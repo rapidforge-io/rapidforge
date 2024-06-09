@@ -19,5 +19,6 @@
 
 # Go workspace file
 tmp
+bin
 go.work
 go.work.sum
