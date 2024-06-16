@@ -22,3 +22,32 @@ tmp
 bin
 go.work
 go.work.sum
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript cache
+*/*.tsbuildinfo
+# Optional npm cache directory
+*/.npm
+
+# Optional eslint cache
+*/.eslintcache
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+### react ###
+.DS_*
+**/*.backup.*
+**/*.back.*
+
+sitebuilder/node_modules
+sitebuilder
