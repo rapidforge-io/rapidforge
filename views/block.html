@@ -1,0 +1,103 @@
+{{ define "title" }}{{.block.Name}}{{end }} {{define "content.html"}}
+<div class="is-flex is-align-items-baseline">
+  <div class="mr-2" style="font-size: 24px">
+    <a href="/blocks"> <sl-icon name="arrow-left"></sl-icon></a>
+  </div>
+  <div>
+    <div>
+      <div
+        id="title-container"
+        class="is-flex is-hidden is-flex-direction-row is-align-items-stretch"
+      >
+        <div>
+          <h1><div id="blockTitle">{{.block.Name}}</div></h1>
+        </div>
+        <div onclick="myFunction()">
+          <sl-icon name="pencil-square"></sl-icon>
+        </div>
+      </div>
+      <div
+        id="input-container"
+        class="is-hidden is-flex-direction-row is-align-items-stretch"
+      >
+        <sl-input
+          id="titleInput"
+          nam="name"
+          class="mr-2"
+          value="{{.block.Name}}"
+        ></sl-input>
+        <sl-button
+          class="mr-2"
+          id="saveNameButton"
+          hx-post="/rename/block/{{.block.ID}}"
+          hx-target="#blockTitle"
+          hx-vals='js:{name: document.getElementById("titleInput").value}'
+        >
+          <sl-icon name="floppy2"></sl-icon
+        ></sl-button>
+        <sl-button onclick="myFunction()">
+          <sl-icon name="x"></sl-icon
+        ></sl-button>
+      </div>
+    </div>
+  </div>
+</div>
+<sl-tab-group>
+  <sl-tab slot="nav" panel="entities">Entities</sl-tab>
+  <sl-tab slot="nav" panel="settings">Settings</sl-tab>
+
+  <sl-tab-panel name="entities">
+    <div class="m-2">
+      <div class="columns is-align-items-end">
+        <div class="column">
+          <sl-input label="Search" type="search"></sl-input>
+        </div>
+        <div class="column">
+          <sl-dropdown>
+            <sl-button slot="trigger" variant="primary" caret>Create</sl-button>
+            <sl-menu>
+              <sl-menu-item value="webhook">WebHook</sl-menu-item>
+              <sl-menu-item value="page">Page</sl-menu-item>
+              <sl-menu-item value="periodicTasks">Periodic Tasks</sl-menu-item>
+            </sl-menu>
+          </sl-dropdown>
+        </div>
+      </div>
+      <div class="columns m-1">
+        <sl-radio-group
+          label="Filter Entities By Type"
+          name="a"
+          value="webhook"
+        >
+          <sl-radio-button value="all">All</sl-radio-button>
+          <sl-radio-button value="webhook">WebHooks</sl-radio-button>
+          <sl-radio-button value="page">Pages</sl-radio-button>
+          <sl-radio-button value="perdiodicTask"
+            >Periodic Tasks</sl-radio-button
+          >
+        </sl-radio-group>
+      </div>
+    </div>
+  </sl-tab-panel>
+  <sl-tab-panel name="settings">This is the custom tab panel.</sl-tab-panel>
+</sl-tab-group>
+
+<p>Dess</p>
+<script>
+  // Function to handle after request for a specific button
+  function handleAfterRequest(event) {
+    if (event.detail.target.id === "blockTitle") {
+      myFunction();
+    }
+  }
+
+  document.addEventListener("htmx:afterRequest", handleAfterRequest);
+
+  function myFunction() {
+    const titleContainer = document.getElementById("title-container");
+    const inputContainer = document.getElementById("input-container");
+    titleContainer.classList.toggle("is-flex");
+    inputContainer.classList.toggle("is-flex");
+  }
+</script>
+{{end}}

@@ -1,0 +1,18 @@
+{{ define "title" }}Blocks{{ end }}
+
+{{define "content.html"}}
+<h1>Blocks</h1>
+<div class="columns is-align-items-end">
+    <div class="column">
+      <sl-input label="Search" type="search"></sl-input>
+    </div>
+    <div class="column">
+      <sl-button size="medium" variant="primary" hx-post="/blocks/create">Create</sl-button>
+    </div>
+</div>
+<sl-divider></sl-divider>
+
+<div hx-get="/blocks_list" hx-trigger="load" hx-target="this">
+   Loading...
+</div>
+{{end}}

@@ -16,3 +16,12 @@ ifndef name
 endif
 	# echo "Creating migration in ${GOOSE_MIGRATION_DIR} - with type ${type}"; \
     goose --dir database/migrations create ${name} ${type}
+
+
+.PHONY: build-fe postbuild
+npm-build:
+	cd sitebuilder && npm run build
+
+build-fe: npm-build
+	cp site-builder/dist/*.html ./views/
+	cp -r site-builder/dist/static/* ./static/

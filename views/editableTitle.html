@@ -1,0 +1,58 @@
+{{define "editableTitle"}}
+<div>
+    <div>
+        <div
+            id="title-container"
+            class="is-flex is-hidden is-flex-direction-row is-align-items-stretch"
+        >
+            <div>
+                <h1><div id="blockTitle">{{index . "Name"}}</div></h1>
+            </div>
+            <div onclick="myFunction()">
+                <sl-icon name="pencil-square"></sl-icon>
+            </div>
+        </div>
+        <div
+            id="input-container"
+            class="is-hidden is-flex-direction-row is-align-items-stretch"
+        >
+            <sl-input
+                id="titleInput"
+                nam="name"
+                class="mr-2"
+                value="{{index . "Name"}}"
+            ></sl-input>
+            <sl-button
+                class="mr-2"
+                id="saveNameButton"
+                hx-post="/rename/block/{{index . "ID"}}"
+                hx-target="#blockTitle"
+                hx-vals='js:{name: document.getElementById("titleInput").value}'
+            >
+                <sl-icon name="floppy2"></sl-icon
+            ></sl-button>
+            <sl-button onclick="myFunction()">
+                <sl-icon name="x"></sl-icon
+            ></sl-button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to handle after request for a specific button
+    function handleAfterRequest(event) {
+        if (event.detail.target.id === "blockTitle") {
+            myFunction();
+        }
+    }
+
+    document.addEventListener("htmx:afterRequest", handleAfterRequest);
+
+    function myFunction() {
+        const titleContainer = document.getElementById("title-container");
+        const inputContainer = document.getElementById("input-container");
+        titleContainer.classList.toggle("is-flex");
+        inputContainer.classList.toggle("is-flex");
+    }
+</script>
+{{end}}

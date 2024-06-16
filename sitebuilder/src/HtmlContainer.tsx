@@ -1,0 +1,76 @@
+import React, { useEffect, useState } from "react";
+import { BaseComponent, BaseDrag, BaseSortable, ComponentHelper, OutsideClickHandler } from "./Components";
+import CodeMirror from "@uiw/react-codemirror";
+import { langs } from "@uiw/codemirror-extensions-langs";
+import { useCanvasItems } from "./App";
+
+export function HtmlContainer(props) {
+  const { id, onCanvas, label, name, currentParent, html, active } = props;
+  const { canvasItems } = useCanvasItems();
+  // const { onDragStart, id, onCanvas, html} = props;
+  const componentName = 'HtmlContainer';
+  // needed to keep send state of the
+  // container in tree
+  function handlerUpdateProp(htmlContent) {
+    const canvasHtmlEditor = canvasItems.search(id);
+    canvasHtmlEditor.editableProps = { html: htmlContent };
+  }
+
+  return onCanvas === true ? (
+    <BaseSortable
+      onCanvas={true}
+      id={id}
+      active={active}
+      currentParent={currentParent}
+      componentName={componentName}
+    >
+      <HtmlEditor updateProp={handlerUpdateProp} html={html}></HtmlEditor>
+    </BaseSortable>
+  ) : (
+    <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
+      {ComponentHelper('HTML container', 'fa-solid fa-code')}
+    </BaseDrag>
+  );
+}
+
+
+export function HtmlEditor(props) {
+    const {html, updateProp} = props
+    const [htmlContent, setHtmlContent] = useState("")
+    const [editMode, setEditMode] = useState(true);
+
+    useEffect(() => {
+      setHtmlContent(html);
+    }, [html]);
+
+
+    return (
+      <>
+        {editMode === true ? (
+          <OutsideClickHandler
+            onOutsideClick={(_) => {
+              setEditMode(false);
+              updateProp(htmlContent);
+            }}
+          >
+            <CodeMirror
+              className="code-editor"
+              height="100%"
+              width="100%"
+              minHeight="100px"
+              value={htmlContent !== undefined ? htmlContent: undefined}
+              placeholder={"/* Edit html code  */"}
+              extensions={[langs.html()]}
+              onChange={(value) => setHtmlContent(value)}
+            />
+          </OutsideClickHandler>
+        ) : (
+          <div
+            onClick={() => setEditMode(true)}
+            style={{ width: "100%" }}
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
+          ></div>
+        )}
+      </>
+    );
+}

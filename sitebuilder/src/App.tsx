@@ -1,0 +1,671 @@
+import React, {
+  useState,
+  useContext,
+  createContext,
+  useRef,
+} from "react";
+import { ComponentPanel } from "./Editor";
+import { TreeNode, Tree } from "./tree";
+import { editableProps, editablePropsRender } from "./Components";
+import { javascript } from "@codemirror/lang-javascript";
+import { langs } from "@uiw/codemirror-extensions-langs";
+import CodeMirror from "@uiw/react-codemirror";
+import JSZip from "jszip";
+import {
+  SlTab,
+  SlTabGroup,
+  SlInput,
+  SlDivider,
+  SlButton,
+} from "@shoelace-style/shoelace/dist/react";
+
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { v4 as uuid } from "uuid";
+
+interface ActiveItem {
+  id: string;
+  // TODO: rename to component name
+  type: string;
+}
+
+interface PageMetaData {
+  js: string;
+  css: string;
+  title: string;
+  description: string;
+  keywords: string;
+}
+
+// component library components ids are missing
+// Try nested structure
+type CanvasItemsContextType = {
+  canvasItems: Tree;
+  setCanvasItems: React.Dispatch<React.SetStateAction<Tree>>;
+  activeItem: ActiveItem | null;
+  setActiveItem: React.Dispatch<React.SetStateAction<ActiveItem> | null>;
+  containerRef: React.MutableRefObject | null;
+  pageMetaData: {};
+  setPageMetadata: React.Dispatch<React.SetStateAction<PageMetaData>>;
+};
+
+const CanvasItemsContext = createContext<CanvasItemsContextType>({
+  canvasItems: new Tree(),
+  setCanvasItems: () => {},
+  activeItem: null,
+  setActiveItem: () => {},
+  containerRef: null,
+  pageMetaData: {},
+  setPageMetadata: () => {},
+  previewTab: null,
+  setPreviewTab: () => {},
+});
+
+export const useCanvasItems = () => useContext(CanvasItemsContext);
+
+// Provider component to wrap your app
+export const CanvasItemsProvider: React.FC = ({ children }) => {
+  const tree = new Tree();
+  const containerRef = useRef(null);
+
+  const rootNode = new TreeNode(
+    "dropzone",
+    "CanvasDropZone",
+    false,
+    editableProps["CanvasDropZone"]
+  );
+  tree.root = rootNode;
+  const [canvasItems, setCanvasItems] = useState<Tree>(tree);
+  const [activeItem, setActiveItem] = useState<ActiveItem>(null);
+  const [pageMetaData, setPageMetadata] = useState<PageMetaData>({
+    title: "title",
+    description: "description",
+  });
+  const [previewTab, setPreviewTab] = useState(null);
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    console.log("drag end event", event);
+    const dropZone = over?.data?.current.dropZone || false;
+    const overData = over?.data?.current || {};
+    const activeData = active?.data?.current || {};
+
+    if (
+      activeData.onCanvas === true &&
+      dropZone === true &&
+      activeData.currentParent !== over.id
+    ) {
+      console.log("moving item");
+      // somehow drop event ends up like this
+      const activeNode = canvasItems.search(active.id);
+      const collidingChild = activeNode.children.find(
+        (child) => child.id === over.id
+      );
+      if (collidingChild) {
+        return;
+      }
+
+      canvasItems.moveNode(active.id, over.id);
+      setCanvasItems((prevTree) => {
+        const newTree = new Tree();
+        newTree.root = prevTree.root;
+        return newTree;
+      });
+      //  dropping item to canvas
+    } else if (dropZone === true && activeData.currentParent !== over.id) {
+      console.log("adding item to canvas...");
+      const id = `${uuid()}-${activeData.componentName}`;
+      let obj = {...editableProps[activeData.componentName]}
+      let tmp = new TreeNode(
+        id,
+        activeData.componentName,
+        false,
+        obj || {}
+      );
+
+      for (let i = 1; i <= activeData.dropzoneCount; i++) {
+        const childNode = new TreeNode(
+          `${activeData.dropzoneComponentName}-${uuid()}`,
+          activeData.dropzoneComponentName,
+          false
+        );
+        tmp.children.push(childNode);
+      }
+
+      const targetId = over.id;
+      const targetNode = canvasItems.search(targetId.toString());
+      targetNode.children.push(tmp);
+      setCanvasItems((prevTree) => {
+        const newTree = new Tree();
+        newTree.root = prevTree.root;
+        return newTree;
+      });
+    } else if (
+      dropZone === false &&
+      overData &&
+      overData.dropZone === undefined &&
+      activeData.parentId === overData.parentId
+    ) {
+      const currentNode = canvasItems.search(activeData.currentParent);
+      const cloneChildren = [...currentNode.children];
+      const activeIndex = activeData.sortable.index;
+      const overIndex = overData.sortable.index;
+      const tmp = cloneChildren[activeIndex];
+      cloneChildren[activeIndex] = cloneChildren[overIndex];
+      cloneChildren[overIndex] = tmp;
+      currentNode.children = cloneChildren;
+      setCanvasItems((prevTree) => {
+        const newTree = new Tree();
+        newTree.root = prevTree.root;
+        return newTree;
+      });
+    }
+  }
+
+  const pointerSensor = useSensor(PointerSensor, {
+    // Require the mouse to move by 10 pixels before activating
+    activationConstraint: {
+      distance: 10,
+    },
+  });
+
+  const sensors = useSensors(pointerSensor);
+
+  return (
+    <CanvasItemsContext.Provider
+      value={{
+        canvasItems,
+        setCanvasItems,
+        activeItem,
+        setActiveItem,
+        containerRef,
+        previewTab,
+        setPreviewTab,
+        pageMetaData,
+        setPageMetadata,
+      }}
+    >
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {children}
+      </DndContext>
+    </CanvasItemsContext.Provider>
+  );
+};
+
+const App = () => {
+  return (
+    <>
+      <CanvasItemsProvider>
+        <Header />
+        <ComponentPanel />
+        <Canvas />
+        <PropEditor />
+      </CanvasItemsProvider>
+    </>
+  );
+};
+
+const Canvas = (props) => {
+  const {
+    containerRef,
+    canvasItems,
+    pageMetaData,
+    setPageMetadata,
+    previewTab,
+  } = useCanvasItems();
+
+  function renderCanvasItems() {
+    return canvasItems.renderTreeStructure(canvasItems.root);
+  }
+
+  const editorRef = useRef(null);
+  const [activeTab, setActiveTab] = useState("canvas");
+
+  function renderTabBody() {
+    if (activeTab == "canvas") {
+      return renderCanvasItems();
+    } else if (activeTab == "js") {
+      return (
+        <>
+          <CodeMirror
+            className="code-editor"
+            height="100%"
+            width="100%"
+            id="js-editor"
+            placeholder={"/* Write javascript code  */"}
+            value={pageMetaData.js}
+            extensions={[javascript({ jsx: true })]}
+            onChange={(value) =>
+              setPageMetadata({ ...pageMetaData, ["js"]: value })
+            }
+          ></CodeMirror>
+        </>
+      );
+    } else if (activeTab == "css") {
+      return (
+        <>
+          <CodeMirror
+            className="code-editor"
+            id="css-editor"
+            height="100%"
+            width="100%"
+            placeholder={"/* Write css code  */"}
+            value={pageMetaData.css}
+            extensions={[langs.css()]}
+            onChange={(value) => {
+              setPageMetadata({ ...pageMetaData, ["css"]: value });
+              // if (previewTab !== null && !previewTab.closed) {
+              //   const html = wrapWithHTML(
+              //     containerRef.current.innerHTML,
+              //     pageMetaData
+              //   );
+              //   previewTab.document.write(html);
+              //   previewTab.document.close();
+              // }
+            }}
+          />
+        </>
+      );
+    } else if (activeTab == "pageGlobals") {
+      return (
+        <div className="mainBuilder">
+          <p className="title is-4 has-text-black">SEO</p>
+          <div className="field">
+            <SlInput
+              size="small"
+              placeholder="Page Title"
+              onSlInput={(e) =>
+                setPageMetadata({
+                  ...pageMetaData,
+                  title: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="field">
+            <SlInput
+              size="small"
+              placeholder="Page description"
+              onSlInput={(e) =>
+                setPageMetadata({
+                  ...pageMetaData,
+                  description: e.target.value,
+                })
+              }
+            />
+          </div>
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div id="builder-container">
+      <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
+        <SlTab slot="nav" panel="canvas" id="canvas">
+          Canvas
+        </SlTab>
+        <SlTab slot="nav" panel="pageGlobals" id="pageGlobals">
+          Page Globals
+        </SlTab>
+        <SlTab slot="nav" panel="css" id="css">
+          CSS
+        </SlTab>
+        <SlTab slot="nav" panel="js" id="js">
+          Javascript
+        </SlTab>
+      </SlTabGroup>
+      {renderTabBody()}
+    </div>
+  );
+};
+
+function wrapWithHTML(htmlContent, pageMetadata) {
+  let scriptTag = "";
+  if (pageMetadata.js) {
+    scriptTag = `<script>${pageMetadata.js}</script>`;
+  }
+
+  let styleTag = "";
+  if (pageMetadata.css) {
+    styleTag = `<style>${pageMetadata.css}</style>`;
+  }
+
+  const fullHTML = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="description" content="${pageMetadata.description}" >
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"/>
+      <style>
+
+        .app {
+          width: 100%;
+          margin: 0 auto;
+          text-align: center;
+          border: 2px dashed #ccc;
+          margin-bottom: 50px;
+          margin-top: 10px;
+          margin: 5%;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+        }
+
+        .base-component {
+          position: relative;
+          padding: 2px;
+        }
+
+        body {
+          margin: 0;
+          display: flex;
+          padding-top: 64px;
+        }
+
+      </style>
+      <title>${pageMetadata.title}</title>
+
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/shoelace-autoloader.js"></script>
+      ${styleTag}
+    </head>
+    <body>
+      <div class="app">
+        ${htmlContent}
+      </div>
+      ${scriptTag}
+    </body>
+    </html>
+  `;
+
+  return fullHTML;
+}
+
+const Header = () => {
+  const {
+    canvasItems,
+    containerRef,
+    setCanvasItems,
+    pageMetaData,
+    previewTab,
+    setPreviewTab,
+    setActiveItem,
+  } = useCanvasItems();
+  return (
+    <header className="header">
+      <div className="container-fluid">
+        <div className="innerHeader">
+          <div className="headerActions">
+            <SlButton
+              size="small"
+              onClick={() => {
+                const result = window.confirm(
+                  "Are you sure you want to clear canvas?"
+                );
+                if (result) {
+                  setCanvasItems((_) => {
+                    const newTree = new Tree();
+                    const rootNode = new TreeNode("dropzone", "CanvasDropZone", false);
+                    newTree.root = rootNode;
+                    setActiveItem(null);
+                    return newTree;
+                  });
+                }
+              }}
+            >
+              <div className="buttonIcon">
+                <i className="fa-solid fa-eraser"></i>
+                <span> Clear</span>
+              </div>
+            </SlButton>
+            <SlButton
+              size="small"
+              disabled={containerRef.current === null}
+              onClick={() => {
+                if (containerRef.current) {
+                  const htmlContent = containerRef.current.innerHTML;
+
+                  let newWindow = null;
+
+                  if (previewTab == null || previewTab.closed) {
+                    newWindow = window.open("", "_blank");
+                    setPreviewTab(newWindow);
+                  } else {
+                    newWindow = previewTab;
+                  }
+
+                  newWindow.document.write(
+                    wrapWithHTML(htmlContent, pageMetaData)
+                  );
+                  newWindow.document.close();
+                }
+              }}
+            >
+              <div className="buttonIcon">
+                <i className="fa-regular fa-eye"></i>
+                <span> Preview</span>
+              </div>
+            </SlButton>
+            <SlButton
+              size="small"
+              onClick={() => {
+                const htmlContent = containerRef.current.innerHTML;
+                const fullHTML = wrapWithHTML(htmlContent, pageMetaData);
+                const zip = new JSZip();
+                zip.file("index.html", fullHTML);
+
+                zip.generateAsync({ type: "blob" }).then((content) => {
+                  const downloadLink = document.createElement("a");
+                  downloadLink.href = URL.createObjectURL(content);
+                  downloadLink.download = "website.zip";
+                  downloadLink.click();
+                });
+              }}
+            >
+              <div className="buttonIcon">
+                <i className="fa fa-download"></i>
+                Download
+              </div>
+            </SlButton>
+
+            <SlButton
+              size="small"
+              onClick={() => {
+                console.log("canvas Items", canvasItems);
+                console.log("page metadata", pageMetaData);
+              }}
+            >
+              <div className="buttonIcon">
+                <i className="fa fa-floppy-o"></i>
+                Settings
+              </div>
+            </SlButton>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+function LayoutEditor() {
+  // when hover on item circle canvas item
+  // don't allow dropzone to be moved
+  const Tree = () => {
+    const { canvasItems } = useCanvasItems();
+
+    function handleDragEnd(e) {
+      console.log("layout drop", e);
+    }
+
+    const TreeNodeComponent = ({ node }) => {
+      const [open, setOpen] = useState(true);
+
+      const handleToggle = () => {
+        setOpen(!open);
+      };
+
+      return (
+        <li data-id={node.id}>
+          <div onClick={handleToggle} style={{ cursor: "pointer" }}>
+            {node.children.length > 0 && (
+              <i
+                className={`fa ${open ? "fa-angle-down" : "fa-angle-right"}`}
+                style={{ marginRight: "5px" }}
+              />
+            )}
+            {node.componentName}
+          </div>
+          <ul className={`list-unstyled ${open ? "show" : "collapse"}`}>
+            {node.children.map((child) => (
+              <TreeNodeComponent key={child.id} node={child} />
+            ))}
+          </ul>
+        </li>
+      );
+    };
+
+    const pointerSensor = useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    });
+
+    const sensors = useSensors(pointerSensor);
+
+    return (
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <ul className="list-unstyled">
+          <TreeNodeComponent node={canvasItems.root} />
+        </ul>
+      </DndContext>
+    );
+  };
+
+  return (
+    <>
+      <Tree />
+    </>
+  );
+}
+
+function PropEditor() {
+  const [isVisible, setIsVisible] = useState(false);
+  const { activeItem, canvasItems, setCanvasItems } =
+    useCanvasItems(CanvasItemsContext);
+
+  const [activeTab, setActiveTab] = useState("props");
+  const toggleVisibility = () => {
+    setIsVisible(!isVisible);
+  };
+
+  function propsRender() {
+    function handlePropOnChange(propKey: string, newValue: string | Object) {
+
+      const canvasItem = canvasItems.search(activeItem?.id);
+      // debugger;
+      if (canvasItem === null) return;
+      // TODO: add default editable keys when dropped into canvas
+      // debugger;
+      if (canvasItem.editableProps == undefined) {
+        canvasItem.editableProps = { [propKey]: newValue };
+      } else {
+        if (
+          propKey == 'style' && canvasItem.editableProps[propKey] !== null &&
+          typeof newValue === "object"
+        ) {
+          canvasItem.editableProps[propKey] = {
+            ...canvasItem.editableProps[propKey],
+            ...newValue,
+          };
+        } else {
+          canvasItem.editableProps[propKey] = newValue;
+         }
+      }
+
+      setCanvasItems((prevTree) => {
+        const newTree = new Tree();
+        newTree.root = prevTree.root;
+        return newTree;
+      });
+    }
+
+    if (activeItem == null) {
+      return <></>;
+    }
+
+    const propEntries = editablePropsRender[activeItem?.type];
+    const canvasItem = canvasItems.search(activeItem?.id);
+
+    if (propEntries === undefined) {
+      console.log("undefined props");
+      return <></>;
+    }
+
+    return Object.entries(propEntries).map(([key, renderFunc], index) => {
+
+      // style: { color: "black", fontSize: "10px" },
+      // nested props
+      if (key === 'style' && Array.isArray(renderFunc)) {
+        const currentValues = canvasItem.editableProps[key];
+
+        return Object.entries(currentValues).map(([key,value], idx) => {
+          let obj = {[key]: value}
+          return (
+            <div className="columns pl-1 pr-1">
+             <SlDivider/>
+             {renderFunc[idx](handlePropOnChange, obj)}
+             <SlDivider/>
+            </div>
+          )
+        })
+
+      } else {
+        const currentValue = canvasItem.editableProps[key];
+        return <div className="columns p-1">{renderFunc(handlePropOnChange, currentValue)}</div>;
+      }
+
+    });
+  }
+
+  function renderTabBody() {
+    if (activeTab === "props") {
+      return <>{propsRender()}</>;
+    } else if (activeTab === "layout") return <LayoutEditor />;
+  }
+
+  return (
+    <aside className={`rightAside ${isVisible ? "show" : ""}`}>
+      <button className="menuRightbtn" onClick={toggleVisibility}>
+        <i className="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <div className="flex-grid has-1-cols">
+        <div>
+        <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
+          <SlTab slot="nav" panel="props" id="props">
+            Props
+          </SlTab>
+          <SlTab slot="nav" panel="layout" id="layout">
+            Layout
+          </SlTab>
+        </SlTabGroup>
+        </div>
+
+        <div className="container pt-3 pl-3">
+         {renderTabBody()}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+export default App;

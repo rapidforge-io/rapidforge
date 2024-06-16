@@ -1,0 +1,24 @@
+{{range .blocks}}
+<sl-details class="mb-2">
+  <div slot="summary">
+    <div class="is-flex">
+      <div class="is-flex is-align-items-center">
+        {{.Name}}
+        <sl-badge variant="{{if .Active}}success{{else}}neutral{{end}}"
+          >{{if .Active}}Active{{else}}Inactive{{end}}</sl-badge
+        >
+      </div>
+    </div>
+  </div>
+
+  <div class="is-flex is-flex-direction-column">
+    <div style="display: flex; align-items: center; height: 2rem">
+      <a href="/blocks/{{.ID}}" class="mr-4">Edit Block</a>
+      <sl-divider vertical></sl-divider>
+      <a href="/block/{{.ID}}">Delete Block</a>
+    </div>
+
+    {{.Description}}
+  </div>
+</sl-details>
+{{end}}

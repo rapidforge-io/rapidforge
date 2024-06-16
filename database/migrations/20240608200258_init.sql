@@ -45,15 +45,18 @@ CREATE TABLE files (
 );
 
 CREATE TABLE webhooks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    active BOOLEAN NOT NULL,
-    env_variables TEXT,
-    blocks BLOB,
-    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
+    Name TEXT,
+    Description TEXT,
+    Active BOOLEAN,
+    EnvVariables TEXT,
+    Block_id INTEGER,
+    Path TEXT,
+    Cors TEXT,
+    HttpMethod TEXT,
+    ExitHttpPair TEXT,
     program_id INTEGER,
-    FOREIGN KEY (program_id) REFERENCES programs(id)
+    FOREIGN KEY(Block_id) REFERENCES Blocks(id),
+    FOREIGN KEY(program_id) REFERENCES Programs(id)
 );
 
 CREATE TABLE pages (

@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	"github.com/rapidforge-io/rapidforge/config"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
@@ -18,11 +18,20 @@ import (
 var embedMigrations embed.FS
 
 // this could be map in future
-var DbConn *sql.DB
+// var DbConn *sql.DB
 
 // for testing
-var GetConnection = func() Connection {
-	return DbConn
+// var GetConnection = func() Connection {
+// 	return DbConn
+// }
+
+type DbCon struct {
+	*sqlx.DB
+}
+
+func New(fileName string) *DbCon {
+	db := LoadConnection(fileName)
+	return &DbCon{DB: db}
 }
 
 type Connection interface {
@@ -68,8 +77,7 @@ func RemoveDbFile(filePath string) {
 	}
 }
 
-func LoadConnection(databaseName string) {
-	var err error
+func LoadConnection(databaseName string) *sqlx.DB {
 
 	if databaseName == "" {
 		databaseName = config.Get().DatabaseUrl
@@ -79,24 +87,23 @@ func LoadConnection(databaseName string) {
 
 	CreateDbFile(databaseName)
 
-	DbConn, err = sql.Open("sqlite", databaseName)
+	dbConnection, err := sqlx.Connect("sqlite", databaseName)
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
+
+	return dbConnection
 }
 
-func RunMigrations() {
-
-	LoadConnection("")
-
-	goose.SetBaseFS(embedMigrations)
+func (db *DbCon) RunMigrations() {
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
 		panic(err)
 	}
+	goose.SetBaseFS(embedMigrations)
 
-	if err := goose.Up(DbConn, "migrations"); err != nil {
+	if err := goose.Up(db.DB.DB, "migrations"); err != nil {
 		panic(err)
 	}
 }
