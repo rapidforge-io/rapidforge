@@ -1,24 +1,27 @@
-{{range .blocks}}
+{{define "card"}}
 <sl-details class="mb-2">
-  <div slot="summary">
-    <div class="is-flex">
-      <div class="is-flex is-align-items-center">
-        {{.Name}}
-        <sl-badge variant="{{if .Active}}success{{else}}neutral{{end}}"
-          >{{if .Active}}Active{{else}}Inactive{{end}}</sl-badge
-        >
-      </div>
+  <div slot="summary" style="width: 100%;">
+    <div class="is-flex is-justify-content-space-between">
+    <div class="is-flex is-align-items-center">{{ defaultString (index . "Name") "No Name" }}</div>
+
+    <div class="is-flex is-align-items-center">
+        <sl-badge variant="{{if (index . "Active")}}success{{else}}neutral{{end}}">
+          {{if index .  "Active"}}Active{{else}}Inactive{{end}}
+        </sl-badge>
+        {{range $index, $element := index . "Badges"}}
+          <sl-badge variant="primary">{{$element}}</sl-badge>
+        {{end}}
+    </div>
     </div>
   </div>
 
   <div class="is-flex is-flex-direction-column">
     <div style="display: flex; align-items: center; height: 2rem">
-      <a href="/blocks/{{.ID}}" class="mr-4">Edit Block</a>
+      <a href="/{{index . "Type"}}/{{index . "ID"}}"class="mr-4">Edit</a>
       <sl-divider vertical></sl-divider>
-      <a href="/block/{{.ID}}">Delete Block</a>
+      <a href="/{{index . "Type"}}/{{index . "ID"}}">Delete</a>
     </div>
-
-    {{.Description}}
+    {{ defaultString (index . "Description") "No Description" }}
   </div>
 </sl-details>
 {{end}}

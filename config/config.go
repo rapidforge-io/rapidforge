@@ -13,6 +13,8 @@ type Config struct {
 	AdminUsername string `env:"RF_ADMIN_USERNAME, default=admin"`
 	AdminPassword string `env:"RF_ADMIN_PASSWORD, default=1234"`
 	DatabaseUrl   string `env:"RF_DATABASE_URL, default=rapidforge.sqlite3"`
+	Domain        string `env:"RF_DOMAIN, default=localhost"`
+	Port          string `env:"RF_PORT, default=4000"`
 	Timeout       time.Duration
 }
 
@@ -36,4 +38,8 @@ func SetEnv(envName string) {
 
 func Get() Config {
 	return c
+}
+
+func BaseUrl() string {
+	return "http://" + c.Domain + ":" + c.Port
 }

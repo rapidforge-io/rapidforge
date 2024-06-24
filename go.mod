@@ -10,6 +10,8 @@ require (
 	modernc.org/sqlite v1.30.0
 )
 
+require github.com/go-playground/validator v9.31.0+incompatible // indirect
+
 require (
 	github.com/bytedance/sonic v1.11.8 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect

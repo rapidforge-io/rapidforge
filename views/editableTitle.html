@@ -1,14 +1,15 @@
 {{define "editableTitle"}}
 <div>
     <div>
+         <sl-alert  id="toastBox" variant="primary"> </sl-alert>
         <div
             id="title-container"
-            class="is-flex is-hidden is-flex-direction-row is-align-items-stretch"
+            class="is-flex is-hidden is-flex-direction-row is-align-items-baseline"
         >
             <div>
-                <h1><div id="blockTitle">{{index . "Name"}}</div></h1>
+                <h1><div id="blockTitle">{{defaultString (index . "Url") (index . "Field")}}</div></h1>
             </div>
-            <div onclick="myFunction()">
+            <div onclick="hideShow()" class="ml-2" style="font-size: 20px;">
                 <sl-icon name="pencil-square"></sl-icon>
             </div>
         </div>
@@ -20,18 +21,17 @@
                 id="titleInput"
                 nam="name"
                 class="mr-2"
-                value="{{index . "Name"}}"
+                value="{{index . "Field"}}"
             ></sl-input>
             <sl-button
                 class="mr-2"
                 id="saveNameButton"
-                hx-post="/rename/block/{{index . "ID"}}"
+                hx-patch="/rename/{{index . "Type"}}/{{index . "ID"}}"
                 hx-target="#blockTitle"
-                hx-vals='js:{name: document.getElementById("titleInput").value}'
+                hx-vals='js:{val: document.getElementById("titleInput").value, type: "{{index . "Type"}}"}'
             >
-                <sl-icon name="floppy2"></sl-icon
-            ></sl-button>
-            <sl-button onclick="myFunction()">
+                <sl-icon name="floppy2"></sl-icon></sl-button>
+            <sl-button onclick="hideShow()">
                 <sl-icon name="x"></sl-icon
             ></sl-button>
         </div>
@@ -39,16 +39,21 @@
 </div>
 
 <script>
-    // Function to handle after request for a specific button
     function handleAfterRequest(event) {
         if (event.detail.target.id === "blockTitle") {
-            myFunction();
+            hideShow();
         }
     }
 
-    document.addEventListener("htmx:afterRequest", handleAfterRequest);
+    document.addEventListener("toastEvent", function(event) {
+        console.log("Custom Event Triggered!", event);
+        var toast = document.getElementById("toastBox");
+        toast.innerText = event.detail.message;
+        toast.toast();
+    });
 
-    function myFunction() {
+    document.addEventListener("htmx:afterRequest", handleAfterRequest);
+    function hideShow() {
         const titleContainer = document.getElementById("title-container");
         const inputContainer = document.getElementById("input-container");
         titleContainer.classList.toggle("is-flex");

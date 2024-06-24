@@ -24,7 +24,7 @@ CREATE TABLE blocks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
-    active BOOLEAN NOT NULL,
+    active BOOLEAN DEFAULT 1,
     env_variables TEXT,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc'))
 );
@@ -41,21 +41,24 @@ CREATE TABLE files (
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
     filename TEXT,
     content TEXT,
-    FOREIGN KEY (program_id) REFERENCES programs(id)
+    FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
 );
 
 CREATE TABLE webhooks (
-    Name TEXT,
-    Description TEXT,
-    Active BOOLEAN,
-    EnvVariables TEXT,
-    Block_id INTEGER,
-    Path TEXT,
-    Cors TEXT,
-    HttpMethod TEXT,
-    ExitHttpPair TEXT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    description TEXT,
+    active BOOLEAN DEFAULT 1,
+    env_variables TEXT,
+    response_headers TEXT,
+    block_id INTEGER,
+    path TEXT NOT NULL UNIQUE,
+    cors TEXT,
+    http_method TEXT DEFAULT 'GET',
+    exit_http_pair TEXT,
     program_id INTEGER,
-    FOREIGN KEY(Block_id) REFERENCES Blocks(id),
+    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
+    FOREIGN KEY(block_id) REFERENCES Blocks(id),
     FOREIGN KEY(program_id) REFERENCES Programs(id)
 );
 
@@ -63,29 +66,31 @@ CREATE TABLE pages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
-    active BOOLEAN NOT NULL,
+    active BOOLEAN DEFAULT 1,
     env_variables TEXT,
-    blocks BLOB,
+    block_id INTEGER,
     program_id INTEGER,
     canvas_state JSON,
     html_output TEXT,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
+    FOREIGN KEY(block_id) REFERENCES Blocks(id),
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );
 
-CREATE TABLE periodic_runs (
+CREATE TABLE periodic_tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
-    active BOOLEAN NOT NULL,
+    active BOOLEAN DEFAULT 1,
     env_variables TEXT,
-    blocks BLOB,
+    block_id INTEGER,
     program_id INTEGER,
-    timezone TEXT,
-    cron TEXT,
-    next_run_at DATETIME,
+    timezone TEXT DEFAULT 'UTC',
+    cron TEXT NOT NULL,
+    next_run_at DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
     updated_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
+    FOREIGN KEY(block_id) REFERENCES Blocks(id),
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );
 
@@ -98,7 +103,7 @@ CREATE TABLE settings (
 -- +goose Down
 -- SQL section 'Down' is executed when this migration is rolled back
 DROP TABLE IF EXISTS settings;
-DROP TABLE IF EXISTS periodic_runs;
+DROP TABLE IF EXISTS periodic_tasks;
 DROP TABLE IF EXISTS pages;
 DROP TABLE IF EXISTS webhooks;
 DROP TABLE IF EXISTS files;
