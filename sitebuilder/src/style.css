@@ -39,32 +39,10 @@ body {
   padding: 4px;
 }
 
-.component-item:hover {
-  background-color: var(--sl-color-neutral-50);
-}
-
-/* @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */
-
 .base-component {
   position: relative;
   padding: 2px;
 }
-
-/* .base-component.hovered { */
-  /* border: var(--sl-border-radius-small) dotted var(--sl-color-neutral-200); */
-  /* border: 2px solid #5e72e3; */
-/* } */
 
 .draggableComponent {
   background-color: #fbfbfb;
@@ -207,11 +185,11 @@ body {
   /* padding: 20px; */
 }
 
-.buttonIcon {
+/* .buttonIcon {
   display: flex;
     align-items: center;
     gap: 10px
-}
+} */
 
 .divName {
   font-size: 12px;

@@ -8,6 +8,7 @@ import (
 
 	"github.com/rapidforge-io/rapidforge/database"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
+	"github.com/rapidforge-io/rapidforge/utils"
 )
 
 type User struct {
@@ -63,7 +64,7 @@ type Webhook struct {
 	Path            string         `json:"path" db:"path"`
 	Cors            sql.NullString `json:"cors" db:"cors"`
 	HttpMethod      string         `json:"httpMethod" db:"http_method"`
-	ResponseHeaders sql.NullString `json:"responseHeaders" db:"http_method"`
+	ResponseHeaders sql.NullString `json:"responseHeaders" db:"response_headers"`
 	ExitHttpPair    sql.NullString `json:"exitHttpPair" db:"exit_http_pair"`
 	CreatedAt       time.Time      `json:"createdAt" db:"created_at"`
 	ProgramID       int            `json:"programId" db:"program_id"`
@@ -116,6 +117,16 @@ type WebhookFormData struct {
 	HttpVerb          string   `form:"httpVerb" `
 	Cors              string   `form:"cors" `
 	Code              string   `form:"editor"`
+}
+
+type PeriodicTaskFormData struct {
+	Name        string `form:"name"`
+	Description string `form:"description"`
+	Env         string `form:"env"`
+	Active      bool   `form:"active" `
+	FileContent string `form:"editor" `
+	Cron        string `form:"cron" `
+	Code        string `form:"editor"`
 }
 
 type Store struct {
@@ -321,11 +332,11 @@ func (s *Store) UpdateName(table string, id int, newName string) (string, error)
 	var query string
 
 	switch table {
-	case "block":
+	case utils.BlockEntity:
 		query = `UPDATE blocks SET name = ? WHERE id = ?`
-	case "webhook":
+	case utils.WebhookEntity:
 		query = `UPDATE webhooks SET name = ? WHERE id = ?`
-	case "periodic_task":
+	case utils.PeriodicTaskEntity:
 		query = `UPDATE periodic_tasks SET name = ? WHERE id = ?`
 	default:
 		return "", fmt.Errorf("invalid table type: %s", table)
@@ -467,6 +478,53 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int, formData WebhookForm
 	if err != nil {
 		tx.Rollback()
 		rflog.Info("failed to update webhook:", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		rflog.Error("failed to commit transaction", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int, formData PeriodicTaskFormData) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		rflog.Error("failed to begin transaction", err)
+		return err
+	}
+
+	query := `
+		UPDATE files
+		SET content = ?
+		WHERE program_id = (
+			SELECT program_id
+			FROM periodic_tasks
+			WHERE id = ?
+		)
+	`
+
+	_, err = tx.Exec(query, formData.FileContent, periodicTaskID)
+	if err != nil {
+		tx.Rollback()
+		rflog.Info("failed to update file content:", err)
+		return err
+	}
+	query = `UPDATE periodic_tasks SET env_variables = ?,
+	              		               name = ?,
+						               description = ?,
+	                                   cron = ?,
+								       active = ?
+	                                WHERE id = ?`
+
+	_, err = tx.Exec(query, formData.Env, formData.Name, formData.Description, formData.Cron, formData.Active, periodicTaskID)
+
+	if err != nil {
+		tx.Rollback()
+		rflog.Info("failed to update periodic tasks:", err)
 		return err
 	}
 

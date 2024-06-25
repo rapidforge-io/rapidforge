@@ -27,7 +27,7 @@ export function MarkdownContainer(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper('Markdown Editor', 'fa-brands fa-markdown')}
+      {ComponentHelper('Markdown Editor', 'markdown')}
     </BaseDrag>
   );
 }

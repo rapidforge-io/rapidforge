@@ -24,10 +24,10 @@ const (
 )
 
 const (
-	BlockEntity        string = "block"
-	WebhookEntity      string = "webhook"
-	PageEntity         string = "page"
-	PeriodicTaskEntity string = "periodicTask"
+	BlockEntity        string = "blocks"
+	WebhookEntity      string = "webhooks"
+	PageEntity         string = "pages"
+	PeriodicTaskEntity string = "periodic_tasks"
 )
 
 func AlertBox(messageType AlertType, message string) string {

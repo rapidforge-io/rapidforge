@@ -15,9 +15,6 @@
 </style>
 
 <div>
-  <label>Url Path</label>
-  <sl-copy-button from="blockTitle"></sl-copy-button>
-
   {{template "editableTitle" .editableComponentParams }}
 </div>
 
@@ -35,7 +32,8 @@
       <sl-button
         class="ml-2"
         variant="primary"
-        hx-patch="/webhooks/{{.periodicTask.ID}}"
+        hx-patch="/periodic_tasks/{{.periodicTask.ID}}"
+        hx-include="[name]"
         hx-target="#alertBox"
         hx-vals="js:{editor: getEditorVal()}"
       >
@@ -55,8 +53,7 @@
         >
           <div class="ml-2 pt-2 is-align-self-center is-flex">
             <sl-switch id="mySwitch" name="active" value="1"
-              checked>Enable/Disable</sl-switch
-            >
+              {{if .periodicTask.Active }}checked{{end}}>Enable/Disable</sl-switch>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 build:
-	go build -o bin/rapidforge main.go
+	go build -o bin/rapidforge .
 
 run:
 	./bin/rapidforge

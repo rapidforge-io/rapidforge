@@ -36,6 +36,7 @@
         variant="primary"
         hx-patch="/webhooks/{{.webhook.ID}}"
         hx-target="#alertBox"
+        hx-include="[name]"
         hx-vals="js:{editor: getEditorVal()}"
       >
         Save
@@ -61,9 +62,8 @@
             </sl-select>
           </div>
           <div class="ml-2 pt-2 is-align-self-center is-flex">
-            <sl-switch id="mySwitch" name="active" value="1"
-              checked>Enable/Disable</sl-switch
-            >
+           <sl-switch id="mySwitch" name="active" value="1"
+              {{if .webhook.Active }}checked{{end}}>Enable/Disable</sl-switch>
           </div>
         </div>
 

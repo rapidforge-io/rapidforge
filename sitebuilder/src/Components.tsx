@@ -22,6 +22,7 @@ import {
   SlMenu,
   SlMenuItem,
   SlButtonGroup,
+  SlIcon,
 } from "@shoelace-style/shoelace/dist/react";
 
 
@@ -300,7 +301,7 @@ function KeyValueTable(prop) {
             </div>
             <div className="column is-0">
               <SlButton size="small" onClick={() => handleRemoveRow(index)}>
-                <i className="fa-solid fa-minus"></i>
+                <SlIcon name="dash-lg"></SlIcon>
               </SlButton>
             </div>
           </div>
@@ -308,7 +309,7 @@ function KeyValueTable(prop) {
       </div>
       <div className="is-flex is-justify-content-space-around	mt-2" style={{width: "50%"}}>
         <SlButton size="small" onClick={handleAddRow}>
-          <i className="fa-solid fa-plus"></i>
+          <SlIcon name="plus-lg"></SlIcon>
         </SlButton>
       </div>
     </div>
@@ -351,10 +352,8 @@ export function DeleteButton(handlePropOnChange, value) {
         size="small"
         onClick={() => handleDelete(activeItem?.id)}
       >
-        <div className="buttonIcon">
-          <i className="fa-solid fa-trash"></i>
-          <span> Delete</span>
-        </div>
+        <SlIcon name="trash"></SlIcon>
+        Delete
       </SlButton>
     </div>
   );
@@ -485,7 +484,7 @@ export function TextInputComponent(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper('Text Input', 'fa-solid fa-font')}
+      {ComponentHelper('Text Input', 'input-cursor-text')}
     </BaseDrag>
   );
 }
@@ -518,7 +517,7 @@ export function CheckboxComponent(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper("CheckBox", "fa-regular fa-square-check")}
+      {ComponentHelper("CheckBox", "ui-checks-grid")}
     </BaseDrag>
   );
 }
@@ -554,7 +553,7 @@ export function RadioboxComponent(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper("RadioBox", "fa-regular fa-circle-dot")}
+      {ComponentHelper("RadioBox", "ui-radios-grid")}
     </BaseDrag>
   );
 }
@@ -575,7 +574,7 @@ export function TextAreaComponent(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper('Text Area', 'fa-solid fa-font')}
+      {ComponentHelper('Text Area', 'bounding-box-circles')}
     </BaseDrag>
   );
 }
@@ -607,7 +606,7 @@ export function ButtonComponent(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper('Button', 'fa-solid fa-stop')}
+      {ComponentHelper('Button', 'app')}
     </BaseDrag>
   );
 }
@@ -635,7 +634,7 @@ export function FormComponent(props) {
       onCanvas={onCanvas}
       componentName={componentName}
     >
-      {ComponentHelper("Form", "fa-solid fa-align-justify")}
+      {ComponentHelper("Form", "code-square")}
     </BaseDrag>
   );
 }
@@ -657,7 +656,7 @@ export function DividerComponent(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper('Divider', 'fa-solid fa-divide')}
+      {ComponentHelper('Divider', 'hr')}
     </BaseDrag>
   );
 }
@@ -665,10 +664,10 @@ export function DividerComponent(props) {
 export function ComponentHelper(name: string, iconClass: string) {
   return (
     <div className="component-item">
-      <span>
-        <i className={iconClass}></i>
-      </span>
-      <span>{name}</span>
+      <SlButton variant="default" size="small" style={{ width: '100%'}} >
+        <SlIcon slot="prefix" name={iconClass}></SlIcon>
+        {name}
+      </SlButton>
     </div>
   );
 }
@@ -689,7 +688,7 @@ const { id, currentParent, onCanvas, label, style, active } = props;
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper("Paragraph", "fa-solid fa-paragraph")}
+      {ComponentHelper("Paragraph", "paragraph")}
     </BaseDrag>
   );
 }
@@ -818,7 +817,7 @@ export function ContainerComponent(props) {
       dropzoneComponentName={"Dropzone"}
       componentName={componentName}
     >
-      {ComponentHelper('Container', 'fa-solid fa-border-all')}
+      {ComponentHelper('Container', 'archive')}
     </BaseDrag>
   ) : (
     <BaseSortable
@@ -847,7 +846,7 @@ export function Grid2rowsHtmlItem(props) {
       dropzoneComponentName={"Dropzone"}
       componentName={componentName}
     >
-      {ComponentHelper('Grid 1X2', 'fa-solid fa-border-all')}
+      {ComponentHelper('Grid 1X2', 'grid-3x3')}
     </BaseDrag>
   ) : (
     <BaseSortable
@@ -914,7 +913,7 @@ export function DropdownComponent(props) {
       dropzoneComponentName={"Dropzone"}
       componentName={componentName}
     >
-      {ComponentHelper("Dropdown", "fa-solid fa-square-caret-down")}
+      {ComponentHelper("Dropdown", "menu-button-wide")}
     </BaseDrag>
   ) : (
     <BaseSortable

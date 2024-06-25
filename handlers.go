@@ -253,6 +253,35 @@ func updateWebhookHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
+func updatePeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		intId := parseInt(id)
+
+		var form models.PeriodicTaskFormData
+
+		if err := c.ShouldBind(&form); err != nil {
+			// Return error messages if validation fails
+			var errs []string
+			for _, err := range err.(validator.ValidationErrors) {
+				errs = append(errs, err.Field()+": "+err.ActualTag())
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+			return
+		}
+
+		err := store.UpdatePeriodicTaskByFrom(intId, form)
+
+		if err != nil {
+			rflog.Error("failed to update periodic task", err)
+			return
+		}
+
+		c.Header("Content-Type", "text/html")
+		c.String(200, utils.AlertBox(utils.Success, "Periodic task updated"))
+	}
+}
+
 func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")

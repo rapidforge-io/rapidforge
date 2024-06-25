@@ -34,9 +34,9 @@ template "editableTitle" .editableComponentParams }}
           value="webhook"
         >
           <sl-radio-button value="all" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/all" hx-target="#entities">All</sl-radio-button>
-          <sl-radio-button value="webhook" hx-trigger="click,load" hx-get="/block/{{.block.ID}}/entities/webhook" hx-target="#entities">WebHooks</sl-radio-button>
-          <sl-radio-button value="page" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/page" hx-target="#entities">Pages</sl-radio-button>
-          <sl-radio-button value="perdiodicTask" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/periodicTask" hx-target="#entities">Periodic Tasks</sl-radio-button>
+          <sl-radio-button value="webhook" hx-trigger="click,load" hx-get="/block/{{.block.ID}}/entities/webhooks" hx-target="#entities">WebHooks</sl-radio-button>
+          <sl-radio-button value="page" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/pages" hx-target="#entities">Pages</sl-radio-button>
+          <sl-radio-button value="perdiodicTask" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/periodic_tasks" hx-target="#entities">Periodic Tasks</sl-radio-button>
         </sl-radio-group>
         <sl-divider></sl-divider>
         </div>
@@ -48,6 +48,33 @@ template "editableTitle" .editableComponentParams }}
       </div>
     </div>
   </sl-tab-panel>
-  <sl-tab-panel name="settings">This is the custom tab panel.</sl-tab-panel>
+    <sl-tab-panel name="settings">
+    <div id="alertBoxSettings"></div>
+    <form hx-patch="/blocks/{{.block.ID}}" hx-include="[name]" hx-target="#alertBoxSettings">
+      <div class="is-flex is-justify-content-space-between">
+        <div
+          class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
+        >
+          <div class="ml-2 pt-2 is-align-self-center is-flex">
+            <sl-switch id="mySwitch" name="active" value="1"
+              {{if .block.Active }}checked{{end}}>Enable/Disable</sl-switch>
+          </div>
+        </div>
+
+        <div class="ml-10 pt-2 is-align-self-center is-flex">
+          <sl-button type="submit" variant="primary">Save</sl-button>
+        </div>
+      </div>
+
+      <div class="m-2">
+        <sl-details summary="Description">
+          <sl-textarea
+            name="description"
+            value={{defaultString .block.Description "No description"}}
+          ></sl-textarea>
+        </sl-details>
+      </div>
+    </form>
+  </sl-tab-panel>
 </sl-tab-group>
 {{end}}

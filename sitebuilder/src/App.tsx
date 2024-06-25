@@ -17,7 +17,11 @@ import {
   SlInput,
   SlDivider,
   SlButton,
+  SlIcon
 } from "@shoelace-style/shoelace/dist/react";
+
+// import SlIcon from '@shoelace-style/shoelace/dist/react/icon';
+
 
 import {
   DndContext,
@@ -422,10 +426,8 @@ const Header = () => {
                 }
               }}
             >
-              <div className="buttonIcon">
-                <i className="fa-solid fa-eraser"></i>
-                <span> Clear</span>
-              </div>
+              <SlIcon slot="prefix" name="eraser" />
+               Clear
             </SlButton>
             <SlButton
               size="small"
@@ -450,33 +452,9 @@ const Header = () => {
                 }
               }}
             >
-              <div className="buttonIcon">
-                <i className="fa-regular fa-eye"></i>
-                <span> Preview</span>
-              </div>
+              <SlIcon slot="prefix" name="easel3"></SlIcon>
+                Preview
             </SlButton>
-            <SlButton
-              size="small"
-              onClick={() => {
-                const htmlContent = containerRef.current.innerHTML;
-                const fullHTML = wrapWithHTML(htmlContent, pageMetaData);
-                const zip = new JSZip();
-                zip.file("index.html", fullHTML);
-
-                zip.generateAsync({ type: "blob" }).then((content) => {
-                  const downloadLink = document.createElement("a");
-                  downloadLink.href = URL.createObjectURL(content);
-                  downloadLink.download = "website.zip";
-                  downloadLink.click();
-                });
-              }}
-            >
-              <div className="buttonIcon">
-                <i className="fa fa-download"></i>
-                Download
-              </div>
-            </SlButton>
-
             <SlButton
               size="small"
               onClick={() => {
@@ -484,10 +462,8 @@ const Header = () => {
                 console.log("page metadata", pageMetaData);
               }}
             >
-              <div className="buttonIcon">
-                <i className="fa fa-floppy-o"></i>
+              <SlIcon slot="prefix" name="gear"></SlIcon>
                 Settings
-              </div>
             </SlButton>
           </div>
         </div>
@@ -645,7 +621,7 @@ function PropEditor() {
   return (
     <aside className={`rightAside ${isVisible ? "show" : ""}`}>
       <button className="menuRightbtn" onClick={toggleVisibility}>
-        <i className="fa-solid fa-chevron-left"></i>
+        <SlIcon name="arrow-left"></SlIcon>
       </button>
 
       <div className="flex-grid has-1-cols">

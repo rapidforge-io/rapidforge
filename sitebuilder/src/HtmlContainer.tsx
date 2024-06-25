@@ -28,7 +28,7 @@ export function HtmlContainer(props) {
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
-      {ComponentHelper('HTML container', 'fa-solid fa-code')}
+      {ComponentHelper('HTML container', 'filetype-html')}
     </BaseDrag>
   );
 }

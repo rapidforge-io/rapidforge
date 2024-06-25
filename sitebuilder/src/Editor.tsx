@@ -3,7 +3,7 @@ import {
   editableProps,
   classMap,
 } from "./Components";
-import { SlDivider } from "@shoelace-style/shoelace/dist/react";
+import { SlDivider, SlIcon } from "@shoelace-style/shoelace/dist/react";
 
 
 export const ComponentPanel = (props) => {
@@ -16,7 +16,7 @@ export const ComponentPanel = (props) => {
   return (
     <aside className={`leftAside ${isVisible ? "show" : ""}`}>
       <button className="menuLeftbtn" onClick={toggleVisibility}>
-        <i className="fa-solid fa-chevron-right"></i>
+      <SlIcon name="arrow-right"></SlIcon>
       </button>
       <div className="container">
         <h2>Components</h2>

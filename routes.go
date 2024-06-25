@@ -2,13 +2,47 @@ package main
 
 import (
 	"embed"
+	"html/template"
 	"net/http"
 
+	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-gonic/gin"
 	"github.com/rapidforge-io/rapidforge/models"
+	"github.com/rapidforge-io/rapidforge/utils"
 )
 
-func setupRoutes(r *gin.Engine, store *models.Store, viewsFS embed.FS, staticFS embed.FS) {
+func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
+	r := multitemplate.NewRenderer()
+
+	// Define the common template functions
+	funcMap := template.FuncMap{
+		"defaultString": utils.DefaultHtml,
+	}
+
+	basePages := []string{"views/base.html", "views/navbar.html"}
+
+	// Create and add templates to the renderer
+	addTemplate := func(name string, extraPages ...string) {
+		allPages := append(basePages, extraPages...)
+		tmpl := template.Must(template.New("base.html").Funcs(funcMap).ParseFS(viewsFS, allPages...))
+		r.Add(name, tmpl)
+	}
+
+	addTemplate("blocks_base", "views/blocks_base.html")
+	addTemplate("block", "views/editableTitle.html", "views/card.html", "views/block.html")
+	addTemplate("webhook", "views/editableTitle.html", "views/webhook.html")
+	addTemplate("periodic_task", "views/editableTitle.html", "views/periodic_task.html")
+
+	tmpl := template.Must(template.New("block_list.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/block_list.html"))
+
+	r.Add("blocks", tmpl)
+
+	tmpl = template.Must(template.New("entities.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/entities.html"))
+	r.Add("entities", tmpl)
+
+	return r
+}
+func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	staticServer := http.FileServer(http.FS(staticFS))
 	r.GET("/static/*filepath", func(c *gin.Context) {
@@ -40,5 +74,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, viewsFS embed.FS, staticFS 
 
 	r.POST("/periodic_tasks/create", createPeriodicTaskHandler(store))
 
-	r.GET("/pages", pagesHandler)
+	r.PATCH("/periodic_tasks/:id", updatePeriodicTaskHandler(store))
+
+	// r.GET("/pages", pagesHandler)
 }
