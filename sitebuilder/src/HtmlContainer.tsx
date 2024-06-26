@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BaseComponent, BaseDrag, BaseSortable, ComponentHelper, OutsideClickHandler } from "./Components";
+import { BaseDrag, BaseSortable, ComponentHelper, OutsideClickHandler } from "./Components";
 import CodeMirror from "@uiw/react-codemirror";
 import { langs } from "@uiw/codemirror-extensions-langs";
 import { useCanvasItems } from "./App";
@@ -7,10 +7,7 @@ import { useCanvasItems } from "./App";
 export function HtmlContainer(props) {
   const { id, onCanvas, label, name, currentParent, html, active } = props;
   const { canvasItems } = useCanvasItems();
-  // const { onDragStart, id, onCanvas, html} = props;
   const componentName = 'HtmlContainer';
-  // needed to keep send state of the
-  // container in tree
   function handlerUpdateProp(htmlContent) {
     const canvasHtmlEditor = canvasItems.search(id);
     canvasHtmlEditor.editableProps = { html: htmlContent };

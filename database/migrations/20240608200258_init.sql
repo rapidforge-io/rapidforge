@@ -67,14 +67,11 @@ CREATE TABLE pages (
     name TEXT NOT NULL,
     description TEXT,
     active BOOLEAN DEFAULT 1,
-    env_variables TEXT,
     block_id INTEGER,
-    program_id INTEGER,
     canvas_state JSON,
     html_output TEXT,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
-    FOREIGN KEY(block_id) REFERENCES Blocks(id),
-    FOREIGN KEY (program_id) REFERENCES programs(id)
+    FOREIGN KEY(block_id) REFERENCES Blocks(id)
 );
 
 CREATE TABLE periodic_tasks (

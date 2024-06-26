@@ -17,10 +17,9 @@ var staticFS embed.FS
 
 // TODO
 // [ ] Pages
-// [ ] Integrate build system
-// [ ] Change preview and remove download
-// [ ] Remove layout editor
-// [ ] Check if you can get minimap of a page
+// [ ] Make page list page
+// [ ] Fetch page details when page editor is opened
+// [ ] Save button should send a request to save page
 
 // [ ] Not found webhook should not cause a panic
 // [ ] Returning header config for webhook

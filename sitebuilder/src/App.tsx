@@ -17,7 +17,10 @@ import {
   SlInput,
   SlDivider,
   SlButton,
-  SlIcon
+  SlIcon,
+  SlSwitch,
+  SlCopyButton,
+  SlTextarea
 } from "@shoelace-style/shoelace/dist/react";
 
 // import SlIcon from '@shoelace-style/shoelace/dist/react/icon';
@@ -277,12 +280,25 @@ const Canvas = (props) => {
       );
     } else if (activeTab == "pageGlobals") {
       return (
-        <div className="mainBuilder">
-          <p className="title is-4 has-text-black">SEO</p>
-          <div className="field">
+        <div className="is-flex is-justify-content-space-between is-flex-direction-column">
+          <div className="is-flex mb-2 mt-2">
+          <SlSwitch onClick={(e) => setPageMetadata({...pageMetaData, enabled: e.target.checked})}>Enabled/Disabled</SlSwitch>
+          </div>
+          <div className="is-flex mb-2 is-align-items-center">
             <SlInput
-              size="small"
-              placeholder="Page Title"
+              label="Page Url"
+              id="pageUrl"
+              onSlInput={(e) =>
+                setPageMetadata({
+                  ...pageMetaData,
+                  pageUrl: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="is-flex mb-2">
+            <SlInput
+              label="Page Title"
               onSlInput={(e) =>
                 setPageMetadata({
                   ...pageMetaData,
@@ -291,10 +307,9 @@ const Canvas = (props) => {
               }
             />
           </div>
-          <div className="field">
-            <SlInput
-              size="small"
-              placeholder="Page description"
+          <div className="is-flex ">
+            <SlTextarea
+              label="Page description"
               onSlInput={(e) =>
                 setPageMetadata({
                   ...pageMetaData,
@@ -315,7 +330,7 @@ const Canvas = (props) => {
           Canvas
         </SlTab>
         <SlTab slot="nav" panel="pageGlobals" id="pageGlobals">
-          Page Globals
+          Settings
         </SlTab>
         <SlTab slot="nav" panel="css" id="css">
           CSS
@@ -404,71 +419,81 @@ const Header = () => {
     setPreviewTab,
     setActiveItem,
   } = useCanvasItems();
+
+  const url = `${window.global.baseUrl}/pages/${pageMetaData.pageUrl}`;
   return (
-    <header className="header">
-      <div className="container-fluid">
-        <div className="innerHeader">
-          <div className="headerActions">
-            <SlButton
-              size="small"
-              onClick={() => {
-                const result = window.confirm(
-                  "Are you sure you want to clear canvas?"
-                );
-                if (result) {
-                  setCanvasItems((_) => {
-                    const newTree = new Tree();
-                    const rootNode = new TreeNode("dropzone", "CanvasDropZone", false);
-                    newTree.root = rootNode;
-                    setActiveItem(null);
-                    return newTree;
-                  });
-                }
-              }}
-            >
-              <SlIcon slot="prefix" name="eraser" />
-               Clear
-            </SlButton>
-            <SlButton
-              size="small"
-              disabled={containerRef.current === null}
-              onClick={() => {
-                if (containerRef.current) {
-                  const htmlContent = containerRef.current.innerHTML;
-
-                  let newWindow = null;
-
-                  if (previewTab == null || previewTab.closed) {
-                    newWindow = window.open("", "_blank");
-                    setPreviewTab(newWindow);
-                  } else {
-                    newWindow = previewTab;
-                  }
-
-                  newWindow.document.write(
-                    wrapWithHTML(htmlContent, pageMetaData)
-                  );
-                  newWindow.document.close();
-                }
-              }}
-            >
-              <SlIcon slot="prefix" name="easel3"></SlIcon>
-                Preview
-            </SlButton>
-            <SlButton
-              size="small"
-              onClick={() => {
-                console.log("canvas Items", canvasItems);
-                console.log("page metadata", pageMetaData);
-              }}
-            >
-              <SlIcon slot="prefix" name="gear"></SlIcon>
-                Settings
-            </SlButton>
-          </div>
-        </div>
+    <div className="header">
+      <div className="is-flex is-align-items-center mr-8">
+        <p id="pageUrl">{url}</p>
+        <SlCopyButton from="pageUrl"/>
       </div>
-    </header>
+      <div className="is-flex is-align-items-center" style={{ gap: "5px" }}>
+        <SlButton
+          size="small"
+          onClick={() => {
+            const result = window.confirm(
+              "Are you sure you want to clear canvas?"
+            );
+            if (result) {
+              setCanvasItems((_) => {
+                const newTree = new Tree();
+                const rootNode = new TreeNode(
+                  "dropzone",
+                  "CanvasDropZone",
+                  false
+                );
+                newTree.root = rootNode;
+                setActiveItem(null);
+                return newTree;
+              });
+            }
+          }}
+        >
+          <SlIcon slot="prefix" name="eraser" />
+          Clear
+        </SlButton>
+        <SlButton
+          size="small"
+          disabled={containerRef.current === null}
+          onClick={() => {
+            if (containerRef.current) {
+              const htmlContent = containerRef.current.innerHTML;
+
+              let newWindow = null;
+
+              if (previewTab == null || previewTab.closed) {
+                newWindow = window.open("", "_blank");
+                setPreviewTab(newWindow);
+              } else {
+                newWindow = previewTab;
+              }
+
+              newWindow.document.write(wrapWithHTML(htmlContent, pageMetaData));
+              newWindow.document.close();
+            }
+          }}
+        >
+          <SlIcon slot="prefix" name="easel3"></SlIcon>
+          Preview
+        </SlButton>
+        <SlButton
+          size="small"
+          onClick={() => {
+            if (containerRef.current) {
+              const htmlContent = containerRef.current.innerHTML;
+              const htmlOutput = wrapWithHTML(htmlContent, pageMetaData);
+              console.log("htmlOutput", htmlOutput);
+            }
+            console.log("global", window.global.baseUrl);
+            console.log("canvas Items", canvasItems);
+            console.log("page metadata", pageMetaData);
+          }}
+        >
+          <SlIcon slot="prefix" name="floppy"></SlIcon>
+          Save
+        </SlButton>
+      </div>
+    </div>
   );
 };
 
@@ -629,9 +654,6 @@ function PropEditor() {
         <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
           <SlTab slot="nav" panel="props" id="props">
             Props
-          </SlTab>
-          <SlTab slot="nav" panel="layout" id="layout">
-            Layout
           </SlTab>
         </SlTabGroup>
         </div>

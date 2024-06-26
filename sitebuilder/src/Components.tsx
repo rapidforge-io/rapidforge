@@ -352,7 +352,7 @@ export function DeleteButton(handlePropOnChange, value) {
         size="small"
         onClick={() => handleDelete(activeItem?.id)}
       >
-        <SlIcon name="trash"></SlIcon>
+        <SlIcon slot="prefix" name="trash"></SlIcon>
         Delete
       </SlButton>
     </div>

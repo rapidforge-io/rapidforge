@@ -50,7 +50,6 @@ pids
 **/*.back.*
 
 sitebuilder/node_modules
-sitebuilder
 sitebuilder/dist
 sitebuilder/static
 sitebuilder/tmp

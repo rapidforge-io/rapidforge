@@ -323,11 +323,11 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
-func createPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
+func createPageHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		blockId := parseInt(c.PostForm("blockId"))
 
-		webhookId, err := store.InsertPeriodicTaskWithAutoName(blockId)
+		webhookId, err := store.InsertPageWithAutoName(blockId)
 
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "error", gin.H{
@@ -336,14 +336,49 @@ func createPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		redirectTo := fmt.Sprintf("/periodic_tasks/%d", webhookId)
+		redirectTo := fmt.Sprintf("/pages/%d", webhookId)
 		c.Header("HX-Redirect", redirectTo)
 		c.Status(http.StatusFound)
 	}
 }
 
-func pagesHandler(c *gin.Context) {
-	c.HTML(http.StatusOK, "pages.html", gin.H{})
+func createPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		blockId := parseInt(c.PostForm("blockId"))
+
+		periodicTaskId, err := store.InsertPeriodicTaskWithAutoName(blockId)
+
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error", gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		redirectTo := fmt.Sprintf("/periodic_tasks/%d", periodicTaskId)
+		c.Header("HX-Redirect", redirectTo)
+		c.Status(http.StatusFound)
+	}
+}
+
+func pagesHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		intId := parseInt(id)
+		_, err := store.SelectPageById(intId)
+
+		if err != nil {
+			rflog.Error("failed to get page", err)
+			// c.HTML(http.StatusInternalServerError, "error", gin.H{
+			// 	"error": err.Error(),
+			// })
+			// return
+		}
+
+		c.HTML(http.StatusOK, "page", gin.H{
+			"baseUrl": config.BaseUrl(),
+		})
+	}
 }
 
 func parseInt(s string) int {

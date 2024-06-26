@@ -28,14 +28,26 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		r.Add(name, tmpl)
 	}
 
+	// addSinglePage := func(name string, pages ...string) {
+	// 	htmlName := fmt.Sprintf("%v.html", name)
+	// 	rflog.Info("adding page", htmlName)
+	// 	tmpl := template.Must(template.New(htmlName).Funcs(funcMap).ParseFS(viewsFS, pages...))
+	// 	r.Add(name, tmpl)
+	// }
+
 	addTemplate("blocks_base", "views/blocks_base.html")
 	addTemplate("block", "views/editableTitle.html", "views/card.html", "views/block.html")
 	addTemplate("webhook", "views/editableTitle.html", "views/webhook.html")
 	addTemplate("periodic_task", "views/editableTitle.html", "views/periodic_task.html")
+	// addTemplate("pages", "views/pages.html")
 
 	tmpl := template.Must(template.New("block_list.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/block_list.html"))
 
 	r.Add("blocks", tmpl)
+
+	tmpl2 := template.Must(template.New("page.html").Funcs(funcMap).ParseFS(viewsFS, "views/page.html"))
+	r.Add("page", tmpl2)
+	// addSinglePage("page", "views/page.html")
 
 	tmpl = template.Must(template.New("entities.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/entities.html"))
 	r.Add("entities", tmpl)
@@ -76,5 +88,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	r.PATCH("/periodic_tasks/:id", updatePeriodicTaskHandler(store))
 
-	// r.GET("/pages", pagesHandler)
+	r.POST("/pages/create", createPageHandler(store))
+
+	r.GET("/pages/:id", pagesHandler(store))
 }

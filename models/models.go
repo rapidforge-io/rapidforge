@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -71,16 +72,14 @@ type Webhook struct {
 }
 
 type Page struct {
-	ID           int       `json:"id" db:"id"`
-	Name         string    `json:"name" db:"name"`
-	Description  string    `json:"description" db:"description"`
-	Active       bool      `json:"active" db:"active"`
-	EnvVariables string    `json:"envVariables" db:"env_variables"`
-	BlockID      int       `json:"blockId" db:"block_id"`
-	ProgramID    int       `json:"programId" db:"program_id"`
-	CanvasState  string    `json:"canvasState" db:"canvas_state"`
-	HTMLOutput   string    `json:"htmlOutput" db:"html_output"`
-	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
+	ID          int             `json:"id" db:"id"`
+	Name        sql.NullString  `json:"name" db:"name"`
+	Description sql.NullString  `json:"description" db:"description"`
+	Active      bool            `json:"active" db:"active"`
+	BlockID     int             `json:"blockId" db:"block_id"`
+	CanvasState json.RawMessage `json:"canvas_state,omitempty"`
+	HTMLOutput  string          `json:"htmlOutput" db:"html_output"`
+	CreatedAt   time.Time       `json:"createdAt" db:"created_at"`
 }
 
 type PeriodicTask struct {
@@ -284,6 +283,42 @@ func (s *Store) InsertWebhookWithAutoName(blockID int) (int64, error) {
 	webhookId, _ := result.LastInsertId()
 
 	return webhookId, nil
+}
+
+func (s *Store) InsertPageWithAutoName(blockID int) (int64, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		rflog.Error("failed to begin transaction for page", err)
+		return -1, err
+	}
+	var maxID int
+	err = tx.QueryRow("SELECT COALESCE(MAX(id), 0) FROM pages").Scan(&maxID)
+	if err != nil {
+		tx.Rollback()
+		rflog.Error("failed to get max id", err)
+		return -1, err
+	}
+	newPageName := fmt.Sprintf("page - %d", maxID+1)
+
+	// Create page
+	pageQuery := `INSERT INTO pages (name, block_id, created_at) VALUES (?, ?, ?)`
+	pageCreatedAt := time.Now().UTC()
+	result, err := tx.Exec(pageQuery, newPageName, blockID, pageCreatedAt)
+	if err != nil {
+		tx.Rollback()
+		rflog.Error("failed to insert page", err)
+		return -1, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		rflog.Error("failed to commit transaction", err)
+		return -1, err
+	}
+
+	pageID, _ := result.LastInsertId()
+
+	return pageID, nil
 }
 
 func (s *Store) SelectWebhookById(id int) (*Webhook, error) {
@@ -658,4 +693,15 @@ func (s *Store) SelectWebhookDetailsById(id int) (*WebhookDetail, error) {
 	}
 
 	return &webhookDetail, nil
+}
+
+func (s *Store) SelectPageById(id int) (*Page, error) {
+	var page Page
+	query := `SELECT id, name, description, active, block_id, canvas_state, html_output, created_at
+			  FROM pages WHERE id = ?`
+	err := s.db.Get(&page, query, id)
+	if err != nil {
+		return nil, err
+	}
+	return &page, nil
 }

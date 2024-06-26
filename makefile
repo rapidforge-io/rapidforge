@@ -23,9 +23,8 @@ npm-build:
 	cd sitebuilder && npm run build
 
 build-fe: npm-build
-	cp site-builder/dist/*.html ./views/
-	cp -r site-builder/dist/static/* ./static/
-
+	cp -f sitebuilder/dist/*.html ./views/
+	cp -r sitebuilder/dist/static ./static/
 
 .PHONY: kill-port
 kill-port:

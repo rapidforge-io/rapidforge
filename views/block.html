@@ -18,7 +18,9 @@ template "editableTitle" .editableComponentParams }}
                 <sl-menu-item>
                   <button hx-post="/webhooks/create" hx-vals='{"blockId": "{{.block.ID}}" }'> Webhook</button>
                 </sl-menu-item>
-              <sl-menu-item value="page">Page</sl-menu-item>
+              <sl-menu-item value="page">
+                  <button hx-post="/pages/create" hx-vals='{"blockId": "{{.block.ID}}" }'> Page</button>
+              </sl-menu-item>
               <sl-menu-item value="periodicTasks">
                 <button hx-post="/periodic_tasks/create" hx-vals='{"blockId": "{{.block.ID}}" }'> Periodic Tasks</button>
               </sl-menu-item>

@@ -1,16 +1,7 @@
 :root {
-  line-height: 1.5;
-  font-weight: 400;
-
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  font-family: var(--sl-font-sans);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   --bar-height: calc(100vh - 80px);
-  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -123,34 +114,38 @@ body {
   border: 1px solid #ecedef;
   padding: 10px 25px;
   /* min-height: 100%; */
-  position: relative;
+  /* position: relative; */
 }
 
 #builder-components {
   margin: 1px;
 }
 
-/*header css*/
 .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   position: fixed;
   left: 0;
   top: 0;
   width: 100%;
   z-index: 9;
   background: #f8f9fd;
-  padding: 10px 255px 10px 255px;
+  padding: 10px 20px;
 }
+
+/*header css*/
 .innerHeader {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.headerActions {
+/* .headerActions {
   display: flex;
   gap: 5px;
   align-items: center;
-}
+} */
 
 /*aside left*/
 .leftAside {
