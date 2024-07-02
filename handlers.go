@@ -1,9 +1,14 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
@@ -18,21 +23,87 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		httpVerb := c.Request.Method
 		path := c.Param("path")
-		file, err := store.SelectWebhookByPath(path, httpVerb)
+		envVars := map[string]string{}
 
-		if err != nil {
-			rflog.Error("failed to get webhook", err)
+		path = strings.TrimPrefix(path, "/")
+		webhook, err := store.SelectWebhookByPath(path, httpVerb)
+
+		if errors.Is(err, sql.ErrNoRows) {
+			rflog.Error("failed to get webhook", err, "path", path)
 			c.Status(http.StatusNotFound)
+			return
 		}
 
-		res, err := bashrunner.Run(file.Content, map[string]string{})
+		if httpVerb == "POST" || httpVerb == "PUT" || httpVerb == "PATCH" {
+			body, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
+				return
+			}
+
+			envVars["PAYLOAD_DATA"] = string(body)
+		} else {
+			const prefix = "URL_PARAM"
+			values := c.Request.URL.Query()
+			for k, v := range values {
+				key := prefix + "_" + strings.ToUpper(k)
+				envVars[key] = v[0]
+			}
+		}
+
+		webhookEnvVariables := webhook.Webhook.GetEnvVars()
+		headers := c.Request.Header
+		const prefix = "HEADER"
+
+		// injecting headers
+		for key, values := range headers {
+			strings.Join(values, ",")
+			for _, value := range values {
+				key := prefix + "_" + strings.Replace(strings.ToUpper(key), "-", "_", -1)
+				envVars[key] = value
+			}
+		}
+
+		envVars = utils.MergeMaps(envVars, webhookEnvVariables)
+
+		// rflog.Info("----", "webhook env vars", envVars)
+
+		exitHttpPair := webhook.Webhook.GetExitHttpPair()
+
+		rflog.Info("----", "webhook exit http pair", exitHttpPair)
+
+		res, err := bashrunner.Run(webhook.File.Content, envVars)
+
+		httpCode, ok := exitHttpPair[res.ExitCode]
+
+		if !ok {
+			httpCode = http.StatusOK
+		}
 
 		if err != nil {
 			rflog.Error("failed to run webhook", err)
 			c.Status(http.StatusInternalServerError)
 		}
 
-		c.JSON(http.StatusOK, res)
+		c.JSON(httpCode, res)
+	}
+}
+
+func pageHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Param("path")
+		decodedURL, _ := url.QueryUnescape(path)
+		page, err := store.SelectPageByPath(decodedURL)
+
+		if err != nil {
+			rflog.Error("failed to get page", err)
+			c.Status(http.StatusNotFound)
+		}
+
+		html := utils.DefaultString(page.HTMLOutput, "<p>Page is empty</p>")
+
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, html)
 	}
 }
 
@@ -45,7 +116,7 @@ func renameHandler(store *models.Store) gin.HandlerFunc {
 		var updatedField string
 		var err error
 		var htmlContent string
-		if tableType != "webhook" {
+		if tableType != utils.WebhookEntity {
 			updatedField, err = store.UpdateName(tableType, intId, newName)
 			htmlContent = fmt.Sprintf(`<div id="blockTitle">%v</div>`, updatedField)
 		} else {
@@ -138,7 +209,7 @@ func getBlockEntitiesHandler(store *models.Store) gin.HandlerFunc {
 				rflog.Error("failed to get pages", err)
 				return
 			}
-			data = utils.TransformToMaps(pages, "pages")
+			data = utils.TransformToMaps(pages, utils.PageEntity)
 		case utils.PeriodicTaskEntity:
 			periodicRuns, err := store.ListPeriodicTasksByBlockID(blockId)
 			if err != nil {
@@ -297,6 +368,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 		editableComponentArgs["Url"] = fmt.Sprintf("%s/webhook/%s", config.BaseUrl(), webhookWithDetails.Webhook.Path)
 		c.HTML(http.StatusOK, "webhook", gin.H{
 			"webhook":                 webhookWithDetails.Webhook,
+			"httpExitPair":            webhookWithDetails.Webhook.GetExitHttpPair(),
 			"fileContent":             utils.DefaultHtml(webhookWithDetails.File.Content, "echo 'Hello World!'"),
 			"editableComponentParams": editableComponentArgs,
 		})
@@ -361,21 +433,44 @@ func createPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
+func updatePageHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		intId := parseInt(id)
+		var pageData models.PageData
+
+		if err := c.ShouldBindJSON(&pageData); err != nil {
+			// Return error messages if validation fails
+			var errs []string
+			for _, err := range err.(validator.ValidationErrors) {
+				errs = append(errs, err.Field()+": "+err.ActualTag())
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+			return
+		}
+
+		err := store.UpdatePageByID(intId, pageData)
+
+		if err != nil {
+			rflog.Error("failed to update page", err)
+		}
+
+		c.Status(http.StatusOK)
+	}
+}
+
 func pagesHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		intId := parseInt(id)
-		_, err := store.SelectPageById(intId)
-
+		page, err := store.SelectPageById(intId)
 		if err != nil {
-			rflog.Error("failed to get page", err)
-			// c.HTML(http.StatusInternalServerError, "error", gin.H{
-			// 	"error": err.Error(),
-			// })
-			// return
+			c.HTML(http.StatusInternalServerError, "error", gin.H{
+				"error": err.Error(),
+			})
 		}
-
 		c.HTML(http.StatusOK, "page", gin.H{
+			"page":    page,
 			"baseUrl": config.BaseUrl(),
 		})
 	}

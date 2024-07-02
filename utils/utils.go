@@ -154,9 +154,29 @@ func TransformToMaps[T any](items []T, typeName string) []map[string]any {
 			} else {
 				mapBlock["Badges"] = []string{"Hook", httpMethod.(string)}
 			}
+		} else if typeName == PageEntity {
+			mapBlock["Badges"] = []string{"Page"}
+		} else if typeName == PeriodicTaskEntity {
+			mapBlock["Badges"] = []string{"Periodic Task"}
 		}
 		mapBlocks = append(mapBlocks, mapBlock)
 	}
 
 	return mapBlocks
+}
+
+// MergeMaps merges two maps. Values from map2 will overwrite values from map1 if keys are the same.
+func MergeMaps[K comparable, V any](map1, map2 map[K]V) map[K]V {
+
+	mergedMap := make(map[K]V)
+
+	for key, value := range map1 {
+		mergedMap[key] = value
+	}
+
+	for key, value := range map2 {
+		mergedMap[key] = value
+	}
+
+	return mergedMap
 }

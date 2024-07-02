@@ -256,11 +256,8 @@ function KeyValueTable(prop) {
   const [data, setData] = useState(items);
 
   const handleAddRow = () => {
-    console.log("before data", data)
     let updated = [...data, {key: "key", value: "value"}]
-    console.log('update', updated)
     setData(updated);
-    console.log('data is', data)
     handlePropOnChange('items', updated);
   };
 
@@ -388,28 +385,6 @@ export function InputPropEditorHelper(handlePropOnChange, value, key) {
   );
 }
 
-// TODO
-export function StylePropEditor(handlePropOnChange, value) {
-  return (
-    <div className="field">
-      <p>Inline Css Editor</p>
-      <CodeMirror
-        className="code-editor"
-        height="100%"
-        width="100%"
-        placeholder={"/* Write css code  */"}
-        extensions={[langs.css()]}
-        // onFocus={}
-        onChange={(value) => {
-          console.log('yyy', value)
-          // handlePropOnChange("style", value)
-
-        }}
-      />
-    </div>
-  );
-}
-
 // ------ prop editor components end
 
 export function BaseDropZone(props) {
@@ -448,21 +423,21 @@ export function CanvasDropZone(props) {
   const ids = canvasItems.root.children.map((x) => x.id);
 
   const handleSetActiveItem = () => {
-    // const item = canvasItems.search(id);
-    // item?.active = true;
     setActiveItem({ id: id, type: componentName })
   }
 
   return (
     <SortableContext items={ids}>
-      <div
-        id={id}
-        ref={setNodeRef}
-        className={`dropzone  ${classes}`}
-        style={updatedStyle}
-        onClick={() => handleSetActiveItem()}
-      >
-        <div ref={containerRef}>{children}</div>
+      <div ref={containerRef}>
+        <div
+          id={id}
+          ref={setNodeRef}
+          className={`dropzone  ${classes}`}
+          style={updatedStyle}
+          onClick={() => handleSetActiveItem()}
+        >
+          <div>{children}</div>
+        </div>
       </div>
     </SortableContext>
   );
@@ -583,8 +558,6 @@ export function ButtonComponent(props) {
   const { id, onCanvas, label, name, currentParent, style, active } = props;
   const componentName = "ButtonComponent";
 
-  console.log('name', name)
-  console.log('label', label)
   function Body() {
     return (
       <div className="is-flex">
@@ -948,8 +921,6 @@ export const OutsideClickHandler = ({ onOutsideClick, children }) => {
     const handleClickOutside = (event) => {
 
       const targetId = event.target.id;
-      // console.log("wrapref", wrapperRef.current)
-      console.log("targetId:", targetId)
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         if ((targetId!==null || targetId !== undefined) && targetId == "modal-confirm") {
           console.log("here")

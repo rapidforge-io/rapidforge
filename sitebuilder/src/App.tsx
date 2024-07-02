@@ -1,16 +1,10 @@
-import React, {
-  useState,
-  useContext,
-  createContext,
-  useRef,
-} from "react";
+import React, { useState, useContext, createContext, useRef } from "react";
 import { ComponentPanel } from "./Editor";
 import { TreeNode, Tree } from "./tree";
 import { editableProps, editablePropsRender } from "./Components";
 import { javascript } from "@codemirror/lang-javascript";
 import { langs } from "@uiw/codemirror-extensions-langs";
 import CodeMirror from "@uiw/react-codemirror";
-import JSZip from "jszip";
 import {
   SlTab,
   SlTabGroup,
@@ -20,11 +14,11 @@ import {
   SlIcon,
   SlSwitch,
   SlCopyButton,
-  SlTextarea
+  SlTextarea,
+  SlAlert,
 } from "@shoelace-style/shoelace/dist/react";
 
 // import SlIcon from '@shoelace-style/shoelace/dist/react/icon';
-
 
 import {
   DndContext,
@@ -37,7 +31,6 @@ import { v4 as uuid } from "uuid";
 
 interface ActiveItem {
   id: string;
-  // TODO: rename to component name
   type: string;
 }
 
@@ -45,8 +38,15 @@ interface PageMetaData {
   js: string;
   css: string;
   title: string;
+  pageUrl: string;
   description: string;
-  keywords: string;
+  enabled: boolean;
+}
+
+interface PageData {
+  metadata: PageMetaData;
+  canvasItems: Tree;
+  htmlOutput: string;
 }
 
 // component library components ids are missing
@@ -57,6 +57,7 @@ type CanvasItemsContextType = {
   activeItem: ActiveItem | null;
   setActiveItem: React.Dispatch<React.SetStateAction<ActiveItem> | null>;
   containerRef: React.MutableRefObject | null;
+
   pageMetaData: {};
   setPageMetadata: React.Dispatch<React.SetStateAction<PageMetaData>>;
 };
@@ -77,21 +78,38 @@ export const useCanvasItems = () => useContext(CanvasItemsContext);
 
 // Provider component to wrap your app
 export const CanvasItemsProvider: React.FC = ({ children }) => {
-  const tree = new Tree();
-  const containerRef = useRef(null);
 
-  const rootNode = new TreeNode(
-    "dropzone",
-    "CanvasDropZone",
-    false,
-    editableProps["CanvasDropZone"]
-  );
-  tree.root = rootNode;
+  const setupTree = () => {
+    const tree = new Tree();
+    const rootNode = new TreeNode(
+      "dropzone",
+      "CanvasDropZone",
+      false,
+      editableProps["CanvasDropZone"]
+    );
+    tree.root = rootNode;
+    return tree;
+  }
+
+  const containerRef = useRef(null);
+  const loadedTree = window.pageData.canvasState;
+  let tree = null;
+  if (loadedTree && Object.keys(loadedTree).length !== 0) {
+    tree = new Tree();
+    tree.root = window.pageData.canvasState;
+  } else {
+    tree = setupTree();
+  }
+
+  // debugger;
+
   const [canvasItems, setCanvasItems] = useState<Tree>(tree);
   const [activeItem, setActiveItem] = useState<ActiveItem>(null);
   const [pageMetaData, setPageMetadata] = useState<PageMetaData>({
-    title: "title",
-    description: "description",
+    title: window.pageData.title || "title",
+    description: window.pageData.description || "description",
+    active: window.pageData.active || true,
+    pageUrl: window.pageData.path,
   });
   const [previewTab, setPreviewTab] = useState(null);
 
@@ -127,13 +145,8 @@ export const CanvasItemsProvider: React.FC = ({ children }) => {
     } else if (dropZone === true && activeData.currentParent !== over.id) {
       console.log("adding item to canvas...");
       const id = `${uuid()}-${activeData.componentName}`;
-      let obj = {...editableProps[activeData.componentName]}
-      let tmp = new TreeNode(
-        id,
-        activeData.componentName,
-        false,
-        obj || {}
-      );
+      let obj = { ...editableProps[activeData.componentName] };
+      let tmp = new TreeNode(id, activeData.componentName, false, obj || {});
 
       for (let i = 1; i <= activeData.dropzoneCount; i++) {
         const childNode = new TreeNode(
@@ -266,14 +279,6 @@ const Canvas = (props) => {
             extensions={[langs.css()]}
             onChange={(value) => {
               setPageMetadata({ ...pageMetaData, ["css"]: value });
-              // if (previewTab !== null && !previewTab.closed) {
-              //   const html = wrapWithHTML(
-              //     containerRef.current.innerHTML,
-              //     pageMetaData
-              //   );
-              //   previewTab.document.write(html);
-              //   previewTab.document.close();
-              // }
             }}
           />
         </>
@@ -282,12 +287,20 @@ const Canvas = (props) => {
       return (
         <div className="is-flex is-justify-content-space-between is-flex-direction-column">
           <div className="is-flex mb-2 mt-2">
-          <SlSwitch onClick={(e) => setPageMetadata({...pageMetaData, enabled: e.target.checked})}>Enabled/Disabled</SlSwitch>
+            <SlSwitch
+              checked={pageMetaData.active}
+              onClick={(e) =>
+                setPageMetadata({ ...pageMetaData, active: e.target.checked })
+              }
+            >
+              Enabled/Disabled
+            </SlSwitch>
           </div>
           <div className="is-flex mb-2 is-align-items-center">
             <SlInput
               label="Page Url"
               id="pageUrl"
+              value={pageMetaData.pageUrl}
               onSlInput={(e) =>
                 setPageMetadata({
                   ...pageMetaData,
@@ -299,6 +312,7 @@ const Canvas = (props) => {
           <div className="is-flex mb-2">
             <SlInput
               label="Page Title"
+              value={pageMetaData.title}
               onSlInput={(e) =>
                 setPageMetadata({
                   ...pageMetaData,
@@ -310,6 +324,7 @@ const Canvas = (props) => {
           <div className="is-flex ">
             <SlTextarea
               label="Page description"
+              value={pageMetaData.description}
               onSlInput={(e) =>
                 setPageMetadata({
                   ...pageMetaData,
@@ -420,12 +435,18 @@ const Header = () => {
     setActiveItem,
   } = useCanvasItems();
 
-  const url = `${window.global.baseUrl}/pages/${pageMetaData.pageUrl}`;
+  const toastRef = useRef(null);
+  const url = `${window.pageData.baseUrl}/page/${pageMetaData.pageUrl}`;
   return (
     <div className="header">
+      <SlAlert ref={toastRef} variant="success" duration="3000" closable>
+        <SlIcon slot="icon" name="check2-circle" />
+        <strong>Your changes have been saved</strong>
+        <br />
+      </SlAlert>
       <div className="is-flex is-align-items-center mr-8">
         <p id="pageUrl">{url}</p>
-        <SlCopyButton from="pageUrl"/>
+        <SlCopyButton from="pageUrl" />
       </div>
       <div className="is-flex is-align-items-center" style={{ gap: "5px" }}>
         <SlButton
@@ -478,15 +499,43 @@ const Header = () => {
         </SlButton>
         <SlButton
           size="small"
-          onClick={() => {
-            if (containerRef.current) {
-              const htmlContent = containerRef.current.innerHTML;
-              const htmlOutput = wrapWithHTML(htmlContent, pageMetaData);
-              console.log("htmlOutput", htmlOutput);
+          onClick={async () => {
+            if (
+              containerRef.current == null ||
+              containerRef.current.innerHTML == undefined
+            ) {
+              return;
             }
-            console.log("global", window.global.baseUrl);
-            console.log("canvas Items", canvasItems);
-            console.log("page metadata", pageMetaData);
+            const htmlContent = containerRef.current.innerHTML;
+            const htmlOutput = wrapWithHTML(htmlContent, pageMetaData);
+            const { title, description, active, path, ...otherMetaData } =
+              pageMetaData;
+            const pageData: PageData = {
+              title: title,
+              path: url,
+              description: description,
+              active: active,
+              metadata: otherMetaData,
+              canvasItems: canvasItems,
+              htmlOutput: htmlOutput,
+            };
+            console.log("pageData", pageData)
+
+            try {
+              const response = await fetch(`${window.pageData.baseUrl}/pages/${window.pageData.pageId}`, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(pageData),
+              });
+
+              if (response.ok) {
+                toastRef.current.toast();
+              }
+            } catch (error) {
+              console.error("Error:", error);
+            }
           }}
         >
           <SlIcon slot="prefix" name="floppy"></SlIcon>
@@ -570,7 +619,6 @@ function PropEditor() {
 
   function propsRender() {
     function handlePropOnChange(propKey: string, newValue: string | Object) {
-
       const canvasItem = canvasItems.search(activeItem?.id);
       // debugger;
       if (canvasItem === null) return;
@@ -580,7 +628,8 @@ function PropEditor() {
         canvasItem.editableProps = { [propKey]: newValue };
       } else {
         if (
-          propKey == 'style' && canvasItem.editableProps[propKey] !== null &&
+          propKey == "style" &&
+          canvasItem.editableProps[propKey] !== null &&
           typeof newValue === "object"
         ) {
           canvasItem.editableProps[propKey] = {
@@ -589,7 +638,7 @@ function PropEditor() {
           };
         } else {
           canvasItem.editableProps[propKey] = newValue;
-         }
+        }
       }
 
       setCanvasItems((prevTree) => {
@@ -612,28 +661,29 @@ function PropEditor() {
     }
 
     return Object.entries(propEntries).map(([key, renderFunc], index) => {
-
       // style: { color: "black", fontSize: "10px" },
       // nested props
-      if (key === 'style' && Array.isArray(renderFunc)) {
+      if (key === "style" && Array.isArray(renderFunc)) {
         const currentValues = canvasItem.editableProps[key];
 
-        return Object.entries(currentValues).map(([key,value], idx) => {
-          let obj = {[key]: value}
+        return Object.entries(currentValues).map(([key, value], idx) => {
+          let obj = { [key]: value };
           return (
             <div className="columns pl-1 pr-1">
-             <SlDivider/>
-             {renderFunc[idx](handlePropOnChange, obj)}
-             <SlDivider/>
+              <SlDivider />
+              {renderFunc[idx](handlePropOnChange, obj)}
+              <SlDivider />
             </div>
-          )
-        })
-
+          );
+        });
       } else {
         const currentValue = canvasItem.editableProps[key];
-        return <div className="columns p-1">{renderFunc(handlePropOnChange, currentValue)}</div>;
+        return (
+          <div className="columns p-1">
+            {renderFunc(handlePropOnChange, currentValue)}
+          </div>
+        );
       }
-
     });
   }
 
@@ -651,16 +701,14 @@ function PropEditor() {
 
       <div className="flex-grid has-1-cols">
         <div>
-        <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
-          <SlTab slot="nav" panel="props" id="props">
-            Props
-          </SlTab>
-        </SlTabGroup>
+          <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
+            <SlTab slot="nav" panel="props" id="props">
+              Props
+            </SlTab>
+          </SlTabGroup>
         </div>
 
-        <div className="container pt-3 pl-3">
-         {renderTabBody()}
-        </div>
+        <div className="container pt-3 pl-3">{renderTabBody()}</div>
       </div>
     </aside>
   );

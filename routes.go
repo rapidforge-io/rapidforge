@@ -62,7 +62,9 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		staticServer.ServeHTTP(c.Writer, c.Request)
 	})
 
-	r.Any("/webhook/:path", webhookHandlers(store))
+	r.Any("/webhook/*path", webhookHandlers(store))
+
+	r.GET("/page/:path", pageHandler(store))
 
 	r.PATCH("/rename/:type/:id", renameHandler(store))
 
@@ -91,4 +93,6 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	r.POST("/pages/create", createPageHandler(store))
 
 	r.GET("/pages/:id", pagesHandler(store))
+
+	r.PATCH("/pages/:id", updatePageHandler(store))
 }

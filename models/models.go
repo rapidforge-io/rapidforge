@@ -2,7 +2,9 @@ package models
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -71,15 +73,97 @@ type Webhook struct {
 	ProgramID       int            `json:"programId" db:"program_id"`
 }
 
+func (w *Webhook) GetEnvVars() map[string]string {
+	envVars := map[string]string{}
+
+	if w.EnvVariables.String == "" {
+		return envVars
+	}
+
+	pairs := strings.Split(w.EnvVariables.String, "\n")
+
+	if len(pairs) == 0 {
+		return envVars
+	}
+
+	for _, pair := range pairs {
+		parts := strings.Split(pair, "=")
+		envVars[parts[0]] = parts[1]
+	}
+
+	return envVars
+}
+
+func (w *Webhook) GetExitHttpPair() map[int]int {
+	envVars := map[int]int{}
+
+	if w.ExitHttpPair.String == "" {
+		return envVars
+	}
+
+	pairs := strings.Split(w.ExitHttpPair.String, ";")
+
+	if len(pairs) == 0 {
+		return envVars
+	}
+
+	for _, pair := range pairs {
+		parts := strings.Split(pair, "=")
+		key := utils.ParseInt(parts[0])
+		val := utils.ParseInt(parts[1])
+
+		if key == 0 && val == 0 {
+			continue
+		}
+
+		envVars[key] = val
+	}
+
+	return envVars
+}
+
+// Custom type to handle JSON unmarshalling
+type JSONRawString map[string]any
+
+// Implement the sql.Scanner interface for JSONRawString
+func (j *JSONRawString) Scan(value interface{}) error {
+	if value == nil {
+		j = nil
+		return nil
+	}
+	str, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("type assertion to string failed")
+	}
+	err := json.Unmarshal([]byte(str), &j)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Implement the driver.Valuer interface for JSONRawString
+func (j JSONRawString) Value() (driver.Value, error) {
+	if j == nil {
+		return nil, nil
+	}
+	bytes, err := json.Marshal(j)
+	if err != nil {
+		return nil, err
+	}
+	return string(bytes), nil
+}
+
 type Page struct {
-	ID          int             `json:"id" db:"id"`
-	Name        sql.NullString  `json:"name" db:"name"`
-	Description sql.NullString  `json:"description" db:"description"`
-	Active      bool            `json:"active" db:"active"`
-	BlockID     int             `json:"blockId" db:"block_id"`
-	CanvasState json.RawMessage `json:"canvas_state,omitempty"`
-	HTMLOutput  string          `json:"htmlOutput" db:"html_output"`
-	CreatedAt   time.Time       `json:"createdAt" db:"created_at"`
+	ID          int            `json:"id" db:"id"`
+	Path        string         `json:"path" db:"path"`
+	Name        sql.NullString `json:"name" db:"name"`
+	Description sql.NullString `json:"description" db:"description"`
+	Active      bool           `json:"active" db:"active"`
+	BlockID     int            `json:"blockId" db:"block_id"`
+	CanvasState JSONRawString  `json:"canvas_state" db:"canvas_state"`
+	HTMLOutput  sql.NullString `json:"htmlOutput" db:"html_output"`
+	CreatedAt   time.Time      `json:"createdAt" db:"created_at"`
 }
 
 type PeriodicTask struct {
@@ -298,12 +382,18 @@ func (s *Store) InsertPageWithAutoName(blockID int) (int64, error) {
 		rflog.Error("failed to get max id", err)
 		return -1, err
 	}
-	newPageName := fmt.Sprintf("page - %d", maxID+1)
+	newPageName := fmt.Sprintf("page-%d", maxID+1)
+
+	canvasState := JSONRawString{
+		"width":  1024,
+		"height": 768,
+		"layers": []string{"background", "foreground"},
+	}
 
 	// Create page
-	pageQuery := `INSERT INTO pages (name, block_id, created_at) VALUES (?, ?, ?)`
+	pageQuery := `INSERT INTO pages (name, path, block_id, canvas_state, created_at) VALUES (?, ?,?, ?, ?)`
 	pageCreatedAt := time.Now().UTC()
-	result, err := tx.Exec(pageQuery, newPageName, blockID, pageCreatedAt)
+	result, err := tx.Exec(pageQuery, newPageName, newPageName, blockID, canvasState, pageCreatedAt)
 	if err != nil {
 		tx.Rollback()
 		rflog.Error("failed to insert page", err)
@@ -401,7 +491,7 @@ func (s *Store) ListPeriodicTasksByBlockID(blockID int) ([]PeriodicTask, error) 
 // ListPagesByBlockID retrieves pages associated with a given block ID.
 func (s *Store) ListPagesByBlockID(blockID int) ([]Page, error) {
 	var pages []Page
-	query := `SELECT id, name, description, active, env_variables, block_id, program_id, canvas_state, html_output, created_at
+	query := `SELECT id, name, description, active, block_id, canvas_state, html_output, created_at
 			  FROM pages
 			  WHERE block_id = ?`
 	err := s.db.Select(&pages, query, blockID)
@@ -434,10 +524,18 @@ func (s *Store) SelectBlockById(id int) (*Block, error) {
 	return &block, nil
 }
 
-func (s *Store) SelectWebhookByPath(path string, verb string) (*File, error) {
+type WebHookDetail struct {
+	Webhook Webhook `json:"periodicTask" db:"webhook"`
+	File    File    `json:"file" db:"file"`
+}
+
+func (s *Store) SelectWebhookByPath(path string, verb string) (*WebHookDetail, error) {
 	// Query to fetch the webhook, program, and files
 	query := `
-	SELECT f.content AS "content"
+	SELECT f.content AS "file.content",
+	       w.env_variables AS "webhook.env_variables",
+		   w.response_headers AS "webhook.response_headers",
+		   w.exit_http_pair AS "webhook.exit_http_pair"
 	FROM
 		webhooks w
 	JOIN
@@ -449,14 +547,14 @@ func (s *Store) SelectWebhookByPath(path string, verb string) (*File, error) {
 	WHERE
 		w.path = ? AND w.http_method = ? AND w.active = 1 AND b.active = 1`
 
-	var file File
+	var webhookWithDetails WebHookDetail
 
-	err := s.db.Get(&file, query, path, verb)
+	err := s.db.Get(&webhookWithDetails, query, path, verb)
 	if err != nil {
 		return nil, err
 	}
 
-	return &file, nil
+	return &webhookWithDetails, nil
 }
 
 func constructKeyValueFormat(exitCodes, httpResponseCodes []string) string {
@@ -697,11 +795,68 @@ func (s *Store) SelectWebhookDetailsById(id int) (*WebhookDetail, error) {
 
 func (s *Store) SelectPageById(id int) (*Page, error) {
 	var page Page
-	query := `SELECT id, name, description, active, block_id, canvas_state, html_output, created_at
+	query := `SELECT id, path, name, description, active, block_id, canvas_state
 			  FROM pages WHERE id = ?`
 	err := s.db.Get(&page, query, id)
 	if err != nil {
 		return nil, err
 	}
 	return &page, nil
+}
+
+func (s *Store) SelectPageByPath(path string) (*Page, error) {
+	var page Page
+	query := `SELECT path, description, active, html_output FROM pages WHERE path = ? AND active = 1`
+	err := s.db.Get(&page, query, path)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &page, nil
+}
+
+type PageData struct {
+	Path        string `json:"path"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Active      bool   `json:"active"`
+	Metadata    any    `json:"metadata"`
+	CanvasItems any    `json:"canvasItems"`
+	HtmlOutput  any    `json:"htmlOutput"`
+}
+
+const pagesVersion = 1
+
+func (s *Store) UpdatePageByID(id int, pageData PageData) error {
+	tmp := pageData.CanvasItems.(map[string]any)
+	tmp["version"] = pagesVersion
+
+	canvasItemsJSON, err := json.Marshal(tmp)
+	if err != nil {
+		return fmt.Errorf("failed to marshal CanvasItems: %w", err)
+	}
+
+	query := `
+        UPDATE pages
+        SET name = ?, description = ?, canvas_state = ?, html_output = ?
+        WHERE id = ?`
+
+	// Execute the query
+	_, err = s.db.Exec(query,
+		pageData.Title,
+		pageData.Description,
+		string(canvasItemsJSON),
+		pageData.HtmlOutput,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update page: %w", err)
+	}
+
+	return nil
 }

@@ -9,10 +9,33 @@
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
   >
-  <script type="module" crossorigin src="/static/assets/app-DowIQ9x0.js"></script>
-  <link rel="stylesheet" crossorigin href="/static/assets/app-7y1dfLvk.css">
-</head>
+  <script type="module" crossorigin src="/static/assets/app-CVYVTwVs.js"></script>
+  <link rel="stylesheet" crossorigin href="/static/assets/app-B74IeQmj.css">
+
+        <script>
+         var pageData= {
+             baseUrl: {{ .baseUrl }},
+             path: {{ .page.Path }},
+             canvasState: {{ .page.CanvasState.root }},
+             active: {{ .page.Active }},
+             title: {{ .page.Name }},
+             description: {{ .page.Description }},
+             pageId: {{ .page.ID }},
+          };
+        </script>
+        </head>
   <body>
+    <script>
+      var pageData= {
+        baseUrl: "http://localhost:4000",
+        path: "pages-1",
+        canvasState: {},
+        active: true,
+        title: "Page Title",
+        description: "Page Description",
+        pageId: 1,
+        };
+    </script>
     <div id="app"></div>
   </body>
 </html>

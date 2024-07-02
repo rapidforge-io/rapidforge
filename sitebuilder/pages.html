@@ -11,10 +11,18 @@
   >
 </head>
   <body>
-    <div id="app"></div>
     <script>
-      var global = {baseUrl: "localhost:4000"};
+      var pageData= {
+        baseUrl: "http://localhost:4000",
+        path: "pages-1",
+        canvasState: {},
+        active: true,
+        title: "Page Title",
+        description: "Page Description",
+        pageId: 1,
+        };
     </script>
+    <div id="app"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

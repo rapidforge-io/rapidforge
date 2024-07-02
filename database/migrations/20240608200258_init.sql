@@ -64,6 +64,7 @@ CREATE TABLE webhooks (
 
 CREATE TABLE pages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    path TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     description TEXT,
     active BOOLEAN DEFAULT 1,

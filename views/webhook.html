@@ -54,16 +54,18 @@
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
         >
           <div>
-            <sl-select name="httpVerb" label="HTTP Verb" value="GET" required>
+            <sl-select name="httpVerb" label="HTTP Verb" value={{.webhook.HttpMethod}} required>
               <sl-option value="GET">GET</sl-option>
               <sl-option value="POST">POST</sl-option>
               <sl-option value="PATCH">PATCH</sl-option>
               <sl-option value="DELETE">DELETE</sl-option>
             </sl-select>
           </div>
-          <div class="ml-2 pt-2 is-align-self-center is-flex">
-           <sl-switch id="mySwitch" name="active" value="1"
-              {{if .webhook.Active }}checked{{end}}>Enable/Disable</sl-switch>
+          <div class="ml-2 pt-5 is-align-self-center is-flex">
+            <sl-radio-group name="active" value={{.webhook.Active}}>
+                <sl-radio-button value=false>Disabled</sl-radio-button>
+                <sl-radio-button value=true>Enabled</sl-radio-button>
+            </sl-radio-group>
           </div>
         </div>
 
@@ -75,12 +77,13 @@
       <div id="mappings" class="is-flex is-flex-direction-column m-2">
         <div class="mapping-row">
           <div class="columns is-align-items-center">
+          {{range $exitCode, $httpResponseCode:= .httpExitPair}}
             <div class="column">
               <sl-input
                 name="exitCode[]"
                 type="number"
                 label="Exit Code"
-                value="0"
+                value={{$exitCode}}
                 placeholder="Enter exit code"
                 required
               ></sl-input>
@@ -89,12 +92,13 @@
               <sl-input
                 name="httpResponseCode[]"
                 type="number"
-                value="200"
+                value={{$httpResponseCode}}
                 label="HTTP Response Code"
                 placeholder="Enter HTTP code"
                 required
               ></sl-input>
             </div>
+          {{end}}
             <div class="column mt-5">
               <sl-button
                 type="button"
@@ -171,13 +175,6 @@
   function getEditorVal() {
     return editor.getValue();
   }
-
-  const switchElement = document.getElementById("mySwitch");
-  switchElement.value = switchElement.checked ? "1" : "0";
-
-  switchElement.addEventListener("sl-change", () => {
-    switchElement.value = switchElement.checked ? "1" : "0";
-  });
 
   function handleSubmit(event) {
     event.preventDefault();

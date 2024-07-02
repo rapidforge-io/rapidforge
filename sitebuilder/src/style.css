@@ -15,7 +15,7 @@ body {
 #app {
   width: 100%;
   margin: 0 auto;
-  text-align: center;
+  /* text-align: center; */
 }
 
 .code-editor {

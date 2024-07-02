@@ -52,8 +52,10 @@
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
         >
           <div class="ml-2 pt-2 is-align-self-center is-flex">
-            <sl-switch id="mySwitch" name="active" value="1"
-              {{if .periodicTask.Active }}checked{{end}}>Enable/Disable</sl-switch>
+           <sl-radio-group name="active" value={{.periodicTask.Active}}>
+                <sl-radio-button value=false>Disabled</sl-radio-button>
+                <sl-radio-button value=true>Enabled</sl-radio-button>
+            </sl-radio-group>
           </div>
         </div>
 
