@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
@@ -29,9 +30,17 @@ type DbCon struct {
 	*sqlx.DB
 }
 
-func New(fileName string) *DbCon {
-	db := LoadConnection(fileName)
-	return &DbCon{DB: db}
+var (
+	once     sync.Once
+	instance *sqlx.DB
+)
+
+func GetDbConn(fileName string) *DbCon {
+	once.Do(func() {
+		instance = LoadConnection(fileName)
+	})
+
+	return &DbCon{DB: instance}
 }
 
 type Connection interface {

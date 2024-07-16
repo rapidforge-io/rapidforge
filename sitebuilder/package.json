@@ -5,7 +5,7 @@
   "license": "",
   "main": "dist/index.js",
   "type": "module",
-  "keywords": [ ],
+  "keywords": [],
   "scripts": {
     "dev": "vite",
     "start": "vite",
@@ -13,24 +13,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/basic-setup": "^0.20.0",
+    "@codemirror/commands": "^6.6.0",
+    "@codemirror/lang-css": "^6.2.1",
+    "@codemirror/lang-html": "^6.4.9",
     "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/lang-markdown": "^6.2.5",
+    "@codemirror/view": "^6.28.3",
+    "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/sortable": "^8.0.0",
-    "@lexical/react": "^0.14.1",
     "@shoelace-style/shoelace": "^2.15.0",
-    "@uiw/codemirror-extensions-langs": "^4.21.25",
-    "@uiw/react-codemirror": "^4.22.00",
     "codemirror": "^6.0.1",
-    "jszip": "^3.10.1",
-    "lexical": "^0.14.1",
-    "lit": "^3.1.4",
     "marked": "^12.0.2",
-    "prosemirror-model": "^1.19.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "vite-plugin-static-copy": "^1.0.4",
     "@types/quill": "^2.0.10",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
@@ -42,6 +41,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vite-plugin-static-copy": "^1.0.4"
   }
 }

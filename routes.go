@@ -16,7 +16,8 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 
 	// Define the common template functions
 	funcMap := template.FuncMap{
-		"defaultString": utils.DefaultHtml,
+		"defaultString":  utils.DefaultHtml,
+		"formatDateTime": utils.FormatDateTime,
 	}
 
 	basePages := []string{"views/base.html", "views/navbar.html"}
@@ -52,8 +53,12 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 	tmpl = template.Must(template.New("entities.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/entities.html"))
 	r.Add("entities", tmpl)
 
+	tmpl = template.Must(template.New("event_table.html").Funcs(funcMap).ParseFS(viewsFS, "views/event_table.html"))
+	r.Add("event_table", tmpl)
+
 	return r
 }
+
 func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	staticServer := http.FileServer(http.FS(staticFS))
@@ -61,6 +66,8 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		c.Request.URL.Path = "static" + c.Param("filepath")
 		staticServer.ServeHTTP(c.Writer, c.Request)
 	})
+
+	r.DELETE("/delete/:type/:id", deleteHandler(store))
 
 	r.Any("/webhook/*path", webhookHandlers(store))
 
@@ -95,4 +102,6 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	r.GET("/pages/:id", pagesHandler(store))
 
 	r.PATCH("/pages/:id", updatePageHandler(store))
+
+	r.GET("/events/:type/:id", eventsHandler(store))
 }

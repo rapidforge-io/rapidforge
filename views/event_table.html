@@ -1,0 +1,21 @@
+<div class="container">
+  <div>
+    <div class="columns is-mobile has-text-weight-bold">
+      <div class="column">Status</div>
+      <div class="column">Type</div>
+      <div class="column">Created At</div>
+    </div>
+    {{range .events}}
+    <div class="columns is-mobile">
+      <div class="column">
+        {{if .Status}} <sl-badge variant="success">Success</sl-badge> {{else}}
+        <sl-badge variant="danger">Fail</sl-badge> {{end}}
+      </div>
+      <div class="column">{{.EventType}}</div>
+      <div class="column">{{.CreatedAt | formatDateTime}}</div>
+    </div>
+    {{end}}
+  </div>
+</div>
+
+<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/components/format-date/format-date.js"></script>

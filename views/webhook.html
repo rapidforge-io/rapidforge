@@ -23,6 +23,7 @@
 <sl-tab-group>
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
+  <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.webhook.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
 
   <sl-tab-panel name="editor">
     <div id="alertBox"></div>
@@ -159,6 +160,9 @@
         </sl-details>
       </div>
     </form>
+  </sl-tab-panel>
+  <sl-tab-panel name="eventLogs">
+    <div id="eventList"></div>
   </sl-tab-panel>
 </sl-tab-group>
 

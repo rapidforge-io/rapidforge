@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	rflog "github.com/rapidforge-io/rapidforge/logger"
+	"github.com/rapidforge-io/rapidforge/utils"
 	"github.com/sethvargo/go-envconfig"
 )
 
@@ -16,6 +18,8 @@ type Config struct {
 	Domain        string `env:"RF_DOMAIN, default=localhost"`
 	Port          string `env:"RF_PORT, default=4000"`
 	Timeout       time.Duration
+	AuthSecretKey string
+	AuthDuration  time.Duration
 }
 
 var c Config
@@ -26,6 +30,12 @@ func load() {
 		log.Fatal(err)
 	}
 	c.Timeout = 30 * time.Second
+	secretKey, err := utils.GenerateRandomString(32)
+	if err != nil {
+		rflog.Error("failed to generate secret key", "err", err)
+	}
+	c.AuthSecretKey = secretKey
+	c.AuthDuration = 1 * time.Hour
 }
 
 func init() {
@@ -34,6 +44,10 @@ func init() {
 
 func SetEnv(envName string) {
 	c.Env = envName
+}
+
+func SetAuthSecretKey(key string) {
+	c.AuthSecretKey = key
 }
 
 func Get() Config {

@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
-  editableProps,
   classMap,
 } from "./Components";
 import { SlDivider, SlIcon } from "@shoelace-style/shoelace/dist/react";

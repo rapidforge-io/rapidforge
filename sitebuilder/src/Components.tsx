@@ -2,8 +2,6 @@ import { DragEvent, SyntheticEvent, useEffect, useRef, useState } from "react";
 import { useCanvasItems } from "./App";
 import { Tree, TreeNode } from "./tree";
 import React from "react";
-import { langs } from "@uiw/codemirror-extensions-langs";
-import CodeMirror from "@uiw/react-codemirror";
 import { useSortable } from "@dnd-kit/sortable";
 import { HtmlContainer } from "./HtmlContainer";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
@@ -13,21 +11,19 @@ import {
   SlColorPicker,
   SlButton,
   SlInput,
-  SlTextarea,
-  SlCheckbox,
-  SlRadio,
-  SlRadioGroup,
   SlDivider,
   SlDropdown,
   SlMenu,
   SlMenuItem,
   SlButtonGroup,
   SlIcon,
+  SlSelect,
+  SlOption,
 } from "@shoelace-style/shoelace/dist/react";
 
 
 export const classMap = {
-  Grid2rowsHtmlItem,
+  GridComponent,
   ButtonComponent,
   CanvasDropZone,
   Dropzone,
@@ -50,10 +46,14 @@ export const editableProps = {
     style: { backgroundColor: "white" },
     classes:''
   },
+  GridComponent: {
+    columns: 2,
+  },
   ButtonComponent: {
     label: "Button Label",
     name: "button",
     style: {},
+    type: "submit",
   },
   RichText: {},
   FooterHtmlItem: {},
@@ -64,6 +64,7 @@ export const editableProps = {
     style: {},
   },
   RadioboxComponent: {
+    name: 'radio',
     label: 'Select option',
     items: [{ key: "key", value: "value" }],
   },
@@ -92,18 +93,14 @@ export const editablePropsRender = {
     delete: DeleteButton,
     name: NamePropEditor,
     label: LabelPropEditor,
-  },
-  FooterHtmlItem: {
-    delete: DeleteButton,
-  },
-  Grid2rowsHtmlItem: {
-    delete: DeleteButton,
+    type: ButtonTypePropEditor,
   },
   HtmlContainer: {
     delete: DeleteButton,
   },
   FormComponent: {
     delete: DeleteButton,
+    action: FormActionPropEditor,
   },
   TextInputComponent: {
     delete: DeleteButton,
@@ -117,10 +114,12 @@ export const editablePropsRender = {
     delete: DeleteButton,
   },
   CheckboxComponent: {
+    name: NamePropEditor,
     delete: DeleteButton,
     items: ListInput,
   },
   RadioboxComponent: {
+    name: NamePropEditor,
     delete: DeleteButton,
     label: LabelPropEditor,
     items: ListInput,
@@ -138,13 +137,16 @@ export const editablePropsRender = {
     label: LabelPropEditor,
   },
   DropdownComponent: {
+    name: NamePropEditor,
     delete: DeleteButton,
     label: LabelPropEditor,
     items: ListInput,
   },
+  GridComponent: {
+    delete: DeleteButton,
+  }
 };
 
-// {color: '', fontSize: ''}
 function Size(handlePropOnChange, value) {
   const key = Object.keys(value)[0]
   return (
@@ -164,7 +166,20 @@ function Size(handlePropOnChange, value) {
   );
 }
 
-// {/* <div className="is-flex is-flex-direction-column is-align-items-flex-start"> */}
+function Number(handlePropOnChange, value) {
+  return (
+    <div className="is-flex is-flex-direction-column is-align-items-flex-start block">
+      <p>{capitalize('columns')}</p>
+      <SlInput
+        value={value}
+        size={"small"}
+        type="number"
+        onSlInput={(e) => handlePropOnChange('columns', e.currentTarget.value)}
+      />
+    </div>
+  );
+}
+
 function ContentAligner(handlePropOnChange, classes: string) {
   const handleAlignmentChange = (val) => {
     const regex = /is-align-items-\S+/g;
@@ -322,7 +337,7 @@ export function ListInput(handlePropOnChange, value) {
   );
 }
 
-export function DeleteButton(handlePropOnChange, value) {
+export function DeleteButton(_handlePropOnChange, _value) {
   const { canvasItems, setCanvasItems, activeItem, setActiveItem } =
     useCanvasItems();
 
@@ -364,6 +379,10 @@ export function NamePropEditor(handlePropOnChange, value) {
   return InputPropEditorHelper(handlePropOnChange, value, "name")
 }
 
+export function FormActionPropEditor(handlePropOnChange, value) {
+  return InputPropEditorHelper(handlePropOnChange, value, "action")
+}
+
 export function ClassPropEditor(handlePropOnChange, value) {
   return InputPropEditorHelper(handlePropOnChange, value, "classes");
 }
@@ -385,6 +404,23 @@ export function InputPropEditorHelper(handlePropOnChange, value, key) {
   );
 }
 
+export function ButtonTypePropEditor(handlePropOnChange, value) {
+  return (
+    <SlSelect
+      label="Button Type"
+
+      size="small"
+      value={value}
+      // defaultValue={"submit"}
+      onSlChange={(e) => {
+        handlePropOnChange("type", e.target.value)
+      } }
+    >
+      <SlOption value="button">button</SlOption>
+      <SlOption value="submit">submit</SlOption>
+    </SlSelect>
+  );
+}
 // ------ prop editor components end
 
 export function BaseDropZone(props) {
@@ -422,9 +458,17 @@ export function CanvasDropZone(props) {
 
   const ids = canvasItems.root.children.map((x) => x.id);
 
-  const handleSetActiveItem = () => {
-    setActiveItem({ id: id, type: componentName })
-  }
+  const handleSetActiveItem = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveItem((prevActiveItem) => {
+      if (prevActiveItem !== null) {
+        const prevItem = canvasItems.search(prevActiveItem.id);
+        prevItem.active = false;
+      }
+      return { id: id, type: componentName };
+    });
+  };
 
   return (
     <SortableContext items={ids}>
@@ -434,7 +478,7 @@ export function CanvasDropZone(props) {
           ref={setNodeRef}
           className={`dropzone  ${classes}`}
           style={updatedStyle}
-          onClick={() => handleSetActiveItem()}
+          onClick={(e) => handleSetActiveItem(e)}
         >
           <div>{children}</div>
         </div>
@@ -455,7 +499,7 @@ export function TextInputComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <SlInput name={name} type={type || "text"}></SlInput>
+      <input className="input" type="text" name={name} type={type || "text"}></input>
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
@@ -464,6 +508,7 @@ export function TextInputComponent(props) {
   );
 }
 
+// TODO: check this
 export function CheckboxComponent(props) {
   const { id, onCanvas, name, items, currentParent, active } = props;
   const componentName = "CheckboxComponent";
@@ -479,13 +524,10 @@ export function CheckboxComponent(props) {
       <div className="is-flex is-flex-direction-column m-2">
         {items.map((option, _) => (
           <div className="is-flex">
-            <SlCheckbox
-              className="is-flex m-1"
-              name={name}
-              value={option.value}
-            >
-              <div className="is-flex"> {option.key}</div>
-            </SlCheckbox>
+            <label className="checkbox">
+              <input type="checkbox" value={option.value} name={name} />
+               {option.key}
+            </label>
           </div>
         ))}
       </div>
@@ -498,15 +540,7 @@ export function CheckboxComponent(props) {
 }
 
 export function RadioboxComponent(props) {
-  const {
-    id,
-    onCanvas,
-    name,
-    items,
-    label,
-    currentParent,
-    active,
-  } = props;
+  const { id, onCanvas, name, items, label, currentParent, active } = props;
   const componentName = "RadioboxComponent";
   return onCanvas === true ? (
     <BaseSortable
@@ -516,14 +550,14 @@ export function RadioboxComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <div className="is-flex">
-        <SlRadioGroup name={name} label={label}>
-          {items.map((option, _) => (
-            <SlRadio className="is-flex m-1" value={option.value}>
-              {option.key}
-            </SlRadio>
-          ))}
-        </SlRadioGroup>
+      <div className="is-flex is-flex-direction-column">
+        <p>{label}</p>
+        {items.map((option, _) => (
+          <label className="radio m-1">
+            <input type="radio" name={name} value={option.value} />
+            {option.key}
+          </label>
+        ))}
       </div>
     </BaseSortable>
   ) : (
@@ -545,7 +579,7 @@ export function TextAreaComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <SlTextarea name={name} ></SlTextarea>
+      <textarea className="textarea" name={name} ></textarea>
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
@@ -555,15 +589,15 @@ export function TextAreaComponent(props) {
 }
 
 export function ButtonComponent(props) {
-  const { id, onCanvas, label, name, currentParent, style, active } = props;
+  const { id, onCanvas, label, name, currentParent, style, active, type} = props;
   const componentName = "ButtonComponent";
 
   function Body() {
     return (
       <div className="is-flex">
-      <SlButton variant="primary" name={name} type="button" style={style}>
+      <button className="button is-primary is-link" name={name} type={type} style={style}>
         {label}
-      </SlButton>
+      </button>
       </div>
     );
   }
@@ -585,8 +619,9 @@ export function ButtonComponent(props) {
 }
 
 export function FormComponent(props) {
-  const { id, currentParent, onCanvas, actionUrl, children, active } = props;
+  const { id, currentParent, onCanvas, action, children, active } = props;
   const componentName = "FormComponent";
+
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
@@ -595,8 +630,8 @@ export function FormComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <div className="base-component">
-        <form className="form-gap is-flex is-align-items-center" action={actionUrl}>{children}</form>
+      <div className="base-component m-4">
+        <form className="form-gap is-flex is-align-items-center" action={action} method="POST">{children}</form>
       </div>
     </BaseSortable>
   ) : (
@@ -778,7 +813,6 @@ export function BaseDrag(props) {
   );
 }
 
-
 export function ContainerComponent(props) {
   const { id, currentParent, onCanvas, children, classes, active } = props;
   const componentName = "ContainerComponent";
@@ -807,19 +841,33 @@ export function ContainerComponent(props) {
   );
 }
 
-export function Grid2rowsHtmlItem(props) {
-  const { id, currentParent, onCanvas, children, active } = props;
-  const componentName = "Grid2rowsHtmlItem";
+export function GridComponent(props) {
+  const { id, currentParent, onCanvas, children, active} = props;
+  const componentName = "GridComponent";
+  const [columnsCount, setColumnsCount] = useState(2);
 
   return onCanvas !== true ? (
     <BaseDrag
       id={id}
       onCanvas={onCanvas}
-      dropzoneCount={2}
+      dropzoneCount={columnsCount}
       dropzoneComponentName={"Dropzone"}
       componentName={componentName}
     >
-      {ComponentHelper('Grid 1X2', 'grid-3x3')}
+      <div className="component-item">
+        <SlButton variant="default" size="small" style={{ width: "50%" }}>
+          <SlIcon slot="prefix" name={"grid-3x3"}></SlIcon>
+          Grid
+        </SlButton>
+          <SlInput
+            type="number"
+            size="small"
+            max={10}
+            value={`${columnsCount}`}
+            style={{ width: "30%" }}
+            onSlInput={(e) => setColumnsCount(e.currentTarget.value)}
+          ></SlInput>
+      </div>
     </BaseDrag>
   ) : (
     <BaseSortable
@@ -875,7 +923,7 @@ export function Dropzone(props) {
 }
 
 export function DropdownComponent(props) {
-  const { id, currentParent, onCanvas, items, label,active } = props;
+  const { id, currentParent, name, onCanvas, items, label,active } = props;
   const componentName = "DropdownComponent";
 
   return onCanvas !== true ? (
@@ -897,18 +945,16 @@ export function DropdownComponent(props) {
       componentName={componentName}
     >
       <div className="is-flex">
-      <SlDropdown>
-        <SlButton slot="trigger" caret>
-          {label}
-        </SlButton>
-        <SlMenu>
-          {items.map((option, _) => (
-            <SlMenuItem value={option.value}>
-              {option.key}
-            </SlMenuItem>
-          ))}
-        </SlMenu>
-      </SlDropdown>
+        <div className="select is-fullwidth">
+          <select id="options" name={name} required>
+            <option value="" disabled selected>
+              {label}
+            </option>
+            {items.map((option, _) => (
+              <option value={option.value}>{option.key}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </BaseSortable>
   );

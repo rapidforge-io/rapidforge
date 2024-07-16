@@ -15,7 +15,7 @@ import (
 )
 
 type User struct {
-	ID           int       `json:"id" db:"id"`
+	ID           int64     `json:"id" db:"id"`
 	Username     string    `json:"username" db:"username"`
 	PasswordHash string    `json:"passwordHash" db:"password_hash"`
 	Email        string    `json:"email" db:"email"`
@@ -26,7 +26,7 @@ type User struct {
 }
 
 type Credential struct {
-	ID          int       `json:"id" db:"id"`
+	ID          int64     `json:"id" db:"id"`
 	Name        string    `json:"name" db:"name"`
 	Description string    `json:"description" db:"description"`
 	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
@@ -35,22 +35,22 @@ type Credential struct {
 }
 
 type Block struct {
-	ID           int       `json:"id" db:"id"`
-	Name         string    `json:"name" db:"name"`
-	Description  string    `json:"description" db:"description"`
-	Active       bool      `json:"active" db:"active"`
-	EnvVariables string    `json:"envVariables" db:"env_variables"`
-	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
+	ID           int64          `json:"id" db:"id"`
+	Name         string         `json:"name" db:"name"`
+	Description  string         `json:"description" db:"description"`
+	Active       bool           `json:"active" db:"active"`
+	EnvVariables sql.NullString `json:"envVariables" db:"env_variables"`
+	CreatedAt    time.Time      `json:"createdAt" db:"created_at"`
 }
 
 type Program struct {
-	ID        int       `json:"id" db:"id"`
+	ID        int64     `json:"id" db:"id"`
 	Name      string    `json:"name" db:"name"`
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 }
 
 type File struct {
-	ID        int       `json:"id" db:"id"`
+	ID        int64     `json:"id" db:"id"`
 	ProgramID int       `json:"programId" db:"program_id"`
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 	Filename  string    `json:"filename" db:"filename"`
@@ -58,7 +58,7 @@ type File struct {
 }
 
 type Webhook struct {
-	ID              int            `json:"id" db:"id"`
+	ID              int64          `json:"id" db:"id"`
 	Name            sql.NullString `json:"name" db:"name"`
 	Description     sql.NullString `json:"description" db:"description"`
 	Active          bool           `json:"active" db:"active"`
@@ -73,25 +73,33 @@ type Webhook struct {
 	ProgramID       int            `json:"programId" db:"program_id"`
 }
 
-func (w *Webhook) GetEnvVars() map[string]string {
-	envVars := map[string]string{}
+func getEnvVars(envVars sql.NullString) map[string]string {
+	envVarsMap := map[string]string{}
 
-	if w.EnvVariables.String == "" {
-		return envVars
+	if envVars.String == "" {
+		return envVarsMap
 	}
 
-	pairs := strings.Split(w.EnvVariables.String, "\n")
+	pairs := strings.Split(envVars.String, "\n")
 
 	if len(pairs) == 0 {
-		return envVars
+		return envVarsMap
 	}
 
 	for _, pair := range pairs {
 		parts := strings.Split(pair, "=")
-		envVars[parts[0]] = parts[1]
+		envVarsMap[parts[0]] = parts[1]
 	}
 
-	return envVars
+	return envVarsMap
+}
+
+func (w *Webhook) GetEnvVars() map[string]string {
+	return getEnvVars(w.EnvVariables)
+}
+
+func (w *Block) GetEnvVars() map[string]string {
+	return getEnvVars(w.EnvVariables)
 }
 
 func (w *Webhook) GetExitHttpPair() map[int]int {
@@ -155,7 +163,7 @@ func (j JSONRawString) Value() (driver.Value, error) {
 }
 
 type Page struct {
-	ID          int            `json:"id" db:"id"`
+	ID          int64          `json:"id" db:"id"`
 	Path        string         `json:"path" db:"path"`
 	Name        sql.NullString `json:"name" db:"name"`
 	Description sql.NullString `json:"description" db:"description"`
@@ -167,7 +175,7 @@ type Page struct {
 }
 
 type PeriodicTask struct {
-	ID           int            `json:"id" db:"id"`
+	ID           int64          `json:"id" db:"id"`
 	Name         sql.NullString `json:"name" db:"name"`
 	Description  sql.NullString `json:"description" db:"description"`
 	Active       bool           `json:"active" db:"active"`
@@ -179,12 +187,6 @@ type PeriodicTask struct {
 	NextRunAt    time.Time      `json:"nextRunAt" db:"next_run_at"`
 	CreatedAt    time.Time      `json:"createdAt" db:"created_at"`
 	UpdatedAt    time.Time      `json:"updatedAt" db:"updated_at"`
-}
-
-type Setting struct {
-	ID    int    `json:"id" db:"id"`
-	Name  string `json:"name" db:"name"`
-	Value string `json:"value" db:"value"`
 }
 
 // -----------------------------------------------------------------------------
@@ -238,7 +240,7 @@ func (s *Store) ListBlocks() ([]Block, error) {
 	return blocks, nil
 }
 
-func (s *Store) InsertPeriodicTaskWithAutoName(blockID int) (int64, error) {
+func (s *Store) InsertPeriodicTaskWithAutoName(blockID int64) (int64, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
@@ -304,7 +306,7 @@ func (s *Store) InsertPeriodicTaskWithAutoName(blockID int) (int64, error) {
 	return taskId, nil
 }
 
-func (s *Store) InsertWebhookWithAutoName(blockID int) (int64, error) {
+func (s *Store) InsertWebhookWithAutoName(blockID int64) (int64, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
@@ -369,7 +371,7 @@ func (s *Store) InsertWebhookWithAutoName(blockID int) (int64, error) {
 	return webhookId, nil
 }
 
-func (s *Store) InsertPageWithAutoName(blockID int) (int64, error) {
+func (s *Store) InsertPageWithAutoName(blockID int64) (int64, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		rflog.Error("failed to begin transaction for page", err)
@@ -411,7 +413,7 @@ func (s *Store) InsertPageWithAutoName(blockID int) (int64, error) {
 	return pageID, nil
 }
 
-func (s *Store) SelectWebhookById(id int) (*Webhook, error) {
+func (s *Store) SelectWebhookById(id int64) (*Webhook, error) {
 	var webhook Webhook
 	query := `SELECT id, name, description, active, env_variables, block_id, path, cors, http_method, response_headers, exit_http_pair, program_id, created_at FROM webhooks WHERE id = ?`
 	err := s.db.Get(&webhook, query, id)
@@ -453,7 +455,7 @@ func (s *Store) InsertBlockWithAutoName(description string, active bool) (int64,
 }
 
 // make it shorter
-func (s *Store) UpdateName(table string, id int, newName string) (string, error) {
+func (s *Store) UpdateName(table string, id int64, newName string) (string, error) {
 	var query string
 
 	switch table {
@@ -476,7 +478,7 @@ func (s *Store) UpdateName(table string, id int, newName string) (string, error)
 }
 
 // ListPeriodicTasksByBlockID retrieves periodic runs associated with a given block ID.
-func (s *Store) ListPeriodicTasksByBlockID(blockID int) ([]PeriodicTask, error) {
+func (s *Store) ListPeriodicTasksByBlockID(blockID int64) ([]PeriodicTask, error) {
 	var periodicRuns []PeriodicTask
 	query := `SELECT id, name, description, active, env_variables, block_id, program_id, timezone, cron, next_run_at, created_at, updated_at
 			  FROM periodic_tasks
@@ -489,7 +491,7 @@ func (s *Store) ListPeriodicTasksByBlockID(blockID int) ([]PeriodicTask, error) 
 }
 
 // ListPagesByBlockID retrieves pages associated with a given block ID.
-func (s *Store) ListPagesByBlockID(blockID int) ([]Page, error) {
+func (s *Store) ListPagesByBlockID(blockID int64) ([]Page, error) {
 	var pages []Page
 	query := `SELECT id, name, description, active, block_id, canvas_state, html_output, created_at
 			  FROM pages
@@ -501,7 +503,7 @@ func (s *Store) ListPagesByBlockID(blockID int) ([]Page, error) {
 	return pages, nil
 }
 
-func (s *Store) ListWebhooksByBlockID(blockID int) ([]Webhook, error) {
+func (s *Store) ListWebhooksByBlockID(blockID int64) ([]Webhook, error) {
 	var webhooks []Webhook
 	query := `SELECT id, name, description, active,
 	                 env_variables, block_id, path, cors, http_method,
@@ -514,7 +516,7 @@ func (s *Store) ListWebhooksByBlockID(blockID int) ([]Webhook, error) {
 	return webhooks, nil
 }
 
-func (s *Store) SelectBlockById(id int) (*Block, error) {
+func (s *Store) SelectBlockById(id int64) (*Block, error) {
 	var block Block
 	query := `SELECT id, name, description, active, env_variables, created_at FROM blocks WHERE id = ?`
 	err := s.db.Get(&block, query, id)
@@ -527,15 +529,19 @@ func (s *Store) SelectBlockById(id int) (*Block, error) {
 type WebHookDetail struct {
 	Webhook Webhook `json:"periodicTask" db:"webhook"`
 	File    File    `json:"file" db:"file"`
+	Block   Block   `json:"block" db:"block"`
 }
 
 func (s *Store) SelectWebhookByPath(path string, verb string) (*WebHookDetail, error) {
 	// Query to fetch the webhook, program, and files
 	query := `
 	SELECT f.content AS "file.content",
+           w.id AS "webhook.id",
 	       w.env_variables AS "webhook.env_variables",
 		   w.response_headers AS "webhook.response_headers",
-		   w.exit_http_pair AS "webhook.exit_http_pair"
+		   w.exit_http_pair AS "webhook.exit_http_pair",
+		   b.env_variables AS "block.env_variables",
+		   b.id AS "block.id"
 	FROM
 		webhooks w
 	JOIN
@@ -573,7 +579,7 @@ func constructKeyValueFormat(exitCodes, httpResponseCodes []string) string {
 	return result
 }
 
-func (s *Store) UpdateFileContentByWebhookID(webhookID int, formData WebhookFormData) error {
+func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFormData) error {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
@@ -623,7 +629,7 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int, formData WebhookForm
 	return nil
 }
 
-func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int, formData PeriodicTaskFormData) error {
+func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int64, formData PeriodicTaskFormData) error {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
@@ -670,7 +676,7 @@ func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int, formData PeriodicTa
 	return nil
 }
 
-func (s *Store) UpdateWebhookPath(id int, newPath string) (string, error) {
+func (s *Store) UpdateWebhookPath(id int64, newPath string) (string, error) {
 	// Check if the new path starts with "/webhooks" and remove it if present
 	newPath = strings.TrimPrefix(newPath, "/webhooks")
 	newPath = strings.TrimPrefix(newPath, "webhooks")
@@ -699,7 +705,7 @@ type PeriodicTaskDetail struct {
 	File         File         `json:"file" db:"file"`
 }
 
-func (s *Store) SelectPeriodicTaskDetailsById(id int) (*PeriodicTaskDetail, error) {
+func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, error) {
 	var periodicTaskDetail PeriodicTaskDetail
 
 	query := `
@@ -728,7 +734,7 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int) (*PeriodicTaskDetail, erro
 	return &periodicTaskDetail, nil
 }
 
-func (s *Store) SelectPeriodicTaskDetailsByIdOld(id int) (*PeriodicTaskDetail, error) {
+func (s *Store) SelectPeriodicTaskDetailsByIdOld(id int64) (*PeriodicTaskDetail, error) {
 	var periodicTaskDetail PeriodicTaskDetail
 
 	query := `
@@ -764,7 +770,7 @@ type WebhookDetail struct {
 	File    File    `json:"file"`
 }
 
-func (s *Store) SelectWebhookDetailsById(id int) (*WebhookDetail, error) {
+func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 	var webhookDetail WebhookDetail
 
 	query := `
@@ -793,7 +799,7 @@ func (s *Store) SelectWebhookDetailsById(id int) (*WebhookDetail, error) {
 	return &webhookDetail, nil
 }
 
-func (s *Store) SelectPageById(id int) (*Page, error) {
+func (s *Store) SelectPageById(id int64) (*Page, error) {
 	var page Page
 	query := `SELECT id, path, name, description, active, block_id, canvas_state
 			  FROM pages WHERE id = ?`
@@ -832,7 +838,7 @@ type PageData struct {
 
 const pagesVersion = 1
 
-func (s *Store) UpdatePageByID(id int, pageData PageData) error {
+func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 	tmp := pageData.CanvasItems.(map[string]any)
 	tmp["version"] = pagesVersion
 
@@ -843,7 +849,11 @@ func (s *Store) UpdatePageByID(id int, pageData PageData) error {
 
 	query := `
         UPDATE pages
-        SET name = ?, description = ?, canvas_state = ?, html_output = ?
+        SET name = ?,
+		    description = ?,
+		    canvas_state = ?,
+			html_output = ?,
+			active = ?
         WHERE id = ?`
 
 	// Execute the query
@@ -852,10 +862,105 @@ func (s *Store) UpdatePageByID(id int, pageData PageData) error {
 		pageData.Description,
 		string(canvasItemsJSON),
 		pageData.HtmlOutput,
+		pageData.Active,
 		id,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update page: %w", err)
+	}
+
+	return nil
+}
+func (s *Store) DeleteBlockById(id int64) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		rflog.Error("failed to begin transaction", err)
+		return err
+	}
+
+	query := "DELETE FROM blocks WHERE id = ?"
+	_, err = tx.Exec(query, id)
+	if err != nil {
+		tx.Rollback()
+		rflog.Info("failed to delete block:", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		rflog.Error("failed to commit transaction", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *Store) DeleteWebhookById(id int64) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		rflog.Error("failed to begin transaction", err)
+		return err
+	}
+
+	query := "DELETE FROM webhooks WHERE id = ?"
+	_, err = tx.Exec(query, id)
+	if err != nil {
+		tx.Rollback()
+		rflog.Info("failed to delete webhook:", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		rflog.Error("failed to commit transaction", err)
+		return err
+	}
+
+	return nil
+}
+func (s *Store) DeletePageById(id int64) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		rflog.Error("failed to begin transaction", err)
+		return err
+	}
+
+	query := "DELETE FROM pages WHERE id = ?"
+	_, err = tx.Exec(query, id)
+	if err != nil {
+		tx.Rollback()
+		rflog.Info("failed to delete page:", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		rflog.Error("failed to commit transaction", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *Store) DeletePeriodicTaskById(id int64) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		rflog.Error("failed to begin transaction", err)
+		return err
+	}
+
+	query := "DELETE FROM periodic_tasks WHERE id = ?"
+	_, err = tx.Exec(query, id)
+	if err != nil {
+		tx.Rollback()
+		rflog.Info("failed to delete periodic task:", err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		rflog.Error("failed to commit transaction", err)
+		return err
 	}
 
 	return nil

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/rapidforge-io/rapidforge/config"
 	"github.com/rapidforge-io/rapidforge/database"
 	"github.com/rapidforge-io/rapidforge/models"
 )
@@ -18,21 +19,40 @@ var viewsFS embed.FS
 var staticFS embed.FS
 
 // TODO
-// [ ] Pass payload to webhook runner
-// [ ] Make form submit for pages
+// [ ] Add out column to event log
+// [ ] Make list view for webhook event logs
+// [ ] Make a list view for block event logs
+// [ ] Add back button for views
+// [ ] Add blank state button
+// [ ] Implement perodic task
+// [ ] Think what to add for settings page
 
-// [ ] Returning header config when webhook is invoked
-// [ ] Add back button for block and webhook
 // [ ] Add Settings page general settings
-// [ ] Add delete action
 // [ ] Add search function
 // [ ] Should we add status to periodic tasks?
 // [ ] Add pagination for block list (can be done later)
+// [ ] Adding throttling for webhook endpoints
+// [ ] adding config for max password attempt
+
+// Thinking
+// - what will happend for authentication when there is more then one instance
+// - check backup from pocketbase
+// - only allow user creation from admin board
+// - import script feature, importing and creating end points for each file
 
 func main() {
-	dbCon := database.New("")
+	dbCon := database.GetDbConn("")
 	dbCon.RunMigrations()
 	store := models.NewModel(dbCon)
+	authSecret, _ := store.GetConfigByKey("authSecretKey")
+
+	if len(authSecret) == 0 {
+		authSecret = config.Get().AuthSecretKey
+		store.InsertSetting("authSecretKey", authSecret)
+	} else {
+		config.SetAuthSecretKey(authSecret)
+	}
+
 	r := gin.Default()
 
 	r.Use(func(c *gin.Context) {

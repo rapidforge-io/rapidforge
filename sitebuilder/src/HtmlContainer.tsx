@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BaseDrag, BaseSortable, ComponentHelper, OutsideClickHandler } from "./Components";
-import CodeMirror from "@uiw/react-codemirror";
-import { langs } from "@uiw/codemirror-extensions-langs";
 import { useCanvasItems } from "./App";
+import { SlTextarea } from "@shoelace-style/shoelace/dist/react";
 
 export function HtmlContainer(props) {
   const { id, onCanvas, label, name, currentParent, html, active } = props;
@@ -40,7 +39,6 @@ export function HtmlEditor(props) {
       setHtmlContent(html);
     }, [html]);
 
-
     return (
       <>
         {editMode === true ? (
@@ -50,15 +48,17 @@ export function HtmlEditor(props) {
               updateProp(htmlContent);
             }}
           >
-            <CodeMirror
-              className="code-editor"
-              height="100%"
-              width="100%"
-              minHeight="100px"
+            <SlTextarea
               value={htmlContent !== undefined ? htmlContent: undefined}
-              placeholder={"/* Edit html code  */"}
-              extensions={[langs.html()]}
-              onChange={(value) => setHtmlContent(value)}
+              label="HTML"
+              style={{ fontFamily: "monospace" }}
+              placeholder={"/* Edit HTML code */"}
+              onSlInput={(e) => {
+                const value = e.target.value;
+                if (value.length > 0) {
+                  setHtmlContent(value);
+                }
+              }}
             />
           </OutsideClickHandler>
         ) : (

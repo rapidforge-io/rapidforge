@@ -8,15 +8,15 @@ export default function injectHtml() {
         /<\/head>/,
         `
         <script>
-         var pageData= {
+        var pageData= {
              baseUrl: {{ .baseUrl }},
              path: {{ .page.Path }},
              canvasState: {{ .page.CanvasState.root }},
              active: {{ .page.Active }},
-             title: {{ .page.Name }},
-             description: {{ .page.Description }},
+             title: {{defaultString .page.Name "Title"}},
+             description: {{defaultString .page.Description "Description"}},
              pageId: {{ .page.ID }},
-          };
+         };
         </script>
         </head>`
       );

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
@@ -34,6 +36,12 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
+		blockEnvVariables := webhook.Block.GetEnvVars()
+		webhookEnvVariables := webhook.Webhook.GetEnvVars()
+
+		envVars = utils.MergeMaps(envVars, blockEnvVariables)
+		envVars = utils.MergeMaps(envVars, webhookEnvVariables)
+
 		if httpVerb == "POST" || httpVerb == "PUT" || httpVerb == "PATCH" {
 			body, err := io.ReadAll(c.Request.Body)
 			if err != nil {
@@ -51,9 +59,13 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			}
 		}
 
-		webhookEnvVariables := webhook.Webhook.GetEnvVars()
 		headers := c.Request.Header
 		const prefix = "HEADER"
+
+		eventArgs := map[string]any{
+			"payload": envVars["PAYLOAD_DATA"],
+			"headers": map[string]any{},
+		}
 
 		// injecting headers
 		for key, values := range headers {
@@ -61,18 +73,30 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			for _, value := range values {
 				key := prefix + "_" + strings.Replace(strings.ToUpper(key), "-", "_", -1)
 				envVars[key] = value
+				// prep for recording event args
+				tmp := eventArgs["headers"].(map[string]any)
+				tmp[key] = value
 			}
 		}
 
 		envVars = utils.MergeMaps(envVars, webhookEnvVariables)
 
-		// rflog.Info("----", "webhook env vars", envVars)
-
 		exitHttpPair := webhook.Webhook.GetExitHttpPair()
 
-		rflog.Info("----", "webhook exit http pair", exitHttpPair)
-
 		res, err := bashrunner.Run(webhook.File.Content, envVars)
+
+		args, _ := json.Marshal(eventArgs)
+
+		defer store.InsertEvent(models.Event{
+			Status:         fmt.Sprint(res.ExitCode),
+			CreatedAt:      time.Now(),
+			EventType:      utils.WebhookEntity,
+			Args:           string(args),
+			Logs:           string(res.Error),
+			WebhookID:      sql.NullInt64{Int64: webhook.Webhook.ID, Valid: true},
+			PeriodicTaskID: sql.NullInt64{},
+			BlockID:        webhook.Block.ID,
+		})
 
 		httpCode, ok := exitHttpPair[res.ExitCode]
 
@@ -86,6 +110,42 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 		}
 
 		c.JSON(httpCode, res)
+	}
+}
+
+func eventsHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		typeName := c.Param("type")
+		id := c.Param("id")
+
+		idField := map[string]string{
+			utils.WebhookEntity:      "webhook_id",
+			utils.BlockEntity:        "block_id",
+			utils.PeriodicTaskEntity: "periodic_task_id",
+		}
+
+		c.Header("Content-Type", "text/html")
+
+		if typeName == "" {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "typeName is required"))
+			return
+		}
+
+		if id == "" {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "id is required"))
+			return
+		}
+
+		events, err := store.FetchEventByTypeAndID(typeName, parseInt(id), idField[typeName])
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.HTML(http.StatusOK, "event_table", gin.H{
+			"events": events,
+		})
 	}
 }
 
@@ -368,6 +428,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 		editableComponentArgs["Url"] = fmt.Sprintf("%s/webhook/%s", config.BaseUrl(), webhookWithDetails.Webhook.Path)
 		c.HTML(http.StatusOK, "webhook", gin.H{
 			"webhook":                 webhookWithDetails.Webhook,
+			"Type":                    utils.WebhookEntity,
 			"httpExitPair":            webhookWithDetails.Webhook.GetExitHttpPair(),
 			"fileContent":             utils.DefaultHtml(webhookWithDetails.File.Content, "echo 'Hello World!'"),
 			"editableComponentParams": editableComponentArgs,
@@ -433,6 +494,52 @@ func createPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
+func deleteHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		typeName := c.Param("type")
+		intId := parseInt(id)
+
+		if typeName == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "typeName is required"})
+			return
+		}
+
+		switch typeName {
+		case utils.BlockEntity:
+			err := store.DeleteBlockById(intId)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		case utils.WebhookEntity:
+			err := store.DeleteWebhookById(intId)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		case utils.PageEntity:
+			err := store.DeletePageById(intId)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		case utils.PeriodicTaskEntity:
+			err := store.DeletePeriodicTaskById(intId)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "typeName is invalid"})
+			return
+		}
+
+		c.Status(http.StatusOK)
+		c.String(200, utils.AlertBox(utils.Success, "Item deleted"))
+	}
+}
+
 func updatePageHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -448,7 +555,7 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 			return
 		}
-
+		rflog.Info("-----", "pageData", pageData.Active)
 		err := store.UpdatePageByID(intId, pageData)
 
 		if err != nil {
@@ -476,8 +583,8 @@ func pagesHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
-func parseInt(s string) int {
-	i, err := strconv.Atoi(s)
+func parseInt(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		return 0
 	}

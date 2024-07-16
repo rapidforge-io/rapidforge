@@ -2,12 +2,15 @@ package utils
 
 import (
 	"bytes"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"reflect"
 	"strconv"
+	"time"
 
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 )
@@ -29,6 +32,10 @@ const (
 	PageEntity         string = "pages"
 	PeriodicTaskEntity string = "periodic_tasks"
 )
+
+func FormatDateTime(datetime time.Time) string {
+	return datetime.Format(time.RFC822)
+}
 
 func AlertBox(messageType AlertType, message string) string {
 	alertTemplate := `
@@ -164,6 +171,30 @@ func TransformToMaps[T any](items []T, typeName string) []map[string]any {
 
 	return mapBlocks
 }
+
+// GenerateRandomString creates a random string of a specified length
+func GenerateRandomString(length int) (string, error) {
+	randomBytes := make([]byte, length)
+
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(randomBytes), nil
+}
+
+// Add this to merge maps
+// func (s *Settings) Merge(other *Settings) error {
+// 	s.mux.Lock()
+// 	defer s.mux.Unlock()
+
+// 	bytes, err := json.Marshal(other)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return json.Unmarshal(bytes, s)
+// }
 
 // MergeMaps merges two maps. Values from map2 will overwrite values from map1 if keys are the same.
 func MergeMaps[K comparable, V any](map1, map2 map[K]V) map[K]V {

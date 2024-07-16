@@ -42,8 +42,9 @@ func Run(script string, envVars map[string]string) (ScriptResult, error) {
 	cmd := exec.Command("bash", tmpFile.Name())
 
 	// Create a buffer to capture the standard output
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	// Set environment variables
 	env := os.Environ()
@@ -65,7 +66,8 @@ func Run(script string, envVars map[string]string) (ScriptResult, error) {
 	}
 
 	// Get the output as a string
-	output := out.String()
+	output := stdout.String()
+	errs := stderr.String()
 
-	return ScriptResult{ExitCode: exitCode, Output: output}, nil
+	return ScriptResult{ExitCode: exitCode, Output: output, Error: errs}, nil
 }

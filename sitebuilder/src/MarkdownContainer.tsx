@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { BaseComponent, BaseDrag, BaseSortable, ComponentHelper, OutsideClickHandler } from "./Components";
-import CodeMirror from "@uiw/react-codemirror";
-import { langs } from "@uiw/codemirror-extensions-langs";
+import { BaseDrag, BaseSortable, ComponentHelper, OutsideClickHandler } from "./Components";
 import { useCanvasItems } from "./App";
 import { marked } from 'marked';
+import { SlTextarea } from "@shoelace-style/shoelace/dist/react";
 
 export function MarkdownContainer(props) {
   const { id, onCanvas, label, name, currentParent, markdown, active } = props;
@@ -53,21 +52,21 @@ export function MarkdownEditor(props) {
               updateProp(markdownContent);
             }}
           >
-            <CodeMirror
-              style={{ textAlign: "left" }}
-              height="100%"
-              width="100%"
-              minHeight="100px"
+            <SlTextarea
               value={
                 markdownContent !== undefined ? markdownContent : undefined
               }
+              label="Markdown"
+              style={{ fontFamily: "monospace" }}
               placeholder={"/* Write markdown code  */"}
-              extensions={[langs.markdown()]}
-              onChange={async (value) => {
-                setMarkdownContent(value);
-                const html = await marked.parse(value);
-                console.log('html', html)
-                setHtmlContent(html);
+              onSlInput={async (e) => {
+                const value = e.target.value;
+
+                if (value.length > 0) {
+                  setMarkdownContent(value);
+                  const html = await marked.parse(value);
+                  setHtmlContent(html);
+                }
               }}
             />
           </OutsideClickHandler>

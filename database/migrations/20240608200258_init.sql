@@ -58,7 +58,7 @@ CREATE TABLE webhooks (
     exit_http_pair TEXT,
     program_id INTEGER,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
-    FOREIGN KEY(block_id) REFERENCES Blocks(id),
+    FOREIGN KEY(block_id) REFERENCES blocks(id) ON DELETE CASCADE,
     FOREIGN KEY(program_id) REFERENCES Programs(id)
 );
 
@@ -72,7 +72,7 @@ CREATE TABLE pages (
     canvas_state JSON,
     html_output TEXT,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
-    FOREIGN KEY(block_id) REFERENCES Blocks(id)
+    FOREIGN KEY(block_id) REFERENCES blocks(id) ON DELETE CASCADE
 );
 
 CREATE TABLE periodic_tasks (
@@ -88,7 +88,7 @@ CREATE TABLE periodic_tasks (
     next_run_at DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
     updated_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
-    FOREIGN KEY(block_id) REFERENCES Blocks(id),
+    FOREIGN KEY(block_id) REFERENCES blocks(id) ON DELETE CASCADE,
     FOREIGN KEY (program_id) REFERENCES programs(id)
 );
 
@@ -96,6 +96,21 @@ CREATE TABLE settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     value TEXT
+);
+
+CREATE TABLE events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    status TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
+    event_type TEXT NOT NULL,
+    args TEXT, -- JSON string
+    logs TEXT, -- JSON string
+    webhook_id INTEGER,
+    periodic_task_id INTEGER,
+    block_id INTEGER NOT NULL,
+    FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE,
+    FOREIGN KEY (periodic_task_id) REFERENCES periodic_tasks(id) ON DELETE CASCADE,
+    FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE CASCADE
 );
 
 -- +goose Down

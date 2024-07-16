@@ -33,12 +33,13 @@ template "editableTitle" .editableComponentParams }}
         <sl-radio-group
           label="Filter Entities By Type"
           name="a"
+          id="entityRadioGroup"
           value="webhook"
         >
-          <sl-radio-button value="all" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/all" hx-target="#entities">All</sl-radio-button>
-          <sl-radio-button value="webhook" hx-trigger="click,load" hx-get="/block/{{.block.ID}}/entities/webhooks" hx-target="#entities">WebHooks</sl-radio-button>
-          <sl-radio-button value="page" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/pages" hx-target="#entities">Pages</sl-radio-button>
-          <sl-radio-button value="perdiodicTask" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/periodic_tasks" hx-target="#entities">Periodic Tasks</sl-radio-button>
+          <sl-radio-button id="entities-all" value="all" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/all" hx-target="#entities">All</sl-radio-button>
+          <sl-radio-button id="entities-webhooks" value="webhook" hx-trigger="click,load" hx-get="/block/{{.block.ID}}/entities/webhooks" hx-target="#entities">WebHooks</sl-radio-button>
+          <sl-radio-button id="entities-pages" value="page" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/pages" hx-target="#entities">Pages</sl-radio-button>
+          <sl-radio-button id="entities-periodic_tasks" value="perdiodicTask" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/periodic_tasks" hx-target="#entities">Periodic Tasks</sl-radio-button>
         </sl-radio-group>
         <sl-divider></sl-divider>
         </div>
@@ -52,6 +53,8 @@ template "editableTitle" .editableComponentParams }}
   </sl-tab-panel>
     <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
+    <!--for delete message-->
+    <div id="alertBox" class="mb-2"></div>
     <form hx-patch="/blocks/{{.block.ID}}" hx-include="[name]" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
@@ -76,6 +79,16 @@ template "editableTitle" .editableComponentParams }}
           <sl-textarea
             name="description"
             value={{defaultString .block.Description "No description"}}
+          ></sl-textarea>
+        </sl-details>
+      </div>
+
+      <div class="m-2">
+        <sl-details summary="Environment Variables">
+          <sl-textarea
+            name="env"
+            label="Write environments variable here to make them accessible in all entities"
+            value={{defaultString .block.EnvVariables "key=value"}}
           ></sl-textarea>
         </sl-details>
       </div>

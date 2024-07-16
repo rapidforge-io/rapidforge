@@ -14,7 +14,7 @@
       }
 
       #sidebar {
-        width: 250px;
+        width: 200px;
         background-color: #f8f9fa;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         display: flex;
@@ -71,21 +71,31 @@
 >
     <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/components/alert/alert.js"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   </head>
   <body>
 
     {{ template "navbar.html" . }}
     <div id="content" class="content">
-      <button
-        class="toggle-button"
-        variant="primary"
-        pill
-        onclick="toggleSidebar()"
-      >
-        ☰
-      </button>
       {{ template "content.html" . }}
     </div>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   </body>
+  <script>
+  function reloadEntities() {
+     // if the user is on the blocks page, we will trigger div load event
+    if (window.location.href.endsWith("blocks")) {
+      const blockList = document.getElementById('blockList');
+      if (blockList) {
+        htmx.ajax('GET', '/blocks_list',  { target: blockList });
+      }
+    } else {
+      const radioGroup = document.getElementById('entityRadioGroup');
+      const selectedButton = radioGroup.querySelector('sl-radio-button[checked]');
+      if (selectedButton) {
+        selectedButton.click();
+      }
+    }
+  }
+</script>
+
 </html>

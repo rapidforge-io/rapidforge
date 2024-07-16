@@ -2,9 +2,7 @@ import React, { useState, useContext, createContext, useRef } from "react";
 import { ComponentPanel } from "./Editor";
 import { TreeNode, Tree } from "./tree";
 import { editableProps, editablePropsRender } from "./Components";
-import { javascript } from "@codemirror/lang-javascript";
-import { langs } from "@uiw/codemirror-extensions-langs";
-import CodeMirror from "@uiw/react-codemirror";
+
 import {
   SlTab,
   SlTabGroup,
@@ -16,6 +14,7 @@ import {
   SlCopyButton,
   SlTextarea,
   SlAlert,
+  SlTabPanel,
 } from "@shoelace-style/shoelace/dist/react";
 
 // import SlIcon from '@shoelace-style/shoelace/dist/react/icon';
@@ -28,6 +27,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { v4 as uuid } from "uuid";
+import CodeMirrorComponent  from "./CodeMirrorComponent";
 
 interface ActiveItem {
   id: string;
@@ -100,8 +100,6 @@ export const CanvasItemsProvider: React.FC = ({ children }) => {
   } else {
     tree = setupTree();
   }
-
-  // debugger;
 
   const [canvasItems, setCanvasItems] = useState<Tree>(tree);
   const [activeItem, setActiveItem] = useState<ActiveItem>(null);
@@ -236,111 +234,15 @@ const Canvas = (props) => {
     canvasItems,
     pageMetaData,
     setPageMetadata,
-    previewTab,
   } = useCanvasItems();
 
   function renderCanvasItems() {
     return canvasItems.renderTreeStructure(canvasItems.root);
   }
 
-  const editorRef = useRef(null);
-  const [activeTab, setActiveTab] = useState("canvas");
-
-  function renderTabBody() {
-    if (activeTab == "canvas") {
-      return renderCanvasItems();
-    } else if (activeTab == "js") {
-      return (
-        <>
-          <CodeMirror
-            className="code-editor"
-            height="100%"
-            width="100%"
-            id="js-editor"
-            placeholder={"/* Write javascript code  */"}
-            value={pageMetaData.js}
-            extensions={[javascript({ jsx: true })]}
-            onChange={(value) =>
-              setPageMetadata({ ...pageMetaData, ["js"]: value })
-            }
-          ></CodeMirror>
-        </>
-      );
-    } else if (activeTab == "css") {
-      return (
-        <>
-          <CodeMirror
-            className="code-editor"
-            id="css-editor"
-            height="100%"
-            width="100%"
-            placeholder={"/* Write css code  */"}
-            value={pageMetaData.css}
-            extensions={[langs.css()]}
-            onChange={(value) => {
-              setPageMetadata({ ...pageMetaData, ["css"]: value });
-            }}
-          />
-        </>
-      );
-    } else if (activeTab == "pageGlobals") {
-      return (
-        <div className="is-flex is-justify-content-space-between is-flex-direction-column">
-          <div className="is-flex mb-2 mt-2">
-            <SlSwitch
-              checked={pageMetaData.active}
-              onClick={(e) =>
-                setPageMetadata({ ...pageMetaData, active: e.target.checked })
-              }
-            >
-              Enabled/Disabled
-            </SlSwitch>
-          </div>
-          <div className="is-flex mb-2 is-align-items-center">
-            <SlInput
-              label="Page Url"
-              id="pageUrl"
-              value={pageMetaData.pageUrl}
-              onSlInput={(e) =>
-                setPageMetadata({
-                  ...pageMetaData,
-                  pageUrl: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="is-flex mb-2">
-            <SlInput
-              label="Page Title"
-              value={pageMetaData.title}
-              onSlInput={(e) =>
-                setPageMetadata({
-                  ...pageMetaData,
-                  title: e.target.value,
-                })
-              }
-            />
-          </div>
-          <div className="is-flex ">
-            <SlTextarea
-              label="Page description"
-              value={pageMetaData.description}
-              onSlInput={(e) =>
-                setPageMetadata({
-                  ...pageMetaData,
-                  description: e.target.value,
-                })
-              }
-            />
-          </div>
-        </div>
-      );
-    }
-  }
-
   return (
     <div id="builder-container">
-      <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
+      <SlTabGroup>
         <SlTab slot="nav" panel="canvas" id="canvas">
           Canvas
         </SlTab>
@@ -353,8 +255,82 @@ const Canvas = (props) => {
         <SlTab slot="nav" panel="js" id="js">
           Javascript
         </SlTab>
+
+        <SlTabPanel name="canvas">{renderCanvasItems()}</SlTabPanel>
+        <SlTabPanel name="css">
+          <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
+          <CodeMirrorComponent
+              language="css"
+              defaultText={"/* Write css code  */"}
+              setCode={(value) =>
+                setPageMetadata({ ...pageMetaData, ["css"]: value })
+              }
+            ></CodeMirrorComponent>
+          </div>
+        </SlTabPanel>
+        <SlTabPanel name="pageGlobals">
+          <div className="is-flex is-justify-content-space-between is-flex-direction-column">
+            <div className="is-flex mb-2 mt-2">
+              <SlSwitch
+                checked={pageMetaData.active}
+                onClick={(e) =>
+                  setPageMetadata({ ...pageMetaData, active: e.target.checked })
+                }
+              >
+                Enabled/Disabled
+              </SlSwitch>
+            </div>
+            <div className="is-flex mb-2 is-align-items-center">
+              <SlInput
+                label="Page Url"
+                id="pageUrl"
+                value={pageMetaData.pageUrl}
+                onSlInput={(e) =>
+                  setPageMetadata({
+                    ...pageMetaData,
+                    pageUrl: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="is-flex mb-2">
+              <SlInput
+                label="Page Title"
+                value={pageMetaData.title}
+                onSlInput={(e) =>
+                  setPageMetadata({
+                    ...pageMetaData,
+                    title: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="is-flex ">
+              <SlTextarea
+                label="Page description"
+                value={pageMetaData.description}
+                onSlInput={(e) =>
+                  setPageMetadata({
+                    ...pageMetaData,
+                    description: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+        </SlTabPanel>
+        <SlTabPanel name="js">
+          <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
+            <CodeMirrorComponent
+              language="js"
+              defaultText={"/* Write javascript code  */"}
+              setCode={(value) =>
+                setPageMetadata({ ...pageMetaData, ["js"]: value })
+              }
+            ></CodeMirrorComponent>
+          </div>
+        </SlTabPanel>
       </SlTabGroup>
-      {renderTabBody()}
     </div>
   );
 };
@@ -408,8 +384,6 @@ function wrapWithHTML(htmlContent, pageMetadata) {
       </style>
       <title>${pageMetadata.title}</title>
 
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css" />
-      <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/shoelace-autoloader.js"></script>
       ${styleTag}
     </head>
     <body>
@@ -497,6 +471,9 @@ const Header = () => {
           <SlIcon slot="prefix" name="easel3"></SlIcon>
           Preview
         </SlButton>
+        <SlButton size="small" onClick={() => {
+          console.log("canvasItems", canvasItems);
+        }}> Debug </SlButton>
         <SlButton
           size="small"
           onClick={async () => {
