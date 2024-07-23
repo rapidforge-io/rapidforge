@@ -16,6 +16,7 @@ export default function injectHtml() {
              title: {{defaultString .page.Name "Title"}},
              description: {{defaultString .page.Description "Description"}},
              pageId: {{ .page.ID }},
+             blockId: {{ .block.ID }},
          };
         </script>
         </head>`

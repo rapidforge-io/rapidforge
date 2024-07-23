@@ -2,9 +2,9 @@
 -- SQL in section 'Up' is executed when this migration is applied
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    email TEXT NOT NULL,
+    email TEXT NULL,
     settings JSON,
     role TEXT,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),

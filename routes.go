@@ -8,6 +8,7 @@ import (
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-gonic/gin"
 	"github.com/rapidforge-io/rapidforge/models"
+	"github.com/rapidforge-io/rapidforge/services"
 	"github.com/rapidforge-io/rapidforge/utils"
 )
 
@@ -29,18 +30,11 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		r.Add(name, tmpl)
 	}
 
-	// addSinglePage := func(name string, pages ...string) {
-	// 	htmlName := fmt.Sprintf("%v.html", name)
-	// 	rflog.Info("adding page", htmlName)
-	// 	tmpl := template.Must(template.New(htmlName).Funcs(funcMap).ParseFS(viewsFS, pages...))
-	// 	r.Add(name, tmpl)
-	// }
-
 	addTemplate("blocks_base", "views/blocks_base.html")
 	addTemplate("block", "views/editableTitle.html", "views/card.html", "views/block.html")
 	addTemplate("webhook", "views/editableTitle.html", "views/webhook.html")
 	addTemplate("periodic_task", "views/editableTitle.html", "views/periodic_task.html")
-	// addTemplate("pages", "views/pages.html")
+	addTemplate("info", "views/info.html")
 
 	tmpl := template.Must(template.New("block_list.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/block_list.html"))
 
@@ -56,7 +50,31 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 	tmpl = template.Must(template.New("event_table.html").Funcs(funcMap).ParseFS(viewsFS, "views/event_table.html"))
 	r.Add("event_table", tmpl)
 
+	tmpl = template.Must(template.New("login.html").Funcs(funcMap).ParseFS(viewsFS, "views/login.html"))
+	r.Add("login", tmpl)
+
 	return r
+}
+
+func AuthMiddleware(loginService *services.LoginService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString, err := c.Cookie("token")
+		if err != nil {
+			c.Redirect(http.StatusFound, "/login")
+			c.Abort()
+			return
+		}
+
+		user, err := loginService.LoginWithToken(tokenString)
+		if err != nil {
+			c.Redirect(http.StatusFound, "/login")
+			c.Abort()
+			return
+		}
+
+		c.Set("user", user)
+		c.Next()
+	}
 }
 
 func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
@@ -67,9 +85,15 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		staticServer.ServeHTTP(c.Writer, c.Request)
 	})
 
-	r.DELETE("/delete/:type/:id", deleteHandler(store))
+	r.GET("/login", loginHandler())
+	r.POST("/login", doLoginHandler(services.GetLoginService()))
+	r.GET("/info", infoHandler())
 
+	// public route
 	r.Any("/webhook/*path", webhookHandlers(store))
+	//r.Use(AuthMiddleware(services.GetLoginService()))
+
+	r.DELETE("/delete/:type/:id", deleteHandler(store))
 
 	r.GET("/page/:path", pageHandler(store))
 
@@ -104,4 +128,6 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	r.PATCH("/pages/:id", updatePageHandler(store))
 
 	r.GET("/events/:type/:id", eventsHandler(store))
+
+	r.GET("/event_details/:id", eventsDetailHandler(store))
 }

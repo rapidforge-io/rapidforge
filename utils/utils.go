@@ -10,8 +10,11 @@ import (
 	"html/template"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/adhocore/gronx"
+	"github.com/go-playground/validator"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 )
 
@@ -37,6 +40,27 @@ func FormatDateTime(datetime time.Time) string {
 	return datetime.Format(time.RFC822)
 }
 
+func GenerateHTML(tmpl string, data any) (string, error) {
+	funcMap := template.FuncMap{
+		"defaultString": DefaultHtml,
+	}
+
+	t, err := template.New("template").Funcs(funcMap).Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+
+	var result string
+	writer := &strings.Builder{}
+	err = t.Execute(writer, data)
+	if err != nil {
+		return "", err
+	}
+	result = writer.String()
+
+	return result, nil
+}
+
 func AlertBox(messageType AlertType, message string) string {
 	alertTemplate := `
         <sl-alert variant={{.messageType}} open closable duration="2000">
@@ -58,6 +82,11 @@ func AlertBox(messageType AlertType, message string) string {
 	t.Execute(&out, data)
 
 	return out.String()
+}
+
+func IsCronValid(fl validator.FieldLevel) bool {
+	cron := fl.Field().String()
+	return gronx.New().IsValid(cron)
 }
 
 func ToastHeader(message string) (string, string) {

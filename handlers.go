@@ -18,6 +18,7 @@ import (
 	"github.com/rapidforge-io/rapidforge/config"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
+	"github.com/rapidforge-io/rapidforge/services"
 	"github.com/rapidforge-io/rapidforge/utils"
 )
 
@@ -91,8 +92,8 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			Status:         fmt.Sprint(res.ExitCode),
 			CreatedAt:      time.Now(),
 			EventType:      utils.WebhookEntity,
-			Args:           string(args),
-			Logs:           string(res.Error),
+			Args:           sql.NullString{String: string(args), Valid: true},
+			Logs:           sql.NullString{String: string(res.Error), Valid: true},
 			WebhookID:      sql.NullInt64{Int64: webhook.Webhook.ID, Valid: true},
 			PeriodicTaskID: sql.NullInt64{},
 			BlockID:        webhook.Block.ID,
@@ -113,6 +114,59 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 	}
 }
 
+func loginHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.HTML(http.StatusOK, "login", gin.H{})
+	}
+}
+
+func infoHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.HTML(http.StatusOK, "info", gin.H{
+			"version": buildVersion,
+			"package": packageVersion,
+			"license": config.License,
+		})
+	}
+}
+
+func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
+	type LoginForm struct {
+		Username string `form:"username" binding:"required"`
+		Password string `form:"password" binding:"required"`
+	}
+
+	return func(c *gin.Context) {
+		var loginForm LoginForm
+
+		if err := c.ShouldBind(&loginForm); err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Invalid parameters"))
+			return
+		}
+
+		token, err := loginService.Login(loginForm.Username, loginForm.Password)
+
+		if errors.Is(err, services.ErrTooManyAttempts) {
+			c.Header("Content-Type", "text/html")
+
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Too many failed login attempts"))
+			return
+		} else if errors.Is(err, services.ErrInvalidUsernameOrPassword) {
+			c.Header("Content-Type", "text/html")
+
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Invalid username or password"))
+			return
+		}
+
+		// Set the SameSite attribute for cookies to mitigate the risk of Cross-Site Request Forgery (CSRF) attacks.
+		// c.SetSameSite(http.SameSiteStrictMode)
+		c.SetCookie("token", token, 3600, "/", "", false, true)
+		c.Header("HX-Redirect", "/blocks")
+		c.Status(http.StatusFound)
+	}
+}
+
 func eventsHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		typeName := c.Param("type")
@@ -124,8 +178,6 @@ func eventsHandler(store *models.Store) gin.HandlerFunc {
 			utils.PeriodicTaskEntity: "periodic_task_id",
 		}
 
-		c.Header("Content-Type", "text/html")
-
 		if typeName == "" {
 			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "typeName is required"))
 			return
@@ -136,7 +188,7 @@ func eventsHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		events, err := store.FetchEventByTypeAndID(typeName, parseInt(id), idField[typeName])
+		events, err := store.FetchEvents(typeName, parseInt(id), idField[typeName])
 
 		if err != nil {
 			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
@@ -146,6 +198,46 @@ func eventsHandler(store *models.Store) gin.HandlerFunc {
 		c.HTML(http.StatusOK, "event_table", gin.H{
 			"events": events,
 		})
+	}
+}
+
+func eventsDetailHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		c.Header("Content-Type", "text/html")
+
+		if id == "" {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "id is required"))
+			return
+		}
+
+		event, err := store.FetchEventByID(parseInt(id))
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		tmpl := `<div class="container">
+		            <div id="payload">
+                      <sl-textarea label="Logs" disabled value={{defaultString .Logs "zzzzzz"}}></sl-textarea>
+                      <sl-textarea label="Args" disabled value={{defaultString .Args "&nbsp;"}}></sl-textarea>
+		        	</div>
+		        </div>`
+
+		outputHtml, err := utils.GenerateHTML(tmpl, event)
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		rflog.Info("|---|", "event logs", event.Logs)
+		rflog.Info("|---|", "event args", event.Args)
+		rflog.Info("event details", "event", outputHtml)
+
+		c.String(http.StatusOK, outputHtml)
 	}
 }
 
@@ -209,6 +301,31 @@ func blocksListHandler(store *models.Store) gin.HandlerFunc {
 
 		mapBlocks := utils.TransformToMaps(blocks, "blocks")
 
+		if len(mapBlocks) == 0 {
+			c.Header("Content-Type", "text/html")
+
+			message := "Blocks are used to group entities together."
+
+			tmpl := `<div class="is-flex is-align-items-center is-justify-content-center">
+                    <sl-alert open>
+					  <div >
+					  <sl-icon slot="icon" name="info-circle"></sl-icon>
+					   {{.Message}}
+					  </div>
+                      <div class="is-flex is-justify-content-center">
+ 			            <sl-button size="medium" variant="primary" hx-post="/blocks/create">Create Block</sl-button>
+                      </div>
+                    </sl-alert>
+                    </div>`
+
+			outputHtml, err := utils.GenerateHTML(tmpl, map[string]any{"Message": message, "Type": utils.BlockEntity})
+
+			if err != nil {
+				c.String(http.StatusOK, outputHtml)
+				return
+			}
+		}
+
 		c.HTML(http.StatusOK, "blocks", gin.H{
 			"blockMaps": mapBlocks,
 		})
@@ -241,6 +358,7 @@ func getBlockHandler(store *models.Store) gin.HandlerFunc {
 
 		c.HTML(http.StatusOK, "block", gin.H{
 			"block":                   block,
+			"Type":                    utils.BlockEntity,
 			"webhooks":                webhookMaps,
 			"editableComponentParams": editableComponentArgs,
 		})
@@ -302,6 +420,45 @@ func getBlockEntitiesHandler(store *models.Store) gin.HandlerFunc {
 			data = append(data, utils.TransformToMaps(webhooks, utils.WebhookEntity)...)
 			data = append(data, utils.TransformToMaps(pages, utils.PageEntity)...)
 			data = append(data, utils.TransformToMaps(periodicRuns, utils.PeriodicTaskEntity)...)
+		}
+
+		if len(data) == 0 {
+			c.Header("Content-Type", "text/html")
+
+			helpText := map[string]string{
+				utils.WebhookEntity:      "Webhooks are used to trigger actions when a specific http request hits endpoint .",
+				utils.PageEntity:         "Pages are used generate user interface.",
+				utils.PeriodicTaskEntity: "Periodic tasks are used to run a task at a specific interval.",
+				"all":                    "Create webhooks, pages, and periodic tasks to get started.",
+			}
+
+			tmpl := `<div class="is-flex is-align-items-center is-justify-content-center">
+                    <sl-alert open>
+                      <div >
+                      <sl-icon slot="icon" name="info-circle"></sl-icon>
+					   {{.Message}}
+                      </div>
+                      <div class="is-flex is-justify-content-center">
+	                    <sl-button variant="primary" hx-post="/{{.Type}}/create" hx-vals='{"blockId": "{{.ID}}" }'> Create</sl-button>
+                      </div>
+                    </sl-alert>
+                    </div>`
+
+			linkType := ""
+			if entityType == "all" {
+				linkType = utils.WebhookEntity
+			} else {
+				linkType = entityType
+			}
+
+			outputHtml, err := utils.GenerateHTML(tmpl, map[string]any{"Message": helpText[entityType], "ID": blockId, "Type": linkType})
+
+			if err != nil {
+				c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+				return
+			}
+
+			c.String(http.StatusOK, outputHtml)
 		}
 
 		c.HTML(http.StatusOK, "entities", gin.H{
@@ -450,6 +607,7 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 		editableComponentArgs["Field"] = utils.DefaultString(periodicTaskDetails.PeriodicTask.Name, "No Name")
 		c.HTML(http.StatusOK, "periodic_task", gin.H{
 			"periodicTask":            periodicTaskDetails.PeriodicTask,
+			"Type":                    utils.PeriodicTaskEntity,
 			"fileContent":             utils.DefaultString(periodicTaskDetails.File.Content, "echo 'Hello World!'"),
 			"editableComponentParams": editableComponentArgs,
 		})

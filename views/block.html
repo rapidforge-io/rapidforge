@@ -1,9 +1,14 @@
-{{ define "title" }}{{.block.Name}}{{end }} {{define "content.html"}} {{
-template "editableTitle" .editableComponentParams }}
+{{ define "title" }}{{.block.Name}}{{end }} {{define "content.html"}}
+
+<div class="is-flex is-align-items-baseline">
+<sl-icon-button name="arrow-left" label="Blocks" href="/blocks"></sl-icon-button>
+{{ template "editableTitle" .editableComponentParams }}
+</div>
 
 <sl-tab-group>
   <sl-tab slot="nav" panel="entities">Entities</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
+  <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.block.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
 
   <sl-tab-panel name="entities">
     <div class="m-2">
@@ -93,6 +98,9 @@ template "editableTitle" .editableComponentParams }}
         </sl-details>
       </div>
     </form>
+  </sl-tab-panel>
+  <sl-tab-panel name="eventLogs">
+    <div id="eventList"></div>
   </sl-tab-panel>
 </sl-tab-group>
 {{end}}

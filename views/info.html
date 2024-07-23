@@ -1,0 +1,42 @@
+
+{{define "content.html"}}
+
+<sl-tab-group>
+  <sl-tab slot="nav" panel="version">Version</sl-tab>
+  <sl-tab slot="nav" panel="license">License</sl-tab>
+
+
+  <sl-tab-panel name="version">
+    <div class="m-2">
+      <sl-details summary="Version">
+        <sl-textarea
+          name="version"
+          value={{.version}}
+          disabled
+        ></sl-textarea>
+      </sl-details>
+      </div>
+      <div class="m-2">
+      <sl-details summary="Package">
+        <sl-textarea
+          name="package"
+          value={{.package}}
+          disabled
+        ></sl-textarea>
+      </sl-details>
+    </div>
+  </sl-tab-panel>
+
+  <sl-tab-panel name="license">
+    <div class="m-2">
+      <sl-textarea
+        label="License Agreement"
+          name="license"
+          resize="auto"
+          disabled
+          value={{.license}}
+      ></sl-textarea>
+    </div>
+  </sl-tab-panel>
+</sl-tab-group>
+{{end}}

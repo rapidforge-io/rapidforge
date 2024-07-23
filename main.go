@@ -7,9 +7,14 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator"
 	"github.com/rapidforge-io/rapidforge/config"
 	"github.com/rapidforge-io/rapidforge/database"
+	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
+	"github.com/rapidforge-io/rapidforge/services"
+	"github.com/rapidforge-io/rapidforge/utils"
 )
 
 //go:embed views/*.html
@@ -19,13 +24,10 @@ var viewsFS embed.FS
 var staticFS embed.FS
 
 // TODO
-// [ ] Add out column to event log
-// [ ] Make list view for webhook event logs
-// [ ] Make a list view for block event logs
-// [ ] Add back button for views
-// [ ] Add blank state button
-// [ ] Implement perodic task
-// [ ] Think what to add for settings page
+// [ ] Think what to add for general settings page (license, current version and package)
+// [ ] Implement user management
+// [ ] Add pagination for event lists
+// [ ] Add authentication feature to webhooks
 
 // [ ] Add Settings page general settings
 // [ ] Add search function
@@ -39,8 +41,15 @@ var staticFS embed.FS
 // - check backup from pocketbase
 // - only allow user creation from admin board
 // - import script feature, importing and creating end points for each file
+// - consider running docker container with endpoints and periodics tasks
+
+var buildVersion string
+var packageVersion string
 
 func main() {
+	buildVersion = "1.0.0"
+	packageVersion = "community"
+
 	dbCon := database.GetDbConn("")
 	dbCon.RunMigrations()
 	store := models.NewModel(dbCon)
@@ -53,7 +62,16 @@ func main() {
 		config.SetAuthSecretKey(authSecret)
 	}
 
+	err := store.CreateAdminUserIfNoUserExists()
+	if err != nil {
+		rflog.Error("failed to create admin user", err)
+	}
+
 	r := gin.Default()
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("cron", utils.IsCronValid)
+	}
 
 	r.Use(func(c *gin.Context) {
 		c.Set("store", store)
@@ -74,6 +92,7 @@ func main() {
 	r.HTMLRender = createMyRender(viewsFS)
 	gin.SetMode(gin.DebugMode)
 
+	services.SetupService(store)
 	setupRoutes(r, store, staticFS)
 
 	r.Run(":4000")

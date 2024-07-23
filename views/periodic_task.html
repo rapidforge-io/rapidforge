@@ -12,15 +12,23 @@
     border: 1px solid #eee;
     height: 120px;
   }
+
+  .invalid {
+           color: red;
+   }
 </style>
 
-<div>
-  {{template "editableTitle" .editableComponentParams }}
+
+<div class="is-flex is-align-items-baseline">
+<sl-icon-button name="arrow-left" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
+{{ template "editableTitle" .editableComponentParams }}
 </div>
+
 
 <sl-tab-group>
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
+  <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.periodicTask.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
 
   <sl-tab-panel name="editor">
     <div id="alertBox"></div>
@@ -60,7 +68,7 @@
         </div>
 
         <div class="ml-10 pt-2 is-align-self-center is-flex">
-          <sl-button type="submit" variant="primary">Save</sl-button>
+          <sl-button type="submit" id="saveButton" variant="primary">Save</sl-button>
         </div>
       </div>
 
@@ -68,6 +76,7 @@
         <sl-details summary="Cron">
           <sl-input
             name="cron"
+            id="cron"
             label="Cron expression"
             value={{defaultString .periodicTask.Cron "*/5 * * * *"}}
           ></sl-input>
@@ -103,6 +112,9 @@
       </div>
     </form>
   </sl-tab-panel>
+  <sl-tab-panel name="eventLogs">
+    <div id="eventList"></div>
+  </sl-tab-panel>
 </sl-tab-group>
 
 <script>
@@ -118,13 +130,6 @@
   function getEditorVal() {
     return editor.getValue();
   }
-
-  const switchElement = document.getElementById("mySwitch");
-  switchElement.value = switchElement.checked ? "1" : "0";
-
-  switchElement.addEventListener("sl-change", () => {
-    switchElement.value = switchElement.checked ? "1" : "0";
-  });
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -166,5 +171,35 @@
       row.remove();
     }
   }
+
+  function isValidCronExpression(expression) {
+           var cronRegex = new RegExp(/^(\*\/\d{1,2}|\d{1,2}|\*)\s(\*|\d{1,2}|\*\/\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d|\d)\s?$/g)
+            if (!cronRegex.test(expression)) {
+                return false;
+            }
+
+            if (expression.trim() === '* * * * *') {
+                return false;
+            }
+            return true;
+  }
+
+  const cronInput = document.getElementById("cron");
+  const saveButton = document.getElementById("saveButton");
+  cronInput.addEventListener('sl-input', function() {
+  const cronValue = cronInput.value;
+    console.log("valid", isValidCronExpression(cronValue))
+                if (isValidCronExpression(cronValue)) {
+                    cronInput.setAttribute('label', 'Cron expression is valid');
+                    cronInput.classList.remove('invalid');
+                    saveButton.disabled = false;
+                } else {
+                    cronInput.setAttribute('label', 'Cron expression is invalid');
+                    cronInput.classList.add('invalid');
+                    saveButton.disabled = true;
+                }
+  });
+
+
 </script>
 {{end}}

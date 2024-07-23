@@ -15,14 +15,14 @@ import (
 )
 
 type User struct {
-	ID           int64     `json:"id" db:"id"`
-	Username     string    `json:"username" db:"username"`
-	PasswordHash string    `json:"passwordHash" db:"password_hash"`
-	Email        string    `json:"email" db:"email"`
-	Settings     string    `json:"settings" db:"settings"`
-	Role         string    `json:"role" db:"role"`
-	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt    time.Time `json:"updatedAt" db:"updated_at"`
+	ID           int64          `json:"id" db:"id"`
+	Username     string         `json:"username" db:"username"`
+	PasswordHash string         `json:"passwordHash" db:"password_hash"`
+	Email        sql.NullString `json:"email" db:"email"`
+	Settings     sql.NullString `json:"settings" db:"settings"`
+	Role         string         `json:"role" db:"role"`
+	CreatedAt    time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt    time.Time      `json:"updatedAt" db:"updated_at"`
 }
 
 type Credential struct {
@@ -99,6 +99,10 @@ func (w *Webhook) GetEnvVars() map[string]string {
 }
 
 func (w *Block) GetEnvVars() map[string]string {
+	return getEnvVars(w.EnvVariables)
+}
+
+func (w *PeriodicTask) GetEnvVars() map[string]string {
 	return getEnvVars(w.EnvVariables)
 }
 
@@ -210,7 +214,7 @@ type PeriodicTaskFormData struct {
 	Env         string `form:"env"`
 	Active      bool   `form:"active" `
 	FileContent string `form:"editor" `
-	Cron        string `form:"cron" `
+	Cron        string `form:"cron" validate:"cron"`
 	Code        string `form:"editor"`
 }
 
@@ -712,36 +716,6 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, er
 		SELECT
 			pt.id AS "periodic_task.id", pt.name AS "periodic_task.name", pt.description AS "periodic_task.description", pt.active AS "periodic_task.active",
 			pt.env_variables AS "periodic_task.env_variables", pt.block_id AS "periodic_task.block_id", pt.program_id AS "periodic_task.program_id",
-			pt.timezone AS "periodic_task.timezone", pt.cron AS "periodic_task.cron", pt.next_run_at AS "periodic_task.next_run_at",
-			pt.created_at AS "periodic_task.created_at", pt.updated_at AS "periodic_task.updated_at",
-			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
-			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
-			f.filename AS "file.filename", f.content AS "file.content"
-		FROM
-			periodic_tasks pt
-		JOIN
-			programs p ON pt.program_id = p.id
-		JOIN
-			files f ON p.id = f.program_id
-		WHERE
-			pt.id = ?`
-
-	err := s.db.Get(&periodicTaskDetail, query, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &periodicTaskDetail, nil
-}
-
-func (s *Store) SelectPeriodicTaskDetailsByIdOld(id int64) (*PeriodicTaskDetail, error) {
-	var periodicTaskDetail PeriodicTaskDetail
-
-	query := `
-		SELECT
-			pt.id AS "periodic_task.id", pt.name AS "periodic_task.name", pt.description AS "periodic_task.description",
-			pt.active AS "periodic_task.active", pt.env_variables AS "periodic_task.env_variables",
-			pt.block_id AS "periodic_task.block_id", pt.program_id AS "periodic_task.program_id",
 			pt.timezone AS "periodic_task.timezone", pt.cron AS "periodic_task.cron", pt.next_run_at AS "periodic_task.next_run_at",
 			pt.created_at AS "periodic_task.created_at", pt.updated_at AS "periodic_task.updated_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",

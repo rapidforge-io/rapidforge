@@ -72,13 +72,14 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/components/alert/alert.js"></script>
   </head>
-  <body>
+  <body hx-ext="response-targets">
 
     {{ template "navbar.html" . }}
     <div id="content" class="content">
       {{ template "content.html" . }}
     </div>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
   </body>
   <script>
   function reloadEntities() {

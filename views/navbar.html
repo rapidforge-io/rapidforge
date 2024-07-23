@@ -1,10 +1,17 @@
   {{define "navbar.html"}}
-  <div id="sidebar">
-    <p class="menu-label">General</p>
-    <ul class="menu-list">
-      <li><sl-button style="width: 95%;" href="/blocks">Blocks</sl-button></li>
-      <li><sl-button style="width: 95%;" href="#">Customers</sl-button></li>
-    </ul>
+  <div id="sidebar" class="pt-2">
+    <sl-tree>
+  <sl-tree-item>
+    <a href="/blocks"> Blocks </a>
+  </sl-tree-item>
+
+  <sl-tree-item>
+    Settings
+    <sl-tree-item>Users</sl-tree-item>
+    <sl-tree-item><a href="/info">Info</a></sl-tree-item>
+    <sl-tree-item>Spruce</sl-tree-item>
+  </sl-tree-item>
+</sl-tree>
   </div>
 </html>
 {{end}}

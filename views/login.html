@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/light.css"
+    />
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"
+    ></script>
+  </head>
+  <body hx-ext="response-targets">
+    <div id="response"></div>
+    <div
+      class="login-container"
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      "
+    >
+      <sl-card style="width: 300px">
+        <h1 slot="header">Login</h1>
+        <form id="login-form"
+              hx-post="/login"
+              hx-include="[name]"
+              hx-target="#response"
+              hx-target-error="#response">
+          <sl-input name="username" label="Username" required></sl-input>
+          <sl-input
+            name="password"
+            type="password"
+            label="Password"
+            password-toggle
+            required
+          ></sl-input>
+          <sl-button
+            type="submit"
+            variant="primary"
+            style="margin-top: 1rem; width: 100%"
+            >Login</sl-button
+          >
+        </form>
+      </sl-card>
+    </div>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+  </body>
+</html>

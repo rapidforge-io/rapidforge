@@ -2,6 +2,8 @@ package rflog
 
 import (
 	"log/slog"
+
+	"github.com/fatih/color"
 )
 
 type RfLogger struct {
@@ -24,7 +26,9 @@ func New() *RfLogger {
 }
 
 func Info(msg string, args ...any) {
+	color.Set(color.FgGreen)
 	logger.Info(msg, args...)
+	color.Unset()
 }
 
 func Error(message any, args ...interface{}) {
@@ -35,5 +39,7 @@ func Error(message any, args ...interface{}) {
 	case error:
 		msg = v.Error()
 	}
+	color.Set(color.FgRed)
 	logger.Error(msg, args...)
+	color.Unset()
 }

@@ -16,8 +16,10 @@
 <div>
   <label>Url Path</label>
   <sl-copy-button from="blockTitle"></sl-copy-button>
-
-  {{template "editableTitle" .editableComponentParams }}
+  <div class="is-flex is-align-items-baseline">
+  <sl-icon-button name="arrow-left" label="Blocks" href="/blocks/{{.webhook.BlockID}}"></sl-icon-button>
+  {{ template "editableTitle" .editableComponentParams }}
+  </div>
 </div>
 
 <sl-tab-group>

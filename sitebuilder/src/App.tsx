@@ -12,6 +12,7 @@ import {
   SlIcon,
   SlSwitch,
   SlCopyButton,
+  SlIconButton,
   SlTextarea,
   SlAlert,
   SlTabPanel,
@@ -411,6 +412,7 @@ const Header = () => {
 
   const toastRef = useRef(null);
   const url = `${window.pageData.baseUrl}/page/${pageMetaData.pageUrl}`;
+  const backUrl = `${window.pageData.baseUrl}/blocks/${window.pageData.blockId}`;
   return (
     <div className="header">
       <SlAlert ref={toastRef} variant="success" duration="3000" closable>
@@ -419,6 +421,8 @@ const Header = () => {
         <br />
       </SlAlert>
       <div className="is-flex is-align-items-center mr-8">
+        <SlIconButton name="arrow-left" label="Back" href={backUrl}  className="mr-2" >
+        </SlIconButton>
         <p id="pageUrl">{url}</p>
         <SlCopyButton from="pageUrl" />
       </div>
@@ -471,9 +475,15 @@ const Header = () => {
           <SlIcon slot="prefix" name="easel3"></SlIcon>
           Preview
         </SlButton>
-        <SlButton size="small" onClick={() => {
-          console.log("canvasItems", canvasItems);
-        }}> Debug </SlButton>
+        <SlButton
+          size="small"
+          onClick={() => {
+            console.log("canvasItems", canvasItems);
+          }}
+        >
+          {" "}
+          Debug{" "}
+        </SlButton>
         <SlButton
           size="small"
           onClick={async () => {
@@ -496,16 +506,19 @@ const Header = () => {
               canvasItems: canvasItems,
               htmlOutput: htmlOutput,
             };
-            console.log("pageData", pageData)
+            console.log("pageData", pageData);
 
             try {
-              const response = await fetch(`${window.pageData.baseUrl}/pages/${window.pageData.pageId}`, {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(pageData),
-              });
+              const response = await fetch(
+                `${window.pageData.baseUrl}/pages/${window.pageData.pageId}`,
+                {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(pageData),
+                }
+              );
 
               if (response.ok) {
                 toastRef.current.toast();
