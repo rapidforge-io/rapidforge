@@ -1,11 +1,8 @@
 
 {{ define "title" }}{{defaultString .periodicTask.Name "periodicTask"}}{{end }} {{define "content.html"}}
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
-/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/shell/shell.min.js"></script>
+<link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
+<script src="/static/javascript/codemirror.6.65.7.js"></script>
+<script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
 
 <style>
   .CodeMirror {

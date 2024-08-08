@@ -5,81 +5,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ block "title" . }}RapidForge{{ end }}</title>
-        <style>
-      body {
-        display: flex;
-        height: 100vh;
-        margin: 0;
-        font-family: Arial, sans-serif;
-      }
+    <link rel="stylesheet" href="/static/css/main.css" />
+  <link
+    rel="stylesheet"
+    media="(prefers-color-scheme:light)"
+    href="/static/css/shoelace.2.16.0.light.css"
+  />
+  <link
+    rel="stylesheet"
+    media="(prefers-color-scheme:dark)"
+    href="/static/css/shoelace.2.16.0.dark.css"
+    onload="document.documentElement.classList.add('sl-theme-dark');"
+  />
+    <link rel="stylesheet" href="/static/css/bulma.1.0.0.min.css">
 
-      #sidebar {
-        width: 200px;
-        background-color: #f8f9fa;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-        transition: transform 0.3s ease;
-        transform: translateX(0);
-      }
-
-      #sidebar.hidden {
-        transform: translateX(-100%);
-      }
-
-      #content {
-        flex-grow: 1;
-        padding: 20px;
-      }
-
-      sl-button::part(base) {
-        width: 100%;
-        justify-content: start;
-      }
-
-      .menu-label {
-        font-weight: bold;
-        padding: 15px 10px;
-      }
-
-      .menu-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .menu-list sl-button {
-        padding-left: 20px;
-      }
-
-      .menu-list li {
-        margin-bottom: 5px;
-      }
-
-      .toggle-button {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 1;
-      }
-    </style>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/themes/light.css" />
-    <link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/shoelace-autoloader.js"></script>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.1/cdn/components/alert/alert.js"></script>
+    <script type="module" src="/static/javascript/shoelace-autoloader.2.16.0.js"></script>
+    <script type="module" src="/static/javascript/components/alert/alert.js"></script>
   </head>
   <body hx-ext="response-targets">
+   <sl-dialog label="Feedback" id="feedbackDialog">
+    <div id="feedbackResponse" class="mb-2"></div>
+     <sl-textarea name="feedback" id="feedbackComment" help-text="Please tell us what you think. Let us know if you encounter with any issues"> </sl-textarea>
+    <sl-button slot="footer" variant="primary"
+        hx-include="#feedbackComment"
+        hx-target="#feedbackResponse"
+        hx-post="/feedback">
+        Send
+   </sl-dialog>
 
     {{ template "navbar.html" . }}
     <div id="content" class="content">
       {{ template "content.html" . }}
     </div>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script src="https://unpkg.com/htmx-ext-response-targets@2.0.0/response-targets.js"></script>
+  <script src="/static/javascript/htmx.2.0.1.js"></script>
+  <script src="/static/javascript/htmx-response-targets.2.0.0.js"></script>
   </body>
   <script>
   function reloadEntities() {
@@ -87,7 +46,7 @@
     if (window.location.href.endsWith("blocks")) {
       const blockList = document.getElementById('blockList');
       if (blockList) {
-        htmx.ajax('GET', '/blocks_list',  { target: blockList });
+        htmx.ajax('GET', '/blocks/list',  { target: blockList });
       }
     } else {
       const radioGroup = document.getElementById('entityRadioGroup');
@@ -98,5 +57,4 @@
     }
   }
 </script>
-
 </html>

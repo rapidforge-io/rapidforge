@@ -1,0 +1,85 @@
+{{ define "title" }}Users{{end }} {{define "content.html"}}
+
+<div class="is-flex is-align-items-baseline">
+<sl-icon-button name="arrow-left" label="Blocks" href="/blocks"></sl-icon-button>
+<h1 class="m-0">Users</h1>
+</div>
+
+<sl-tab-group>
+  <sl-tab slot="nav" panel="users">Users</sl-tab>
+  <sl-tab-panel name="users">
+    <div class="m-2">
+      <div class="columns is-align-items-end">
+          <div class="column">
+          <sl-input label="Search"
+                    type="search"
+                    hx-get="/users/search"
+                    placeholder="Search user by username or email"
+                    name="q"
+                    hx-target="#entities"
+                    hx-trigger="keyup changed delay:500ms"></sl-input>
+        </div>
+        <div class="column">
+          <sl-dropdown>
+            <sl-button id="create" slot="trigger"  onclick="showCreateUserDialog()" variant="primary">Create User</sl-button>
+          </sl-dropdown>
+        </div>
+      </div>
+      <div class="is-flex is-flex-direction-column m-1">
+        <div class="is-flex is-flex-direction-column">
+          <div id="alert" class="mb-2"></div>
+          <div id="entities">
+            {{template "user_cards.html" .}}
+          </div>
+        </div>
+      </div>
+
+
+     <sl-dialog label="New User" id="userCreateDialog" class="dialog-overview">
+      <div id="alertNew" class="mb-2"></div>
+    <form hx-post="/users/new" id="formNew" hx-include="#formNew *[name]" hx-target="#alertNew" hx-target-error="#alertNew" hx-swap="innerHTML">
+        <div>
+           <sl-input label="Username" size="small" name="username" required></sl-input>
+        </div>
+        <div>
+          <sl-input label="Email" size="small" type="email" name="email"></sl-input>
+        </div>
+        <div>
+          <sl-input type="password"
+                    size="small"
+                    label="Password"
+                    minlength="8"
+                    maxlenght="30" name="password" id="password" password-toggle required></sl-input>
+        </div>
+        <div>
+           <sl-select size="small" name="role" value="admin" label="Role">
+              <sl-option value="user">User</sl-option>
+              <sl-option value="admin">Admin</sl-option>
+           </sl-select>
+        </div>
+        <div class="mt-2">
+          <sl-button variant="primary" size="small" id="createUserButton" type="submit">Create</sl-button>
+        </div>
+    </form>
+     </sl-dialog>
+    </div>
+  </sl-tab-panel>
+</sl-tab-group>
+
+<script>
+
+  const userCreateDialog = document.getElementById('userCreateDialog');
+
+   function showCreateUserDialog() {
+    console.log("showCreateUserDialog");
+    userCreateDialog.show();
+  }
+
+  document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.target.id === 'alertNew' && evt.detail.xhr.status === 200) {
+      userCreateDialog.hide();
+      window.location.reload();
+    }
+  });
+</script>
+{{end}}

@@ -4,7 +4,16 @@
 <h1>Blocks</h1>
 <div class="columns is-align-items-end">
     <div class="column">
-      <sl-input label="Search" type="search"></sl-input>
+      <sl-input
+       label="Search"
+       type="search"
+       placeholder="Search blocks by name or description"
+       name="q"
+       hx-get="/blocks/search"
+       hx-target="#blockList"
+       hx-target-error="#blockList"
+       hx-trigger="keyup changed delay:500ms"
+       ></sl-input>
     </div>
     <div class="column">
       <sl-button size="medium" variant="primary" hx-post="/blocks/create">Create Block</sl-button>
@@ -12,7 +21,7 @@
 </div>
 <sl-divider></sl-divider>
 <div id="alertBox" class="mb-2"></div>
-<div id="blockList" hx-get="/blocks_list" hx-trigger="load" hx-target="this">
+<div id="blockList" hx-get="/blocks/list" hx-trigger="load" hx-target="this">
    Loading...
 </div>
 {{end}}

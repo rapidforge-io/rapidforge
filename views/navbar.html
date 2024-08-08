@@ -7,11 +7,15 @@
 
   <sl-tree-item>
     Settings
-    <sl-tree-item>Users</sl-tree-item>
+    <sl-tree-item><a href="/users">Users</a></sl-tree-item>
     <sl-tree-item><a href="/info">Info</a></sl-tree-item>
-    <sl-tree-item>Spruce</sl-tree-item>
+    <sl-tree-item><a href="/credentials">Credentials</a></sl-tree-item>
   </sl-tree-item>
+  <sl-tree-item><div onclick="dialog.show()"> Feedback</div></sl-tree-item>
 </sl-tree>
   </div>
+<script>
+  const dialog = document.getElementById('feedbackDialog');
+</script>
 </html>
 {{end}}

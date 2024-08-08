@@ -1,0 +1,39 @@
+ body {
+     display: flex;
+     height: 100vh;
+     margin: 0;
+     font-family: Arial, sans-serif;
+ }
+
+
+ #content {
+     flex-grow: 1;
+     padding: 20px;
+ }
+
+ #sidebar {
+     width: 200px;
+     background-color: #f8f9fa;
+     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+     display: flex;
+     flex-direction: column;
+     overflow-y: auto;
+     transition: transform 0.3s ease;
+     transform: translateX(0);
+ }
+
+ /* Light theme */
+ @media (prefers-color-scheme: light) {
+     #sidebar {
+         background-color: #f8f9fa;
+         /* Light mode background color */
+     }
+ }
+
+ /* Dark theme */
+ @media (prefers-color-scheme: dark) {
+     #sidebar {
+         background-color: #343a40;
+         /* Dark mode background color */
+     }
+ }

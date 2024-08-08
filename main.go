@@ -3,6 +3,8 @@ package main
 
 import (
 	"embed"
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -24,29 +26,45 @@ var viewsFS embed.FS
 var staticFS embed.FS
 
 // TODO
-// [ ] Think what to add for general settings page (license, current version and package)
-// [ ] Implement user management
+
+// v1  todo
+// [x] Search (webhooks, pages, periodic tasks)
+// [x] route refactoring
+// [x] sqlite3 tuning (wall mode, journal mode)
+// [x] Fix create button label click issue (it does not work when you click outside of the label)
+// [x] Set timeout to 30 seconds for non webhooks
+// [x] Add config params to banner
+// [x] Add cache for non changed pages content
+// [x] Move FE libs to static serving
+// [ ] Inject oauth
+// [ ] Change returning type of webhooks
+// [ ] Check Pages functionality
+// [ ] Write default value for webhook editor
+// [ ] authentication, and displaying user name in menu
+// [ ] pagination
+// [ ] dockerfile
+
+// ------------------
+// [ ] PKCE flow
+// [ ] Adding throttling for webhook endpoints
 // [ ] Add pagination for event lists
 // [ ] Add authentication feature to webhooks
-
-// [ ] Add Settings page general settings
-// [ ] Add search function
 // [ ] Should we add status to periodic tasks?
-// [ ] Add pagination for block list (can be done later)
-// [ ] Adding throttling for webhook endpoints
-// [ ] adding config for max password attempt
 
 // Thinking
+// - allow user to add timeout for end points
 // - what will happend for authentication when there is more then one instance
 // - check backup from pocketbase
 // - only allow user creation from admin board
 // - import script feature, importing and creating end points for each file
 // - consider running docker container with endpoints and periodics tasks
+// - add action to send email using smtp
 
 var buildVersion string
 var packageVersion string
 
 func main() {
+
 	buildVersion = "1.0.0"
 	packageVersion = "community"
 
@@ -62,10 +80,31 @@ func main() {
 		config.SetAuthSecretKey(authSecret)
 	}
 
-	err := store.CreateAdminUserIfNoUserExists()
+	adminUser, err := store.CreateAdminUserIfNoUserExists()
 	if err != nil {
 		rflog.Error("failed to create admin user", err)
+		os.Exit(1)
 	}
+
+	bannerData := map[string]any{
+		"Version":       buildVersion,
+		"Package":       packageVersion,
+		"ARCH":          runtime.GOARCH,
+		"Compiler":      runtime.Compiler,
+		"Environment":   config.Get().Env,
+		"Port":          config.Get().Port,
+		"Domain":        config.Get().Domain,
+		"AdminUserName": "******",
+		"AminPassword":  "******",
+	}
+
+	// this will be populated only for once in initial setup
+	if adminUser != nil {
+		bannerData["AdminUserName"] = adminUser.Username
+		bannerData["AdminPassword"] = adminUser.PasswordHash
+	}
+
+	utils.PrintBanner(viewsFS, bannerData)
 
 	r := gin.Default()
 
@@ -94,6 +133,20 @@ func main() {
 
 	services.SetupService(store)
 	setupRoutes(r, store, staticFS)
+	go startTokenRefreshJob(store)
+	err = r.Run(config.Get().Port)
 
-	r.Run(":4000")
+	if err != nil {
+		rflog.Error("Failed to start server", "err:", err)
+		os.Exit(1)
+	}
+}
+
+func startTokenRefreshJob(store *models.Store) {
+	for range time.Tick(1 * time.Hour) {
+		err := store.RefreshTokens()
+		if err != nil {
+			rflog.Error("Failed to refresh tokens", "err:", err)
+		}
+	}
 }

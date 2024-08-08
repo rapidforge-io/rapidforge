@@ -5,15 +5,17 @@
   <sl-tab slot="nav" panel="version">Version</sl-tab>
   <sl-tab slot="nav" panel="license">License</sl-tab>
 
-
   <sl-tab-panel name="version">
     <div class="m-2">
       <sl-details summary="Version">
+        <div class="is-flex is-align-items-center">
+        <img src = "/static/img/rf.svg" style="width: 150px; height: 150px;" class="mr-2">
         <sl-textarea
           name="version"
           value={{.version}}
           disabled
         ></sl-textarea>
+        </div>
       </sl-details>
       </div>
       <div class="m-2">

@@ -21,6 +21,14 @@ type LoginService struct {
 var ErrTooManyAttempts = errors.New("Too many failed login attempts")
 var ErrInvalidUsernameOrPassword = errors.New("Invalid username or password")
 
+func (s *LoginService) ResetLoginAttempts(username string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.attempts, username)
+	return nil
+}
+
 func (s *LoginService) Login(username, password string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

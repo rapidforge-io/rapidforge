@@ -1,0 +1,35 @@
+{{define "user_cards.html"}}
+{{range $index, $user := .Users}}
+  <sl-details class="mb-2">
+    <div slot="summary" style="width: 100%;">
+      <div class="is-flex is-align-items-center">{{ defaultString ($user.Username) "No Name" }}</div>
+    </div>
+    <div>
+      <h3>Edit User</h3>
+      <sl-button size="small" hx-get="/users/{{$user.Username}}/reset_login" hx-target="#alert" hx-target-error="#alert">Reset Login Retries</sl-button>
+      <sl-divider></sl-divider>
+      <form hx-post="/users/{{$user.ID}}/edit" hx-include="[name]" hx-target="#alert" hx-target-error="#alert" hx-swap="innerHTML">
+        <div>
+          <sl-input label="Username" name="username" value="{{$user.Username}}" readonly size="small"></sl-input>
+        </div>
+        <div>
+          <sl-input label="Email" type="email" name="email" value="{{$user.Email.String}}" size="small"></sl-input>
+        </div>
+        <div>
+          <sl-input type="password" label="password" minlength="8" maxlength="30" name="password" id="password" size="small" password-toggle></sl-input>
+        </div>
+        <div>
+          <sl-select size="small" name="role" label="Role" value={{if eq $user.Role "user"}}"user"{{else}}"admin"{{end}}>
+            <sl-option value="user">User</sl-option>
+            <sl-option value="admin">Admin</sl-option>
+          </sl-select>
+        </div>
+        <div class="mt-2">
+          <sl-button type="submit" size="small" variant="primary">Update</sl-button>
+          <sl-button size="small" variant="danger" hx-confirm="Are you sure you want to delete {{$user.Username}}?" hx-delete="/users/{{$user.ID}}/edit" hx-target="#alert" hx-swap="innerHTML">Delete</sl-button>
+        </div>
+      </form>
+    </div>
+  </sl-details>
+{{end}}
+{{end}}

@@ -42,6 +42,12 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		envVars = utils.MergeMaps(envVars, blockEnvVariables)
 		envVars = utils.MergeMaps(envVars, webhookEnvVariables)
+		creds, err := store.ListCredentialsForEnv()
+		if err == nil {
+			envVars = utils.MergeMaps(envVars, creds)
+		} else {
+			rflog.Error("failed to get credentials", err)
+		}
 
 		if httpVerb == "POST" || httpVerb == "PUT" || httpVerb == "PATCH" {
 			body, err := io.ReadAll(c.Request.Body)
@@ -201,6 +207,121 @@ func eventsHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
+func usersHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		users, err := store.ListUsers()
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.HTML(http.StatusOK, "users", gin.H{
+			"Users": users,
+		})
+	}
+}
+
+type UserInput struct {
+	Username string `form:"username"`
+	Password string `form:"password"`
+	Email    string `form:"email"`
+	Role     string `form:"role"`
+}
+
+func updateUserHandler(store *models.Store) gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var userInput UserInput
+		var user models.User
+		err := c.ShouldBind(&userInput)
+
+		if err != nil {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		user.ID = utils.ParseInt64(id)
+		user.Username = userInput.Username
+		user.Email = sql.NullString{String: userInput.Email, Valid: true}
+		user.PasswordHash = userInput.Password
+		user.Role = userInput.Role
+
+		rflog.Info("user", "user", user, "userInput", userInput)
+		err = store.UpdateUser(&user)
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.Status(http.StatusOK)
+		c.String(http.StatusOK, utils.AlertBox(utils.Success, "User updated"))
+	}
+}
+
+func resetUserLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Param("username")
+
+		err := loginService.ResetLoginAttempts(username)
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.Status(http.StatusOK)
+		c.String(http.StatusOK, utils.AlertBox(utils.Success, "Login count restarted"))
+	}
+}
+
+func createUserHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var userInput UserInput
+		var user models.User
+
+		err := c.ShouldBind(&userInput)
+
+		if err != nil {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		user.Username = userInput.Username
+		user.Email = sql.NullString{String: userInput.Email, Valid: true}
+		user.PasswordHash = userInput.Password
+		user.Role = userInput.Role
+
+		err = store.InsertUser(&user)
+
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.Status(http.StatusOK)
+		c.String(http.StatusOK, utils.AlertBox(utils.Success, "User created"))
+
+	}
+}
+
+func deleteUserHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+		err := store.DeleteUser(utils.ParseInt64(id))
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.Status(http.StatusOK)
+		c.String(http.StatusOK, utils.AlertBox(utils.Success, "User deleted"))
+	}
+}
+
 func eventsDetailHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -254,8 +375,29 @@ func pageHandler(store *models.Store) gin.HandlerFunc {
 
 		html := utils.DefaultString(page.HTMLOutput, "<p>Page is empty</p>")
 
-		c.Header("Content-Type", "text/html")
-		c.String(http.StatusOK, html)
+		etag := fmt.Sprintf("%d-%s", page.ID, page.UpdatedAt.Format(http.TimeFormat))
+
+		// Handle conditional requests
+		if match := c.GetHeader("If-None-Match"); match != "" {
+			if match == etag {
+				c.Status(http.StatusNotModified)
+				return
+			}
+		}
+
+		// Browser cache
+		if modifiedSince := c.GetHeader("If-Modified-Since"); modifiedSince != "" {
+			t, err := time.Parse(http.TimeFormat, modifiedSince)
+			if err == nil && page.UpdatedAt.Before(t.Add(1*time.Second)) {
+				c.Status(http.StatusNotModified)
+				return
+			}
+		}
+
+		c.Header("ETag", etag)
+		c.Header("Last-Modified", page.UpdatedAt.Format(http.TimeFormat))
+		c.Header("Cache-Control", "public, max-age=3600")
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(html))
 	}
 }
 
@@ -326,6 +468,64 @@ func blocksListHandler(store *models.Store) gin.HandlerFunc {
 			}
 		}
 
+		c.HTML(http.StatusOK, "blocks", gin.H{
+			"blockMaps": mapBlocks,
+		})
+	}
+}
+
+func blocksSearchHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		searchQuery := c.Query("q")
+		c.Header("Content-Type", "text/html")
+		if searchQuery == "" {
+			blocks, err := store.ListBlocks()
+			if err != nil {
+				c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+				return
+			}
+
+			mapBlocks := utils.TransformToMaps(blocks, "blocks")
+			c.HTML(http.StatusOK, "blocks", gin.H{
+				"blockMaps": mapBlocks,
+			})
+			return
+		}
+
+		blocks, err := store.SearchBlocks(searchQuery)
+		if err != nil {
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		if len(blocks) == 0 {
+			c.Header("Content-Type", "text/html")
+			message := "No blocks found for the given search query."
+
+			tmpl := `<div class="is-flex is-align-items-center is-justify-content-center">
+                    <sl-alert open>
+					  <div >
+					  <sl-icon slot="icon" name="info-circle"></sl-icon>
+					   {{.Message}}
+					  </div>
+                      <div class="is-flex is-justify-content-center">
+ 			            <sl-button size="medium" variant="primary" hx-post="/blocks/create">Create Block</sl-button>
+                      </div>
+                    </sl-alert>
+                    </div>`
+
+			outputHtml, err := utils.GenerateHTML(tmpl, map[string]any{"Message": message, "Type": utils.BlockEntity})
+
+			if err != nil {
+				rflog.Error("failed to generate html", "err", err.Error())
+				return
+			}
+
+			c.String(http.StatusOK, outputHtml)
+			return
+		}
+
+		mapBlocks := utils.TransformToMaps(blocks, "blocks")
 		c.HTML(http.StatusOK, "blocks", gin.H{
 			"blockMaps": mapBlocks,
 		})
@@ -467,6 +667,36 @@ func getBlockEntitiesHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
+func usersSearchHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		searchQuery := c.Query("q")
+		if searchQuery == "" {
+			users, err := store.ListUsers()
+			if err != nil {
+				c.Header("Content-Type", "text/html")
+				c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+				return
+			}
+
+			c.HTML(http.StatusOK, "user_cards", gin.H{
+				"Users": users,
+			})
+			return
+		}
+
+		users, err := store.SearchUsers(searchQuery)
+		if err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.HTML(http.StatusOK, "user_cards", gin.H{
+			"Users": users,
+		})
+	}
+}
+
 func createBlockHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var block models.Block
@@ -481,6 +711,55 @@ func createBlockHandler(store *models.Store) gin.HandlerFunc {
 
 		c.Header("HX-Redirect", redirectTo)
 		c.Status(http.StatusFound)
+	}
+}
+
+func blocksEntitiesSearchHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		blockIDStr := c.Param("id")
+		blockID, err := strconv.ParseInt(blockIDStr, 10, 64)
+		if err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Invalid block ID"))
+			return
+		}
+
+		searchQuery := c.Query("q")
+		entityType := c.DefaultQuery("entityType", utils.WebhookEntity)
+
+		var results any
+
+		switch entityType {
+		case utils.PageEntity:
+			results, err = store.SearchPages(blockID, searchQuery)
+		case utils.PeriodicTaskEntity:
+			results, err = store.SearchPeriodicTasks(blockID, searchQuery)
+		case utils.WebhookEntity:
+			results, err = store.SearchWebhooks(blockID, searchQuery)
+		default:
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Invalid entity type"))
+			return
+		}
+
+		if err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Invalid entity type"))
+			return
+		}
+
+		switch res := results.(type) {
+		case []models.Webhook:
+			results = utils.TransformToMaps(res, utils.WebhookEntity)
+		case []models.Page:
+			results = utils.TransformToMaps(res, utils.PageEntity)
+		case []models.PeriodicTask:
+			results = utils.TransformToMaps(res, utils.PeriodicTaskEntity)
+		}
+
+		c.HTML(http.StatusOK, "entities", gin.H{
+			"data": results,
+		})
 	}
 }
 
@@ -713,7 +992,6 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 			return
 		}
-		rflog.Info("-----", "pageData", pageData.Active)
 		err := store.UpdatePageByID(intId, pageData)
 
 		if err != nil {
@@ -734,6 +1012,7 @@ func pagesHandler(store *models.Store) gin.HandlerFunc {
 				"error": err.Error(),
 			})
 		}
+
 		c.HTML(http.StatusOK, "page", gin.H{
 			"page":    page,
 			"baseUrl": config.BaseUrl(),

@@ -16,7 +16,7 @@ type Config struct {
 	AdminPassword     string `env:"RF_ADMIN_PASSWORD, default=1234"`
 	DatabaseUrl       string `env:"RF_DATABASE_URL, default=rapidforge.sqlite3"`
 	Domain            string `env:"RF_DOMAIN, default=localhost"`
-	Port              string `env:"RF_PORT, default=4000"`
+	Port              string `env:"RF_PORT, default=:4000"`
 	Timeout           time.Duration
 	AuthSecretKey     string
 	AuthDuration      time.Duration
@@ -65,6 +65,10 @@ func Get() Config {
 	return c
 }
 
+func CredentialCallbackUrl() string {
+	return BaseUrl() + "/credentials/callback"
+}
+
 func BaseUrl() string {
-	return "http://" + c.Domain + ":" + c.Port
+	return "http://" + c.Domain + c.Port
 }

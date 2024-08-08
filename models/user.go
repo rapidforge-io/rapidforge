@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/rapidforge-io/rapidforge/config"
@@ -15,7 +16,38 @@ func (s *Store) VerifyPassword(storedHash string, password string) bool {
 }
 
 func (s *Store) InsertUser(user *User) error {
+	if user.Username == "" {
+		return errors.New("username is required")
+	}
+
 	passwordWithKey := user.PasswordHash + config.Get().AuthKey()
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordWithKey), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	if user.Role == "" {
+		user.Role = "admin"
+	}
+
+	query := `INSERT INTO users (username, password_hash, role, email)
+              VALUES (?, ?, ?, ?)`
+
+	_, err = s.db.Exec(query,
+		user.Username,
+		hashedPassword,
+		user.Role,
+		user.Email,
+	)
+	return err
+}
+
+func (s *Store) InsertUserOLD(user *User) error {
+	passwordWithKey := user.PasswordHash + config.Get().AuthKey()
+
+	if user.Username == "" {
+		return errors.New("username is required")
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordWithKey), bcrypt.DefaultCost)
 	if err != nil {
@@ -51,6 +83,43 @@ func (s *Store) GetUserByID(id int64) (*User, error) {
 	return &user, nil
 }
 
+func (s *Store) UpdateUser(user *User) error {
+	var passwordHash string
+	if user.PasswordHash != "" {
+		passwordWithKey := user.PasswordHash + config.Get().AuthKey()
+		hash, err := bcrypt.GenerateFromPassword([]byte(passwordWithKey), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		passwordHash = string(hash)
+	} else {
+		err := s.db.QueryRow("SELECT password_hash FROM users WHERE id = ?", user.ID).Scan(&passwordHash)
+		if err != nil {
+			return err
+		}
+	}
+
+	if user.Role == "" {
+		user.Role = "admin"
+	}
+
+	_, err := s.db.Exec("UPDATE users SET username = ?, email = ?, password_hash = ?, role = ?, updated_at = ? WHERE id = ?",
+		user.Username, user.Email, passwordHash, user.Role, time.Now().UTC(), user.ID)
+	return err
+}
+
+func (s *Store) ListUsers() ([]User, error) {
+	var users []User
+	query := `SELECT id, username, email, settings, role FROM users`
+
+	err := s.db.Select(&users, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (s *Store) GetUserByUsername(username string) (*User, error) {
 	var user User
 	query := `SELECT id, username, password_hash, email, settings, role, created_at, updated_at
@@ -75,27 +144,6 @@ func (s *Store) DeleteUser(userID int64) error {
 	return nil
 }
 
-func (s *Store) UpdateUserPassword(userID int64, newPassword string) error {
-	passwordWithKey := newPassword + config.Get().AuthKey()
-
-	// Generate the hashed password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwordWithKey), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	query := `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`
-
-	updatedAt := time.Now().UTC()
-
-	_, err = s.db.Exec(query, string(hashedPassword), updatedAt, userID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *Store) UserExists() (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS (SELECT 1 FROM users LIMIT 1)`
@@ -108,10 +156,10 @@ func (s *Store) UserExists() (bool, error) {
 	return exists, nil
 }
 
-func (s *Store) CreateAdminUserIfNoUserExists() error {
+func (s *Store) CreateAdminUserIfNoUserExists() (*User, error) {
 	exists, err := s.UserExists()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !exists {
@@ -123,9 +171,22 @@ func (s *Store) CreateAdminUserIfNoUserExists() error {
 
 		err = s.InsertUser(adminUser)
 		if err != nil {
-			return err
+			return nil, err
 		}
+
+		return adminUser, nil
 	}
 
-	return nil
+	return nil, nil
+}
+
+func (s *Store) SearchUsers(query string) ([]User, error) {
+	var users []User
+	searchQuery := `SELECT id, username, password_hash, email, settings, role, created_at, updated_at FROM users WHERE username LIKE ? OR email LIKE ?`
+	searchTerm := "%" + query + "%"
+	err := s.db.Select(&users, searchQuery, searchTerm, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }

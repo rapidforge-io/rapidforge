@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"database/sql"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -59,6 +60,22 @@ func GenerateHTML(tmpl string, data any) (string, error) {
 	result = writer.String()
 
 	return result, nil
+}
+
+func PrintBanner(viewsFS embed.FS, data any) {
+	t, err := template.New("banner.html").ParseFS(viewsFS, "views/banner.html")
+	if err != nil {
+		return
+	}
+
+	var result string
+	writer := &strings.Builder{}
+	err = t.Execute(writer, data)
+	if err != nil {
+		return
+	}
+	result = writer.String()
+	fmt.Println(result)
 }
 
 func AlertBox(messageType AlertType, message string) string {
@@ -126,6 +143,14 @@ func DefaultString(input any, defaultValue string) string {
 	default:
 		return defaultValue
 	}
+}
+
+func ParseInt64(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return i
 }
 
 func ParseInt(s string) int {

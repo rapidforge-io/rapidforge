@@ -25,15 +25,6 @@ type User struct {
 	UpdatedAt    time.Time      `json:"updatedAt" db:"updated_at"`
 }
 
-type Credential struct {
-	ID          int64     `json:"id" db:"id"`
-	Name        string    `json:"name" db:"name"`
-	Description string    `json:"description" db:"description"`
-	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
-	Type        string    `json:"type" db:"type"`
-	Value       string    `json:"value" db:"value"`
-}
-
 type Block struct {
 	ID           int64          `json:"id" db:"id"`
 	Name         string         `json:"name" db:"name"`
@@ -176,6 +167,7 @@ type Page struct {
 	CanvasState JSONRawString  `json:"canvas_state" db:"canvas_state"`
 	HTMLOutput  sql.NullString `json:"htmlOutput" db:"html_output"`
 	CreatedAt   time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt   time.Time      `json:"updatedAt" db:"updated_at"`
 }
 
 type PeriodicTask struct {
@@ -242,6 +234,50 @@ func (s *Store) ListBlocks() ([]Block, error) {
 		return nil, err
 	}
 	return blocks, nil
+}
+
+func (s *Store) SearchBlocks(query string) ([]Block, error) {
+	var blocks []Block
+	searchQuery := `SELECT id, name, description, active, env_variables, created_at FROM blocks WHERE name LIKE ? OR description LIKE ?`
+	searchTerm := "%" + query + "%"
+	err := s.db.Select(&blocks, searchQuery, searchTerm, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	return blocks, nil
+}
+
+func (s *Store) SearchPages(blockID int64, query string) ([]Page, error) {
+	var pages []Page
+	searchQuery := `SELECT * FROM pages WHERE block_id = ? AND (name LIKE ? OR description LIKE ?)`
+	searchTerm := "%" + query + "%"
+	err := s.db.Select(&pages, searchQuery, blockID, searchTerm, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	return pages, nil
+}
+
+func (s *Store) SearchPeriodicTasks(blockID int64, query string) ([]PeriodicTask, error) {
+	var tasks []PeriodicTask
+	searchQuery := `SELECT * FROM periodic_tasks WHERE block_id = ? AND (name LIKE ? OR description LIKE ?)`
+	searchTerm := "%" + query + "%"
+	err := s.db.Select(&tasks, searchQuery, blockID, searchTerm, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func (s *Store) SearchWebhooks(blockID int64, query string) ([]Webhook, error) {
+	var webhooks []Webhook
+	searchQuery := `SELECT * FROM webhooks WHERE block_id = ? AND (name LIKE ? OR description LIKE ?)`
+	searchTerm := "%" + query + "%"
+	err := s.db.Select(&webhooks, searchQuery, blockID, searchTerm, searchTerm)
+	if err != nil {
+		return nil, err
+	}
+	return webhooks, nil
 }
 
 func (s *Store) InsertPeriodicTaskWithAutoName(blockID int64) (int64, error) {
@@ -397,9 +433,8 @@ func (s *Store) InsertPageWithAutoName(blockID int64) (int64, error) {
 	}
 
 	// Create page
-	pageQuery := `INSERT INTO pages (name, path, block_id, canvas_state, created_at) VALUES (?, ?,?, ?, ?)`
-	pageCreatedAt := time.Now().UTC()
-	result, err := tx.Exec(pageQuery, newPageName, newPageName, blockID, canvasState, pageCreatedAt)
+	pageQuery := `INSERT INTO pages (name, path, block_id, canvas_state) VALUES (?, ?,?, ?)`
+	result, err := tx.Exec(pageQuery, newPageName, newPageName, blockID, canvasState)
 	if err != nil {
 		tx.Rollback()
 		rflog.Error("failed to insert page", err)
@@ -827,7 +862,8 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 		    description = ?,
 		    canvas_state = ?,
 			html_output = ?,
-			active = ?
+			active = ?,
+			updated_at = ?
         WHERE id = ?`
 
 	// Execute the query
@@ -837,6 +873,7 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 		string(canvasItemsJSON),
 		pageData.HtmlOutput,
 		pageData.Active,
+		time.Now().UTC(),
 		id,
 	)
 	if err != nil {

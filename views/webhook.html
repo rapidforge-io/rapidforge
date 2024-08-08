@@ -1,15 +1,20 @@
 {{ define "title" }}{{defaultString .webhook.Name "webhook"}}{{end }} {{define "content.html"}}
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
-/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/shell/shell.min.js"></script>
+<link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
+<script src="/static/javascript/codemirror.6.65.7.js"></script>
+<script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
+
 
 <style>
   .CodeMirror {
     border: 1px solid #eee;
     height: 120px;
+  }
+
+  /* Dark theme */
+  @media (prefers-color-scheme: dark) {
+      .CodeMirror {
+        background-color: #343a40;
+      }
   }
 </style>
 
@@ -47,6 +52,7 @@
     </div>
     <div class="m-2">
       <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
+      <div id="editor2"></div>
     </div>
   </sl-tab-panel>
   <sl-tab-panel name="settings">
@@ -169,13 +175,15 @@
 </sl-tab-group>
 
 <script>
-  const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+  const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dracula' : 'default';
+
+   const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
     lineNumbers: true,
     matchBrackets: true,
     autoCloseBrackets: true,
     mode: "shell",
+    can:true,
     indentUnit: 2,
-    theme: "default",
   });
 
   function getEditorVal() {

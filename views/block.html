@@ -14,20 +14,27 @@
     <div class="m-2">
       <div class="columns is-align-items-end">
         <div class="column">
-          <sl-input label="Search" type="search"></sl-input>
+          <sl-input label="Search"
+            type="search"
+            name="q"
+            placeholder="By name or description"
+            hx-get="/blocks/{{.block.ID}}/entities/search"
+            hx-target="#entities"
+            hx-trigger="keyup changed delay:500ms"
+            hx-include="#entityRadioGroup"></sl-input>
         </div>
         <div class="column">
           <sl-dropdown>
             <sl-button slot="trigger" variant="primary" caret>Create</sl-button>
             <sl-menu>
-                <sl-menu-item>
-                  <button hx-post="/webhooks/create" hx-vals='{"blockId": "{{.block.ID}}" }'> Webhook</button>
+                <sl-menu-item hx-post="/webhooks/create" hx-vals='{"blockId": "{{.block.ID}}" }' hx-trigger="click">
+                Webhook
                 </sl-menu-item>
-              <sl-menu-item value="page">
-                  <button hx-post="/pages/create" hx-vals='{"blockId": "{{.block.ID}}" }'> Page</button>
+              <sl-menu-item hx-post="/pages/create" hx-vals='{"blockId": "{{.block.ID}}" }' hx-trigger="click">
+                Page
               </sl-menu-item>
-              <sl-menu-item value="periodicTasks">
-                <button hx-post="/periodic_tasks/create" hx-vals='{"blockId": "{{.block.ID}}" }'> Periodic Tasks</button>
+              <sl-menu-item hx-post="/periodic_tasks/create" hx-vals='{"blockId": "{{.block.ID}}" }' hx-trigger="click">
+                Periodic Tasks
               </sl-menu-item>
             </sl-menu>
           </sl-dropdown>
@@ -37,14 +44,14 @@
         <div class="mb-2">
         <sl-radio-group
           label="Filter Entities By Type"
-          name="a"
+          name="entityType"
           id="entityRadioGroup"
-          value="webhook"
+          value="webhooks"
         >
-          <sl-radio-button id="entities-all" value="all" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/all" hx-target="#entities">All</sl-radio-button>
-          <sl-radio-button id="entities-webhooks" value="webhook" hx-trigger="click,load" hx-get="/block/{{.block.ID}}/entities/webhooks" hx-target="#entities">WebHooks</sl-radio-button>
-          <sl-radio-button id="entities-pages" value="page" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/pages" hx-target="#entities">Pages</sl-radio-button>
-          <sl-radio-button id="entities-periodic_tasks" value="perdiodicTask" hx-trigger="click" hx-get="/block/{{.block.ID}}/entities/periodic_tasks" hx-target="#entities">Periodic Tasks</sl-radio-button>
+          <sl-radio-button id="entities-all" value="all" hx-trigger="click" hx-get="/blocks/{{.block.ID}}/entities/all" hx-target="#entities">All</sl-radio-button>
+          <sl-radio-button id="entities-webhooks" value="webhooks" hx-trigger="click,load" hx-get="/blocks/{{.block.ID}}/entities/webhooks" hx-target="#entities">WebHooks</sl-radio-button>
+          <sl-radio-button id="entities-pages" value="pages" hx-trigger="click" hx-get="/blocks/{{.block.ID}}/entities/pages" hx-target="#entities">Pages</sl-radio-button>
+          <sl-radio-button id="entities-periodic_tasks" value="periodic_tasks" hx-trigger="click" hx-get="/blocks/{{.block.ID}}/entities/periodic_tasks" hx-target="#entities">Periodic Tasks</sl-radio-button>
         </sl-radio-group>
         <sl-divider></sl-divider>
         </div>

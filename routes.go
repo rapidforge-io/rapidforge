@@ -4,9 +4,13 @@ import (
 	"embed"
 	"html/template"
 	"net/http"
+	"path/filepath"
+	"time"
 
 	"github.com/gin-contrib/multitemplate"
+	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
+
 	"github.com/rapidforge-io/rapidforge/models"
 	"github.com/rapidforge-io/rapidforge/services"
 	"github.com/rapidforge-io/rapidforge/utils"
@@ -14,44 +18,55 @@ import (
 
 func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 	r := multitemplate.NewRenderer()
-
-	// Define the common template functions
 	funcMap := template.FuncMap{
 		"defaultString":  utils.DefaultHtml,
 		"formatDateTime": utils.FormatDateTime,
 	}
-
 	basePages := []string{"views/base.html", "views/navbar.html"}
 
-	// Create and add templates to the renderer
-	addTemplate := func(name string, extraPages ...string) {
+	// Helper function to add templates with base pages
+	addTemplateWithBase := func(name string, extraPages ...string) {
 		allPages := append(basePages, extraPages...)
 		tmpl := template.Must(template.New("base.html").Funcs(funcMap).ParseFS(viewsFS, allPages...))
 		r.Add(name, tmpl)
 	}
 
-	addTemplate("blocks_base", "views/blocks_base.html")
-	addTemplate("block", "views/editableTitle.html", "views/card.html", "views/block.html")
-	addTemplate("webhook", "views/editableTitle.html", "views/webhook.html")
-	addTemplate("periodic_task", "views/editableTitle.html", "views/periodic_task.html")
-	addTemplate("info", "views/info.html")
+	// Helper function to add templates without base pages
+	addTemplate := func(name, templateName string, extraPages ...string) {
+		allPages := append([]string{templateName}, extraPages...)
+		tmpl := template.Must(template.New(filepath.Base(templateName)).Funcs(funcMap).ParseFS(viewsFS, allPages...))
+		r.Add(name, tmpl)
+	}
 
-	tmpl := template.Must(template.New("block_list.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/block_list.html"))
+	// Templates with base pages
+	templatesWithBase := map[string][]string{
+		"blocks_base":   {"views/blocks_base.html"},
+		"block":         {"views/editableTitle.html", "views/card.html", "views/block.html"},
+		"webhook":       {"views/editableTitle.html", "views/webhook.html"},
+		"periodic_task": {"views/editableTitle.html", "views/periodic_task.html"},
+		"info":          {"views/info.html"},
+		"users":         {"views/users.html", "views/user_cards.html"},
+		"credentials":   {"views/credentials.html"},
+	}
 
-	r.Add("blocks", tmpl)
+	for name, pages := range templatesWithBase {
+		addTemplateWithBase(name, pages...)
+	}
 
-	tmpl2 := template.Must(template.New("page.html").Funcs(funcMap).ParseFS(viewsFS, "views/page.html"))
-	r.Add("page", tmpl2)
-	// addSinglePage("page", "views/page.html")
+	// Templates without base pages
+	templatesWithoutBase := map[string][]string{
+		"blocks":          {"views/block_list.html", "views/card.html"},
+		"page":            {"views/page.html"},
+		"entities":        {"views/entities.html", "views/card.html"},
+		"event_table":     {"views/event_table.html"},
+		"login":           {"views/login.html"},
+		"credential_list": {"views/credential_list.html", "views/card.html"},
+		"user_cards":      {"views/user_cards.html"},
+	}
 
-	tmpl = template.Must(template.New("entities.html").Funcs(funcMap).ParseFS(viewsFS, "views/card.html", "views/entities.html"))
-	r.Add("entities", tmpl)
-
-	tmpl = template.Must(template.New("event_table.html").Funcs(funcMap).ParseFS(viewsFS, "views/event_table.html"))
-	r.Add("event_table", tmpl)
-
-	tmpl = template.Must(template.New("login.html").Funcs(funcMap).ParseFS(viewsFS, "views/login.html"))
-	r.Add("login", tmpl)
+	for name, pages := range templatesWithoutBase {
+		addTemplate(name, pages[0], pages[1:]...)
+	}
 
 	return r
 }
@@ -77,57 +92,122 @@ func AuthMiddleware(loginService *services.LoginService) gin.HandlerFunc {
 	}
 }
 
-func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
+func TimeoutMiddleware() gin.HandlerFunc {
+	return timeout.New(
+		timeout.WithTimeout(30*time.Second),
+		timeout.WithHandler(func(c *gin.Context) {
+			c.Next()
+		}),
+		timeout.WithResponse(func(ctx *gin.Context) {
+			ctx.String(http.StatusRequestTimeout, "timeout")
+		}),
+	)
+}
 
+func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
+	// Static Routes
 	staticServer := http.FileServer(http.FS(staticFS))
 	r.GET("/static/*filepath", func(c *gin.Context) {
 		c.Request.URL.Path = "static" + c.Param("filepath")
 		staticServer.ServeHTTP(c.Writer, c.Request)
 	})
 
+	// Redirect root (/) to /blocks
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/blocks")
+	})
+
+	// Authentication Routes
 	r.GET("/login", loginHandler())
 	r.POST("/login", doLoginHandler(services.GetLoginService()))
-	r.GET("/info", infoHandler())
 
-	// public route
+	// Public Routes
 	r.Any("/webhook/*path", webhookHandlers(store))
-	//r.Use(AuthMiddleware(services.GetLoginService()))
-
-	r.DELETE("/delete/:type/:id", deleteHandler(store))
-
 	r.GET("/page/:path", pageHandler(store))
 
-	r.PATCH("/rename/:type/:id", renameHandler(store))
+	// Block Routes
+	blockGroup := r.Group("/blocks")
+	{
+		blockGroup.GET("/list", blocksListHandler(store))
+		blockGroup.GET("/search", blocksSearchHandler(store))
+		blockGroup.GET("/:id", getBlockHandler(store))
+		blockGroup.GET("/:id/entities/:type", getBlockEntitiesHandler(store))
+		blockGroup.GET("/:id/entities/search", blocksEntitiesSearchHandler(store))
+		blockGroup.POST("/create", createBlockHandler(store))
+		blockGroup.GET("/", blocksBaseHandler)
+	}
 
-	r.GET("/blocks_list", blocksListHandler(store))
+	// Webhook Routes
+	webhookGroup := r.Group("/webhooks")
+	{
+		webhookGroup.POST("/create", createWebhookHandler(store))
+		webhookGroup.PATCH("/:id", updateWebhookHandler(store))
+		webhookGroup.GET("/:id", getWebhookHandler(store))
+	}
 
-	r.GET("/blocks/:id", getBlockHandler(store))
+	// Periodic Task Routes
+	periodicTaskGroup := r.Group("/periodic_tasks")
+	{
+		periodicTaskGroup.GET("/:id", getPeriodicTaskHandler(store))
+		periodicTaskGroup.POST("/create", createPeriodicTaskHandler(store))
+		periodicTaskGroup.PATCH("/:id", updatePeriodicTaskHandler(store))
+	}
 
-	r.GET("/block/:id/entities/:type", getBlockEntitiesHandler(store))
+	// Page Routes
+	pageGroup := r.Group("/pages")
+	{
+		pageGroup.POST("/create", createPageHandler(store))
+		pageGroup.GET("/:id", pagesHandler(store))
+		pageGroup.PATCH("/:id", updatePageHandler(store))
+	}
 
-	r.POST("/blocks/create", createBlockHandler(store))
+	// Event Routes
+	eventGroup := r.Group("/events")
+	{
+		eventGroup.GET("/:type/:id", eventsHandler(store))
+		eventGroup.GET("/details/:id", eventsDetailHandler(store))
+	}
 
-	r.POST("/webhooks/create", createWebhookHandler(store))
+	// User Routes
+	userGroup := r.Group("/users")
+	{
+		userGroup.GET("/", usersHandler(store))
+		userGroup.POST("/:id/edit", updateUserHandler(store))
+		userGroup.DELETE("/:id/edit", deleteUserHandler(store))
+		userGroup.POST("/new", createUserHandler(store))
+		userGroup.GET("/search", usersSearchHandler(store))
+		userGroup.GET("/:username/reset_login", resetUserLoginHandler(services.GetLoginService()))
+	}
 
-	r.GET("/blocks", blocksBaseHandler)
+	// Credential Routes
+	credentialGroup := r.Group("/credentials")
+	{
+		credentialGroup.GET("/", credentialsHandler())
+		credentialGroup.POST("/create", credentialsCreateHandlerGenerated(store))
+		credentialGroup.GET("/list", credentialsListHandler(store))
+		credentialGroup.DELETE("/:id", credentialsDeleteHandler(store))
+		credentialGroup.GET("/callback", oAuth2CallbackHandler(store))
+		credentialGroup.GET("/refresh/:id", refreshCredentialHandler(store))
+		credentialGroup.GET("/search", credentialsSearchHandler(store))
+	}
 
-	r.PATCH("/webhooks/:id", updateWebhookHandler(store))
+	groups := []*gin.RouterGroup{
+		blockGroup,
+		pageGroup,
+		webhookGroup,
+		periodicTaskGroup,
+		userGroup,
+		credentialGroup,
+		eventGroup,
+	}
+	for _, group := range groups {
+		group.Use(TimeoutMiddleware())
+		//group.Use(AuthMiddleware(services.GetLoginService()))
+	}
 
-	r.GET("/webhooks/:id", getWebhookHandler(store))
-
-	r.GET("/periodic_tasks/:id", getPeriodicTaskHandler(store))
-
-	r.POST("/periodic_tasks/create", createPeriodicTaskHandler(store))
-
-	r.PATCH("/periodic_tasks/:id", updatePeriodicTaskHandler(store))
-
-	r.POST("/pages/create", createPageHandler(store))
-
-	r.GET("/pages/:id", pagesHandler(store))
-
-	r.PATCH("/pages/:id", updatePageHandler(store))
-
-	r.GET("/events/:type/:id", eventsHandler(store))
-
-	r.GET("/event_details/:id", eventsDetailHandler(store))
+	// Miscellaneous Routes
+	r.GET("/info", infoHandler())
+	r.POST("/feedback", TimeoutMiddleware(), feedbackHandler())
+	r.DELETE("/delete/:type/:id", TimeoutMiddleware(), deleteHandler(store))
+	r.PATCH("/rename/:type/:id", TimeoutMiddleware(), renameHandler(store))
 }

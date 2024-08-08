@@ -13,11 +13,19 @@ CREATE TABLE users (
 
 CREATE TABLE credentials (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
     name TEXT NOT NULL UNIQUE,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
-    type TEXT,
-    value TEXT
+    oauth_url TEXT,
+    oauth_token_url TEXT,
+    grant_type TEXT NOT NULL,
+    scope TEXT,
+    value TEXT,
+    client_id TEXT,
+    client_secret TEXT,
+    token TEXT,
+    refresh_token TEXT,
+    expiry TEXT,
+    updated_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc'))
 );
 
 CREATE TABLE blocks (
@@ -72,6 +80,7 @@ CREATE TABLE pages (
     canvas_state JSON,
     html_output TEXT,
     created_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
+    updated_at TIMESTAMP DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'utc')),
     FOREIGN KEY(block_id) REFERENCES blocks(id) ON DELETE CASCADE
 );
 

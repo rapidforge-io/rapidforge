@@ -15,7 +15,7 @@
       <div class="column">{{.EventType}}</div>
       <div class="column">{{.CreatedAt | formatDateTime}}</div>
       <div class="column">
-        <sl-button onclick="dialog.show()" hx-get="/event_details/{{.ID}}" hx-target="#payload" hx-trigger="click">Show Details</sl-button>
+        <sl-button onclick="dialog.show()" hx-get="/events/details/{{.ID}}" hx-target="#payload" hx-trigger="click">Show Details</sl-button>
       </div>
       <sl-dialog label="Details" class="dialog-overview" style="--width: 50vw;">
         <div id="payload"></div>
