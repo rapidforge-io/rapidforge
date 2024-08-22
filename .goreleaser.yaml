@@ -10,7 +10,7 @@ version: 2
 
 release:
   github:
-    owner: rapidforge-io
+    owner: eldemcan
     name:  rapidforge-io/bin
 
 before:
