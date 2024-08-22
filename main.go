@@ -76,13 +76,12 @@ var staticFS embed.FS
 // - consider running docker container with endpoints and periodics tasks
 // - add action to send email using smtp
 
-var buildVersion string
-var packageVersion string
+var (
+	Version = "1.0.0"
+	Package = "community"
+)
 
 func main() {
-
-	buildVersion = "1.0.0"
-	packageVersion = "community"
 
 	dbCon := database.GetDbConn("")
 	dbCon.RunMigrations()
@@ -104,8 +103,8 @@ func main() {
 	}
 
 	bannerData := map[string]any{
-		"Version":       buildVersion,
-		"Package":       packageVersion,
+		"Version":       Version,
+		"Package":       Package,
 		"ARCH":          runtime.GOARCH,
 		"Compiler":      runtime.Compiler,
 		"Environment":   config.Get().Env,

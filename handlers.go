@@ -187,8 +187,8 @@ func logoutHandler() gin.HandlerFunc {
 func infoHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "info", gin.H{
-			"version":     buildVersion,
-			"package":     packageVersion,
+			"version":     Version,
+			"package":     Package,
 			"license":     config.License,
 			"currentUser": getCurrentUser(c),
 		})
