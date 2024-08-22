@@ -35,6 +35,11 @@ var (
 	instance *sqlx.DB
 )
 
+const (
+	pragmas = "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=journal_size_limit(200000000)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_pragma=temp_store(MEMORY)&_pragma=cache_size(-16000)"
+	driver  = "sqlite"
+)
+
 func GetDbConn(fileName string) *DbCon {
 	once.Do(func() {
 		instance = LoadConnection(fileName)
@@ -86,6 +91,30 @@ func RemoveDbFile(filePath string) {
 	}
 }
 
+func SetupKV() {
+
+	databaseName := config.Get().KVUrl
+	database, err := sqlx.Open(driver, databaseName+pragmas)
+	if err != nil {
+		rflog.Error("Failed to open database", "err:", err)
+	}
+	defer database.Close()
+
+	// Create the KeyValueStore table
+	createTableSQL := `CREATE TABLE IF NOT EXISTS KV (
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
+	"key" TEXT NOT NULL UNIQUE,
+	"value" TEXT
+);`
+
+	_, err = database.Exec(createTableSQL)
+	if err != nil {
+		rflog.Error("Failed to create table", "err:", err)
+	}
+
+	fmt.Println("KeyValueStore table created successfully.")
+}
+
 func LoadConnection(databaseName string) *sqlx.DB {
 
 	if databaseName == "" {
@@ -96,8 +125,7 @@ func LoadConnection(databaseName string) *sqlx.DB {
 
 	CreateDbFile(databaseName)
 
-	pragmas := "?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=journal_size_limit(200000000)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_pragma=temp_store(MEMORY)&_pragma=cache_size(-16000)"
-	dbConnection, err := sqlx.Connect("sqlite", databaseName+pragmas)
+	dbConnection, err := sqlx.Connect(driver, databaseName+pragmas)
 
 	if err != nil {
 		panic(err)

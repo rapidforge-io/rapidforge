@@ -2,9 +2,12 @@ package models
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/rapidforge-io/rapidforge/config"
+	rflog "github.com/rapidforge-io/rapidforge/logger"
+	"github.com/rapidforge-io/rapidforge/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -162,10 +165,18 @@ func (s *Store) CreateAdminUserIfNoUserExists() (*User, error) {
 		return nil, err
 	}
 
+	randomPassword, _ := utils.GenerateRandomString(8)
+
+	if err != nil {
+		rflog.Error("failed to generate random password", "err", err)
+		os.Exit(1)
+		return nil, err
+	}
+
 	if !exists {
 		adminUser := &User{
 			Username:     "admin",
-			PasswordHash: "admin123",
+			PasswordHash: randomPassword,
 			Role:         "admin",
 		}
 

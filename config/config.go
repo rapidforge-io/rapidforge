@@ -2,7 +2,11 @@ package config
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/pem"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	rflog "github.com/rapidforge-io/rapidforge/logger"
@@ -11,12 +15,14 @@ import (
 )
 
 type Config struct {
-	Env               string `env:"RF_ENV,default=development"`
-	AdminUsername     string `env:"RF_ADMIN_USERNAME, default=admin"`
-	AdminPassword     string `env:"RF_ADMIN_PASSWORD, default=1234"`
+	Env               string `env:"RF_ENV,default=production"`
 	DatabaseUrl       string `env:"RF_DATABASE_URL, default=rapidforge.sqlite3"`
+	KVUrl             string `env:"RF_KV_URL"`
 	Domain            string `env:"RF_DOMAIN, default=localhost"`
 	Port              string `env:"RF_PORT, default=:4000"`
+	PemData           string `env:"TLS_CERT"`
+	LoadBalancer      bool
+	FECacheBuster     string
 	Timeout           time.Duration
 	AuthSecretKey     string
 	AuthDuration      time.Duration
@@ -36,6 +42,8 @@ func load() {
 		rflog.Error("failed to generate secret key", "err", err)
 	}
 	c.AuthSecretKey = secretKey
+	c.LoadBalancer = getEnvAsBool("RF_LB", true)
+	c.FECacheBuster, _ = utils.GenerateRandomString(10)
 
 	c.AuthDuration = 1 * time.Hour
 	c.LoginAttemptCount = 5
@@ -69,6 +77,54 @@ func CredentialCallbackUrl() string {
 	return BaseUrl() + "/credentials/callback"
 }
 
+func (c Config) TLSCert() *tls.Certificate {
+	if c.PemData == "" {
+		return nil
+	}
+
+	// Parse the PEM data
+	certBlock, rest := pem.Decode([]byte(c.PemData))
+	if certBlock == nil || certBlock.Type != "CERTIFICATE" {
+		log.Fatalf("Failed to decode PEM block containing the certificate")
+	}
+
+	keyBlock, _ := pem.Decode(rest)
+	if keyBlock == nil || keyBlock.Type != "PRIVATE KEY" {
+		log.Fatalf("Failed to decode PEM block containing the private key")
+	}
+
+	cert, err := tls.X509KeyPair(pem.EncodeToMemory(certBlock), pem.EncodeToMemory(keyBlock))
+	if err != nil {
+		log.Fatalf("Failed to create TLS certificate: %v", err)
+	}
+
+	return &cert
+}
+
+func getEnvAsBool(name string, defaultVal bool) bool {
+	valStr := os.Getenv(name)
+	if valStr == "" {
+		return defaultVal
+	}
+	val, err := strconv.ParseBool(valStr)
+	if err != nil {
+		return defaultVal
+	}
+	return val
+}
+
+func httpProtocol() string {
+	if c.Env == "development" {
+		return "http://"
+	}
+	return "https://"
+}
+
 func BaseUrl() string {
-	return "http://" + c.Domain + c.Port
+	if c.Port == ":80" || c.Port == ":443" || c.LoadBalancer {
+		return httpProtocol() + c.Domain
+	} else {
+
+		return httpProtocol() + c.Domain + c.Port
+	}
 }

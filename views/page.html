@@ -1,27 +1,29 @@
 <!doctype html>
 <html lang="en" data-theme="light">
   <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title> RapidForge Page Builder</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title> RapidForge Page Builder</title>
 
-  <link rel="stylesheet" href="/static/css/bulma.1.0.0.min.css" >
-  <script type="module" crossorigin src="/static/assets/app-BbDwtOjo.js"></script>
-  <link rel="stylesheet" crossorigin href="/static/assets/app-D4W1Yat8.css">
-
-        <script>
-        var pageData= {
-             baseUrl: {{ .baseUrl }},
-             path: {{ .page.Path }},
-             canvasState: {{ .page.CanvasState.root }},
-             active: {{ .page.Active }},
-             title: {{defaultString .page.Name "Title"}},
-             description: {{defaultString .page.Description "Description"}},
-             pageId: {{ .page.ID }},
-         };
-        </script>
-        </head>
-  <body>
-    <div id="app"></div>
-  </body>
-</html>
+    <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
+  >
+    <script type="module" crossorigin src="/static/assets/app-CUpzNB82.js"></script>
+    <link rel="stylesheet" crossorigin href="/static/assets/app-D4W1Yat8.css">
+    <script>
+      var pageData = {
+        baseUrl: {{ .baseUrl }},
+        path: {{ .page.Path }},
+        canvasState: {{ .page.CanvasState.root }},
+        active: {{ .page.Active }},
+        title: {{defaultString .page.Name "Title"}},
+        description: {{defaultString .page.Description "Description"}},
+        pageId: {{ .page.ID }},
+        blockId: {{ .blockId }}
+      };
+    </script>
+    <body>
+      <div id="app"></div>
+    </body>
+  </html>

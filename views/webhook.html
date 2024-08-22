@@ -1,22 +1,9 @@
 {{ define "title" }}{{defaultString .webhook.Name "webhook"}}{{end }} {{define "content.html"}}
 <link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
+<link rel="stylesheet" href="/static/css/dracula.min.css">
+<link rel="stylesheet" href="/static/css/codemirror.css">
 <script src="/static/javascript/codemirror.6.65.7.js"></script>
 <script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
-
-
-<style>
-  .CodeMirror {
-    border: 1px solid #eee;
-    height: 120px;
-  }
-
-  /* Dark theme */
-  @media (prefers-color-scheme: dark) {
-      .CodeMirror {
-        background-color: #343a40;
-      }
-  }
-</style>
 
 <div>
   <label>Url Path</label>
@@ -34,11 +21,10 @@
 
   <sl-tab-panel name="editor">
     <div id="alertBox"></div>
-    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2">
-      <div>
-        <sl-input placeholder="{{defaultString .webhook.Name ""}}" label="Name" disabled>
-        </sl-input>
-      </div>
+    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between">
+      <div class="is-flex is-flex-direction-row is-align-items-end">
+      <sl-input placeholder="{{defaultString .webhook.Name ""}}" label="Name" disabled>
+      </sl-input>
       <sl-button
         class="ml-2"
         variant="primary"
@@ -49,15 +35,19 @@
       >
         Save
       </sl-button>
+      </div>
+      <div>
+      <sl-icon-button name="question-circle"  onclick="codeHelper.show()"></sl-icon-button>
+      {{template "cheatsheet.html" }}
+      </div>
     </div>
     <div class="m-2">
       <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
-      <div id="editor2"></div>
     </div>
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form hx-patch="/webhooks/{{.webhook.ID}}" hx-include="[name]" hx-target="#alertBoxSettings">
+    <form id="webhookConfig" hx-patch="/webhooks/{{.webhook.ID}}" hx-include="#webhookConfig [name]"  hx-vals="js:{editor: getEditorVal()}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -175,26 +165,20 @@
 </sl-tab-group>
 
 <script>
-  const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dracula' : 'default';
+   let evenDialog = null;
+   const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dracula' : 'default';
 
    const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
     lineNumbers: true,
     matchBrackets: true,
     autoCloseBrackets: true,
     mode: "shell",
-    can:true,
     indentUnit: 2,
+    theme: theme,
   });
 
   function getEditorVal() {
     return editor.getValue();
-  }
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    const form = document.querySelector("form");
-    const data = new FormData(form);
-    form.submit();
   }
 
   function addRow() {

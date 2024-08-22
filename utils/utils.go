@@ -118,7 +118,11 @@ func ToastHeader(message string) (string, string) {
 func DefaultHtml(input any, defaultValue string) template.HTML {
 	switch v := input.(type) {
 	case string:
-		return template.HTML(v)
+		if v == "" {
+			return template.HTML(defaultValue)
+		} else {
+			return template.HTML(v)
+		}
 	case sql.NullString:
 		if v.Valid && v.String != "" {
 			return template.HTML(v.String)
@@ -133,7 +137,11 @@ func DefaultHtml(input any, defaultValue string) template.HTML {
 func DefaultString(input any, defaultValue string) string {
 	switch v := input.(type) {
 	case string:
-		return v
+		if v == "" {
+			return defaultValue
+		} else {
+			return v
+		}
 	case sql.NullString:
 		if v.Valid && v.String != "" {
 			return v.String

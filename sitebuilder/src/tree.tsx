@@ -96,27 +96,6 @@ export class Tree {
     return true;
   }
 
-  insertBefore(sourceId: string, targetId: string): TreeNode {
-    console.log('[insertBefore] for target_id', targetId);
-    const parent = this.findClosestParent(targetId);
-    console.log("[insertBefore] parent", parent)
-    console.log(`[insertBefore] sourceid: ${sourceId} - target_id: ${targetId}`)
-    if (parent) {
-      const index = parent.children.findIndex((child) => child.id === targetId);
-      if (index !== -1) {
-        let sourceNode = this.search(sourceId);
-
-        if (sourceNode != null) {
-          this.deleteNode(sourceNode.id);
-        }
-
-        parent.children.splice(index, 0, sourceNode);
-      }
-    }
-
-    return this.root;
-  }
-
    // Method to move a node from source to destination within the tree
    moveNode(sourceId: string, destinationId: string): boolean {
     const sourceNode = this.search(sourceId);
@@ -150,13 +129,9 @@ export class Tree {
     if (parent) {
       let sourceNode = this.search(sourceId);
       let p2 = Object.assign({}, sourceNode);
-      console.log("p2 before", p2)
       if (sourceNode != null) {
         this.deleteNode(sourceNode.id);
       }
-      console.log("p2 after", p2)
-      // debugger;
-
       parent.children.push(p2);
     }
 
@@ -169,7 +144,6 @@ export class Tree {
 
     // If the current node has children, recursively render them
     if (node.children.length > 0) {
-      // console.log("props to spread", node.editableProps);
       return (
         <>
           {

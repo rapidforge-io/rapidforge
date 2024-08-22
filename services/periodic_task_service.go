@@ -42,14 +42,21 @@ func (s *Service) RunPeriodicPrograms() {
 				rflog.Error("Problem occurred during update nextRunAt", "err=", err)
 			}
 
-			defer s.store.InsertEvent(models.Event{
-				Status:         fmt.Sprint(res.ExitCode),
-				CreatedAt:      time.Now(),
-				EventType:      utils.PeriodicTaskEntity,
-				Logs:           sql.NullString{String: string(res.Output), Valid: true},
-				PeriodicTaskID: sql.NullInt64{Int64: task.PeriodicTask.ID, Valid: true},
-				BlockID:        task.Block.ID,
-			})
+			insertEvent := func() {
+				_, err := s.store.InsertEvent(models.Event{
+					Status:         fmt.Sprint(res.ExitCode),
+					EventType:      utils.PeriodicTaskEntity,
+					Logs:           sql.NullString{String: string(res.Output), Valid: true},
+					PeriodicTaskID: sql.NullInt64{Int64: task.PeriodicTask.ID, Valid: true},
+					BlockID:        task.Block.ID,
+				})
+
+				if err != nil {
+					rflog.Error("Problem occurred during insert event", "err=", err)
+				}
+			}
+
+			defer insertEvent()
 		}()
 	}
 }

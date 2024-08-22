@@ -9,10 +9,9 @@
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
   >
-  <script type="module" crossorigin src="/static/assets/app-BbDwtOjo.js"></script>
+  <script type="module" crossorigin src="/static/assets/app-CUpzNB82.js"></script>
   <link rel="stylesheet" crossorigin href="/static/assets/app-D4W1Yat8.css">
-
-        <script>
+<script>
         var pageData= {
              baseUrl: {{ .baseUrl }},
              path: {{ .page.Path }},
@@ -21,9 +20,8 @@
              title: {{defaultString .page.Name "Title"}},
              description: {{defaultString .page.Description "Description"}},
              pageId: {{ .page.ID }},
-         };
-        </script>
-        </head>
+             blockId: {{ .blockId }},
+         };</script>
   <body>
     <script>
       var pageData= {
@@ -34,6 +32,7 @@
         title: "Page Title",
         description: "Page Description",
         pageId: 1,
+        blockId:1,
         };
     </script>
     <div id="app"></div>

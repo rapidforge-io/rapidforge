@@ -1,0 +1,8 @@
+ .CodeMirror {
+    height: 600px;
+  }
+
+ /* Dark theme */
+@media (prefers-color-scheme: dark) {
+
+}

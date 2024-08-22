@@ -1,21 +1,43 @@
-  {{define "navbar.html"}}
-  <div id="sidebar" class="pt-2">
+{{define "navbar.html"}}
+  <div id="sidebar" class="pt-2 is-flex  is-justify-content-space-between">
+    <div>
     <sl-tree>
-  <sl-tree-item>
-    <a href="/blocks"> Blocks </a>
-  </sl-tree-item>
+      <sl-tree-item>
+        <a href="/blocks"> Blocks </a>
+      </sl-tree-item>
 
-  <sl-tree-item>
+        <sl-tree-item>
     Settings
-    <sl-tree-item><a href="/users">Users</a></sl-tree-item>
-    <sl-tree-item><a href="/info">Info</a></sl-tree-item>
-    <sl-tree-item><a href="/credentials">Credentials</a></sl-tree-item>
-  </sl-tree-item>
-  <sl-tree-item><div onclick="dialog.show()"> Feedback</div></sl-tree-item>
-</sl-tree>
+    <sl-tree-item>
+            <a href="/users">Users</a>
+          </sl-tree-item>
+          <sl-tree-item>
+            <a href="/info">Info</a>
+          </sl-tree-item>
+          <sl-tree-item>
+            <a href="/credentials">Credentials</a>
+          </sl-tree-item>
+        </sl-tree-item>
+        <sl-tree-item>
+          <div onclick="dialog.show()"> Feedback</div>
+        </sl-tree-item>
+      </sl-tree>
+    </div>
+    <div>
+     <sl-divider style="--width: 1px;"></sl-divider>
+    <div class="is-flex is-flex-direction-row m-2">
+      <div class="mr-2">
+      <sl-avatar shape="rounded"></sl-avatar>
+      </div>
+      <div class="is-flex is-flex-direction-column">
+      <p>{{.currentUser.Username}}</p>
+      <a href="/logout">Logout</a>
+      </div>
+    </div>
+    </div>
   </div>
-<script>
-  const dialog = document.getElementById('feedbackDialog');
-</script>
+  <script>
+    const dialog = document.getElementById('feedbackDialog');
+  </script>
 </html>
 {{end}}

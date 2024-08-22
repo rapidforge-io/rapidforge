@@ -3,12 +3,12 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/rapidforge-io/rapidforge/config"
-	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
 )
 
@@ -33,7 +33,10 @@ func (s *LoginService) Login(username, password string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	rflog.Info("login", "username", username, "password", password)
+	username = strings.ReplaceAll(username, "\n", "")
+	username = strings.ReplaceAll(username, " ", "")
+	password = strings.ReplaceAll(password, "\n", "")
+	password = strings.ReplaceAll(password, " ", "")
 
 	if s.attempts[username] >= config.Get().LoginAttemptCount {
 		return "", ErrTooManyAttempts

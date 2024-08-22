@@ -46,7 +46,6 @@
     }
 
     document.addEventListener("toastEvent", function(event) {
-        console.log("Custom Event Triggered!", event);
         var toast = document.getElementById("toastBox");
         toast.innerText = event.detail.message;
         toast.toast();

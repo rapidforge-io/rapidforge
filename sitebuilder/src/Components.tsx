@@ -19,6 +19,7 @@ import {
   SlIcon,
   SlSelect,
   SlOption,
+  SlRange,
 } from "@shoelace-style/shoelace/dist/react";
 
 
@@ -43,8 +44,8 @@ export const classMap = {
 // map of what is editable on right side of the screen
 export const editableProps = {
   CanvasDropZone: {
-    style: { backgroundColor: "white" },
-    classes:''
+    style: { backgroundColor: "white", width: "100%" },
+    classes:'',
   },
   GridComponent: {
     columns: 2,
@@ -86,8 +87,8 @@ export const editableProps = {
 // how Prop attributes should be rendered, keys should match editableProps map
 export const editablePropsRender = {
   CanvasDropZone: {
-    style: ColorPicker,
-    classes: ContentAligner
+    style: [ColorPicker, WidthAdjuster],
+    classes: ContentAligner,
   },
   ButtonComponent: {
     delete: DeleteButton,
@@ -166,16 +167,19 @@ function Size(handlePropOnChange, value) {
   );
 }
 
-function Number(handlePropOnChange, value) {
+function WidthAdjuster(handlePropOnChange, value) {
+  const key = Object.keys(value)[0]
+
   return (
-    <div className="is-flex is-flex-direction-column is-align-items-flex-start block">
-      <p>{capitalize('columns')}</p>
-      <SlInput
-        value={value}
-        size={"small"}
-        type="number"
-        onSlInput={(e) => handlePropOnChange('columns', e.currentTarget.value)}
-      />
+    <div className="is-flex is-flex-direction-column is-align-items-flex-start">
+      <SlRange
+       label={capitalize(key)}
+       value={value[key].replace("%", "")}
+       min={0}
+       max={100}
+       onSlChange={(e) => handlePropOnChange("style", { [key]: `${e.target.value}%` })}
+
+       />
     </div>
   );
 }
@@ -353,7 +357,7 @@ export function DeleteButton(_handlePropOnChange, _value) {
         return newTree;
       });
     } else {
-      console.log("Somethings wrong with delete ");
+      console.error("Somethings wrong with delete ");
     }
   };
 
@@ -421,7 +425,6 @@ export function ButtonTypePropEditor(handlePropOnChange, value) {
     </SlSelect>
   );
 }
-// ------ prop editor components end
 
 export function BaseDropZone(props) {
   const { children, id, componentName } = props;
@@ -455,7 +458,6 @@ export function CanvasDropZone(props) {
   };
 
   const updatedStyle = {...defaultStyle, ...style}
-
   const ids = canvasItems.root.children.map((x) => x.id);
 
   const handleSetActiveItem = (e) => {
@@ -969,7 +971,6 @@ export const OutsideClickHandler = ({ onOutsideClick, children }) => {
       const targetId = event.target.id;
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         if ((targetId!==null || targetId !== undefined) && targetId == "modal-confirm") {
-          console.log("here")
         } else {
           onOutsideClick();
         }

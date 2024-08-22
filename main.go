@@ -2,7 +2,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"embed"
+	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 	"time"
@@ -36,13 +39,25 @@ var staticFS embed.FS
 // [x] Add config params to banner
 // [x] Add cache for non changed pages content
 // [x] Move FE libs to static serving
-// [ ] Inject oauth
-// [ ] Change returning type of webhooks
-// [ ] Check Pages functionality
-// [ ] Write default value for webhook editor
-// [ ] authentication, and displaying user name in menu
-// [ ] pagination
-// [ ] dockerfile
+// [x] Inject oauth
+// [x] Change returning type of webhooks
+// [x] Show details button opens feedback modal
+// [x] Write default value for webhook editor
+// [x] Remove events older than 1 week
+// [x] Dev mode and production mode
+// [x] Check Pages functionality
+// [x] authentication, and displaying user name in menu
+// [x] dockerfile
+// [x] Fix UI for webhooks
+// [x] Fix Event payload for periodic tasks (with curl)
+// [x] JSON viewer night view is not working
+// [x] Event listing has error
+// [x] remove horizontal scroll
+// [x] add favicon
+// [x] check warning in user screen
+// [x] remove console log in periodic tasks
+// [x] remove console log pages
+// [x] check form dark scheme
 
 // ------------------
 // [ ] PKCE flow
@@ -50,6 +65,7 @@ var staticFS embed.FS
 // [ ] Add pagination for event lists
 // [ ] Add authentication feature to webhooks
 // [ ] Should we add status to periodic tasks?
+// [ ] pagination
 
 // Thinking
 // - allow user to add timeout for end points
@@ -70,6 +86,7 @@ func main() {
 
 	dbCon := database.GetDbConn("")
 	dbCon.RunMigrations()
+	database.SetupKV()
 	store := models.NewModel(dbCon)
 	authSecret, _ := store.GetConfigByKey("authSecretKey")
 
@@ -95,7 +112,7 @@ func main() {
 		"Port":          config.Get().Port,
 		"Domain":        config.Get().Domain,
 		"AdminUserName": "******",
-		"AminPassword":  "******",
+		"AdminPassword": "******",
 	}
 
 	// this will be populated only for once in initial setup
@@ -106,19 +123,32 @@ func main() {
 
 	utils.PrintBanner(viewsFS, bannerData)
 
+	// to disable gin
+	// gin.DefaultWriter = io.Discard
 	r := gin.Default()
+
+	if config.Get().Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("cron", utils.IsCronValid)
 	}
 
-	r.Use(func(c *gin.Context) {
-		c.Set("store", store)
-		c.Next()
-	})
+	if gin.Mode() == gin.ReleaseMode {
+		allowedOrigins := fmt.Sprintf("^https://*.%s:%s$", config.Get().Domain, config.Get().Port)
 
-	// Allow all CORS in development environment
-	if gin.Mode() == gin.DebugMode {
+		r.Use(cors.New(cors.Config{
+			AllowOrigins:     []string{allowedOrigins},
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+			ExposeHeaders:    []string{"Content-Length"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}))
+	} else {
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     []string{"*"},
 			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -129,16 +159,47 @@ func main() {
 		}))
 	}
 	r.HTMLRender = createMyRender(viewsFS)
-	gin.SetMode(gin.DebugMode)
 
 	services.SetupService(store)
 	setupRoutes(r, store, staticFS)
 	go startTokenRefreshJob(store)
-	err = r.Run(config.Get().Port)
+	go startEventCleanupJob(store)
+
+	if config.Get().PemData != "" {
+
+		tslCert := config.Get().TLSCert()
+
+		if tslCert == nil {
+			rflog.Error("Failed to load TLS certificate", "err:", err)
+			os.Exit(1)
+		}
+
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{*tslCert},
+		}
+		server := &http.Server{
+			Addr:      config.Get().Port,
+			Handler:   r,
+			TLSConfig: tlsConfig,
+		}
+		server.ListenAndServeTLS("", "")
+
+	} else {
+		err = r.Run(config.Get().Port)
+	}
 
 	if err != nil {
 		rflog.Error("Failed to start server", "err:", err)
 		os.Exit(1)
+	}
+}
+
+func startEventCleanupJob(store *models.Store) {
+	for range time.Tick(24 * time.Hour) {
+		_, err := store.RemoveEventsOlderThanAWeek()
+		if err != nil {
+			rflog.Error("Failed to remove events older than a week", "err:", err)
+		}
 	}
 }
 

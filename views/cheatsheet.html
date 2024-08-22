@@ -1,0 +1,12 @@
+{{define "cheatsheet.html"}}
+ <sl-dialog id="codeHelper" label="Cheat Sheet">
+   Special Environment Variables:
+   <sl-divider></sl-divider>
+   <p> - <code>PAYLOAD_DATA</code> = Payload data for the webhook, whole payload will be assigned to text</p>
+   <p> - <code>HEADER_{HEADER_NAME}</code> = Header name e.g. HEADER_USER_AGENT</p>
+   <p> - <code>CRED_{CREDENTIAL_NAME}</code> = Credential name e.g. CRED_GITHUB_OAUTH_TOKEN</p>
+</sl-dialog>
+<script>
+  const codeHelper = document.getElementById("codeHelper");
+</script>
+{{end}}

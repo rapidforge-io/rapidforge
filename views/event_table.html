@@ -6,6 +6,7 @@
       <div class="column">Created At</div>
       <div class="column">Details</div>
     </div>
+    <div style="overflow-y: auto; height: 700px;">
     {{range .events}}
     <div class="columns is-mobile">
       <div class="column">
@@ -15,18 +16,19 @@
       <div class="column">{{.EventType}}</div>
       <div class="column">{{.CreatedAt | formatDateTime}}</div>
       <div class="column">
-        <sl-button onclick="dialog.show()" hx-get="/events/details/{{.ID}}" hx-target="#payload" hx-trigger="click">Show Details</sl-button>
+        <sl-button onclick="eventDialog.show()" hx-get="/events/details/{{.ID}}" hx-target="#payload" hx-trigger="click">Show Details</sl-button>
       </div>
-      <sl-dialog label="Details" class="dialog-overview" style="--width: 50vw;">
+      <sl-dialog label="Details" id="eventDetails" class="dialog-overview" style="--width: 50vw;">
         <div id="payload"></div>
-        <sl-button slot="footer" variant="primary"  onclick="dialog.hide()">Close</sl-button>
+        <sl-button slot="footer" variant="primary"  onclick="eventDialog.hide()">Close</sl-button>
       </sl-dialog>
     </div>
     {{end}}
+    </div>
   </div>
 </div>
 
 <script>
-  const dialog = document.querySelector('.dialog-overview');
+    eventDialog = document.getElementById('eventDetails');
 </script>
 

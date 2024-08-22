@@ -106,6 +106,7 @@ func credentialsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "credentials", gin.H{
 			"callbackUrl": config.CredentialCallbackUrl(),
+			"currentUser": getCurrentUser(c),
 		})
 	}
 }
@@ -241,9 +242,6 @@ func oAuth2CallbackHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		token, err := oauthConfig.Exchange(context.Background(), code)
-		// token.ex
-		rflog.Info("-----", "token", token)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to exchange token"})
 			return
@@ -285,8 +283,6 @@ func feedbackHandler() gin.HandlerFunc {
 		if err != nil {
 			rflog.Error("Error marshalling message", "err", err)
 		}
-
-		rflog.Info("feedback", "feedback", string(messageBytes))
 
 		resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(messageBytes))
 		if err != nil || resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {

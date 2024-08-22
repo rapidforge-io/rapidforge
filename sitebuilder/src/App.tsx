@@ -114,7 +114,6 @@ export const CanvasItemsProvider: React.FC = ({ children }) => {
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    console.log("drag end event", event);
     const dropZone = over?.data?.current.dropZone || false;
     const overData = over?.data?.current || {};
     const activeData = active?.data?.current || {};
@@ -124,7 +123,6 @@ export const CanvasItemsProvider: React.FC = ({ children }) => {
       dropZone === true &&
       activeData.currentParent !== over.id
     ) {
-      console.log("moving item");
       // somehow drop event ends up like this
       const activeNode = canvasItems.search(active.id);
       const collidingChild = activeNode.children.find(
@@ -142,7 +140,6 @@ export const CanvasItemsProvider: React.FC = ({ children }) => {
       });
       //  dropping item to canvas
     } else if (dropZone === true && activeData.currentParent !== over.id) {
-      console.log("adding item to canvas...");
       const id = `${uuid()}-${activeData.componentName}`;
       let obj = { ...editableProps[activeData.componentName] };
       let tmp = new TreeNode(id, activeData.componentName, false, obj || {});
@@ -362,7 +359,7 @@ function wrapWithHTML(htmlContent, pageMetadata) {
           width: 100%;
           margin: 0 auto;
           text-align: center;
-          border: 2px dashed #ccc;
+          align-items: center;
           margin-bottom: 50px;
           margin-top: 10px;
           margin: 5%;
@@ -379,6 +376,7 @@ function wrapWithHTML(htmlContent, pageMetadata) {
         body {
           margin: 0;
           display: flex;
+          justify-content: center;
           padding-top: 64px;
         }
 
@@ -475,7 +473,7 @@ const Header = () => {
           <SlIcon slot="prefix" name="easel3"></SlIcon>
           Preview
         </SlButton>
-        <SlButton
+        {import.meta.env.MODE == 'development' && <SlButton
           size="small"
           onClick={() => {
             console.log("canvasItems", canvasItems);
@@ -483,7 +481,7 @@ const Header = () => {
         >
           {" "}
           Debug{" "}
-        </SlButton>
+        </SlButton>}
         <SlButton
           size="small"
           onClick={async () => {
@@ -506,7 +504,6 @@ const Header = () => {
               canvasItems: canvasItems,
               htmlOutput: htmlOutput,
             };
-            console.log("pageData", pageData);
 
             try {
               const response = await fetch(
@@ -541,10 +538,6 @@ function LayoutEditor() {
   // don't allow dropzone to be moved
   const Tree = () => {
     const { canvasItems } = useCanvasItems();
-
-    function handleDragEnd(e) {
-      console.log("layout drop", e);
-    }
 
     const TreeNodeComponent = ({ node }) => {
       const [open, setOpen] = useState(true);
@@ -582,7 +575,7 @@ function LayoutEditor() {
     const sensors = useSensors(pointerSensor);
 
     return (
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors}>
         <ul className="list-unstyled">
           <TreeNodeComponent node={canvasItems.root} />
         </ul>
@@ -646,7 +639,6 @@ function PropEditor() {
     const canvasItem = canvasItems.search(activeItem?.id);
 
     if (propEntries === undefined) {
-      console.log("undefined props");
       return <></>;
     }
 

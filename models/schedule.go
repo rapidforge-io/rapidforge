@@ -21,7 +21,8 @@ func (s *Store) GetDuePeriodicTasks() ([]DueTasksTaskDetail, error) {
         pt.timezone AS "periodic_task.timezone",
         pt.env_variables AS "periodic_task.env_variables",
         pt.block_id AS "periodic_task.block_id",
-        b.env_variables as "block.env_variables"
+        b.env_variables as "block.env_variables",
+        b.id as "block.id"
     FROM
         periodic_tasks pt
         JOIN programs p ON pt.program_id = p.id

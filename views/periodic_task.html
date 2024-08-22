@@ -1,19 +1,10 @@
 
 {{ define "title" }}{{defaultString .periodicTask.Name "periodicTask"}}{{end }} {{define "content.html"}}
 <link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
+<link rel="stylesheet" href="/static/css/dracula.min.css">
+<link rel="stylesheet" href="/static/css/codemirror.css">
 <script src="/static/javascript/codemirror.6.65.7.js"></script>
 <script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
-
-<style>
-  .CodeMirror {
-    border: 1px solid #eee;
-    height: 120px;
-  }
-
-  .invalid {
-           color: red;
-   }
-</style>
 
 
 <div class="is-flex is-align-items-baseline">
@@ -29,21 +20,25 @@
 
   <sl-tab-panel name="editor">
     <div id="alertBox"></div>
-    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2">
-      <div>
+    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between">
+      <div class="is-flex is-flex-direction-row is-align-items-end">
         <sl-input placeholder="{{defaultString .periodicTask.Name ""}}" label="Name" disabled>
         </sl-input>
+        <sl-button
+          class="ml-2"
+          variant="primary"
+          hx-patch="/periodic_tasks/{{.periodicTask.ID}}"
+          hx-include="[name]"
+          hx-target="#alertBox"
+          hx-vals="js:{editor: getEditorVal()}"
+        >
+          Save
+        </sl-button>
       </div>
-      <sl-button
-        class="ml-2"
-        variant="primary"
-        hx-patch="/periodic_tasks/{{.periodicTask.ID}}"
-        hx-include="[name]"
-        hx-target="#alertBox"
-        hx-vals="js:{editor: getEditorVal()}"
-      >
-        Save
-      </sl-button>
+      <div>
+      <sl-icon-button name="question-circle"  onclick="codeHelper.show()"></sl-icon-button>
+      {{template "cheatsheet.html" }}
+      </div>
     </div>
     <div class="m-2">
       <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
@@ -51,7 +46,7 @@
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="[name]" hx-target="#alertBoxSettings">
+    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal()}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -115,24 +110,18 @@
 </sl-tab-group>
 
 <script>
+  const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dracula' : 'default';
   const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
     lineNumbers: true,
     matchBrackets: true,
     autoCloseBrackets: true,
     mode: "shell",
     indentUnit: 2,
-    theme: "default",
+    theme: theme,
   });
 
   function getEditorVal() {
     return editor.getValue();
-  }
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    const form = document.querySelector("form");
-    const data = new FormData(form);
-    form.submit();
   }
 
   function addRow() {
@@ -185,7 +174,6 @@
   const saveButton = document.getElementById("saveButton");
   cronInput.addEventListener('sl-input', function() {
   const cronValue = cronInput.value;
-    console.log("valid", isValidCronExpression(cronValue))
                 if (isValidCronExpression(cronValue)) {
                     cronInput.setAttribute('label', 'Cron expression is valid');
                     cronInput.classList.remove('invalid');

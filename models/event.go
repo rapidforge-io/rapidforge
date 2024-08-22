@@ -21,10 +21,19 @@ type Event struct {
 }
 
 func (s *Store) InsertEvent(event Event) (sql.Result, error) {
-	query := `INSERT INTO events (status, created_at, event_type, args, logs, webhook_id, periodic_task_id, block_id)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	query := ""
+	var result sql.Result
+	var err error
+	if event.EventType == utils.PeriodicTaskEntity {
+		query = `INSERT INTO events (status, event_type, args, logs, periodic_task_id, block_id)
+                 VALUES (?, ?, ?, ?, ?, ?)`
+		result, err = s.db.Exec(query, event.Status, event.EventType, event.Args, event.Logs, event.PeriodicTaskID.Int64, event.BlockID)
+	} else {
+		query = `INSERT INTO events (status, event_type, args, logs, webhook_id, block_id)
+		         VALUES (?, ?, ?, ?, ?, ?)`
+		result, err = s.db.Exec(query, event.Status, event.EventType, event.Args, event.Logs, event.WebhookID.Int64, event.BlockID)
+	}
 
-	result, err := s.db.Exec(query, event.Status, event.CreatedAt, event.EventType, event.Args, event.Logs, event.WebhookID.Int64, event.PeriodicTaskID, event.BlockID)
 	return result, err
 }
 
@@ -83,4 +92,20 @@ func (s *Store) FetchEventByID(id int64) (*Event, error) {
 		return nil, err
 	}
 	return &events, nil
+}
+
+func (s *Store) RemoveEventsOlderThanAWeek() (sql.Result, error) {
+	// Calculate the time threshold for one week ago
+	oneWeekAgo := time.Now().AddDate(0, 0, -7)
+
+	// Prepare the SQL query to delete events older than one week
+	query := `DELETE FROM events WHERE created_at < ?`
+
+	// Execute the query
+	result, err := s.db.Exec(query, oneWeekAgo)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

@@ -125,6 +125,42 @@ func (w *Webhook) GetExitHttpPair() map[int]int {
 	return envVars
 }
 
+func (w *Webhook) GetResponseHeaders() map[string]any {
+	envVars := map[string]any{}
+
+	if w.ResponseHeaders.String == "" {
+		return envVars
+	}
+
+	pairs := strings.Split(w.ResponseHeaders.String, ";")
+
+	if len(pairs) == 0 {
+		return envVars
+	}
+
+	for _, pair := range pairs {
+		parts := strings.Split(pair, "=")
+		key := parts[0]
+		val := parts[1]
+
+		envVars[key] = val
+	}
+
+	return envVars
+}
+
+func (w *Webhook) GetCors() []string {
+	cors := []string{}
+
+	if w.Cors.String == "" || w.Cors.String == "*" {
+		return append(cors, "*")
+	}
+
+	cors = strings.Split(w.Cors.String, "\n")
+
+	return cors
+}
+
 // Custom type to handle JSON unmarshalling
 type JSONRawString map[string]any
 
@@ -176,8 +212,8 @@ type PeriodicTask struct {
 	Description  sql.NullString `json:"description" db:"description"`
 	Active       bool           `json:"active" db:"active"`
 	EnvVariables sql.NullString `json:"envVariables" db:"env_variables"`
-	BlockID      int            `json:"blockId" db:"block_id"`
-	ProgramID    int            `json:"programId" db:"program_id"`
+	BlockID      int64          `json:"blockId" db:"block_id"`
+	ProgramID    int64          `json:"programId" db:"program_id"`
 	Timezone     string         `json:"timezone" db:"timezone"`
 	Cron         string         `json:"cron" db:"cron"`
 	NextRunAt    time.Time      `json:"nextRunAt" db:"next_run_at"`
@@ -391,9 +427,9 @@ func (s *Store) InsertWebhookWithAutoName(blockID int64) (int64, error) {
 	newWebhookName := fmt.Sprintf("webhook - %d", maxID+1)
 
 	// Create webhook
-	webhookQuery := `INSERT INTO webhooks (name, block_id, program_id, path) VALUES (?, ?, ?, ?)`
-	uniquePath := fmt.Sprintf("/webhook/%d-%d", blockID, time.Now().UnixNano())
-	result, err = tx.Exec(webhookQuery, newWebhookName, blockID, programID, uniquePath)
+	webhookQuery := `INSERT INTO webhooks (name, block_id, program_id, path, exit_http_pair) VALUES (?, ?, ?, ?, ?)`
+	uniquePath := fmt.Sprintf("%d-%d", blockID, time.Now().UnixNano())
+	result, err = tx.Exec(webhookQuery, newWebhookName, blockID, programID, uniquePath, "0=200")
 	if err != nil {
 		tx.Rollback()
 		rflog.Error("failed to insert webhook", err)
@@ -638,7 +674,7 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 	_, err = tx.Exec(query, formData.FileContent, webhookID)
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to update file content:", err)
+		rflog.Error("failed to update file content:", "err", err)
 		return err
 	}
 	query = ` UPDATE webhooks SET env_variables = ?,
@@ -655,7 +691,7 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to update webhook:", err)
+		rflog.Error("failed to update webhook:", "err", err)
 		return err
 	}
 
@@ -688,7 +724,7 @@ func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int64, formData Periodic
 	_, err = tx.Exec(query, formData.FileContent, periodicTaskID)
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to update file content:", err)
+		rflog.Error("failed to update file content:", "err", err)
 		return err
 	}
 	query = `UPDATE periodic_tasks SET env_variables = ?,
@@ -702,7 +738,7 @@ func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int64, formData Periodic
 
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to update periodic tasks:", err)
+		rflog.Error("failed to update periodic tasks:", "err", err)
 		return err
 	}
 
@@ -821,7 +857,7 @@ func (s *Store) SelectPageById(id int64) (*Page, error) {
 
 func (s *Store) SelectPageByPath(path string) (*Page, error) {
 	var page Page
-	query := `SELECT path, description, active, html_output FROM pages WHERE path = ? AND active = 1`
+	query := `SELECT path, description, active, html_output, updated_at FROM pages WHERE path = ? AND active = 1`
 	err := s.db.Get(&page, query, path)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -893,7 +929,7 @@ func (s *Store) DeleteBlockById(id int64) error {
 	_, err = tx.Exec(query, id)
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to delete block:", err)
+		rflog.Error("failed to delete block:", "err", err)
 		return err
 	}
 
@@ -917,7 +953,7 @@ func (s *Store) DeleteWebhookById(id int64) error {
 	_, err = tx.Exec(query, id)
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to delete webhook:", err)
+		rflog.Error("failed to delete webhook:", "err", err)
 		return err
 	}
 
@@ -940,7 +976,7 @@ func (s *Store) DeletePageById(id int64) error {
 	_, err = tx.Exec(query, id)
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to delete page:", err)
+		rflog.Error("failed to delete page:", "err", err)
 		return err
 	}
 
@@ -964,7 +1000,7 @@ func (s *Store) DeletePeriodicTaskById(id int64) error {
 	_, err = tx.Exec(query, id)
 	if err != nil {
 		tx.Rollback()
-		rflog.Info("failed to delete periodic task:", err)
+		rflog.Error("failed to delete periodic task:", "err", err)
 		return err
 	}
 

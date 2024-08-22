@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,36 @@ import (
 	"github.com/rapidforge-io/rapidforge/utils"
 )
 
+func getCurrentUser(c *gin.Context) *models.User {
+	user, exists := c.Get("user")
+	if !exists {
+		return nil
+	}
+	return user.(*models.User)
+}
+
+func isOriginAllowed(origin string, allowedOrigins []string) bool {
+	for _, allowedOrigin := range allowedOrigins {
+		// If the allowed origin is '*', accept any origin
+		if allowedOrigin == "*" {
+			return true
+		}
+
+		// Convert wildcard patterns to regex, e.g., '*.example.com' -> '^https?://.*\.example\.com$'
+		regexPattern := "^" + strings.Replace(regexp.QuoteMeta(allowedOrigin), `\*`, `.*`, -1) + "$"
+		match, err := regexp.MatchString(regexPattern, origin)
+		if err != nil {
+			rflog.Error("Regex error:", "err", err)
+			return false
+		}
+
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
 func webhookHandlers(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		httpVerb := c.Request.Method
@@ -34,6 +65,13 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 		if errors.Is(err, sql.ErrNoRows) {
 			rflog.Error("failed to get webhook", err, "path", path)
 			c.Status(http.StatusNotFound)
+			return
+		}
+
+		origin := c.GetHeader("Origin")
+
+		if origin != "" && !isOriginAllowed(origin, webhook.Webhook.GetCors()) {
+			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
 
@@ -74,7 +112,7 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			"headers": map[string]any{},
 		}
 
-		// injecting headers
+		// injecting request headers
 		for key, values := range headers {
 			strings.Join(values, ",")
 			for _, value := range values {
@@ -94,16 +132,22 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		args, _ := json.Marshal(eventArgs)
 
-		defer store.InsertEvent(models.Event{
-			Status:         fmt.Sprint(res.ExitCode),
-			CreatedAt:      time.Now(),
-			EventType:      utils.WebhookEntity,
-			Args:           sql.NullString{String: string(args), Valid: true},
-			Logs:           sql.NullString{String: string(res.Error), Valid: true},
-			WebhookID:      sql.NullInt64{Int64: webhook.Webhook.ID, Valid: true},
-			PeriodicTaskID: sql.NullInt64{},
-			BlockID:        webhook.Block.ID,
-		})
+		insertEvent := func() {
+			_, err := store.InsertEvent(models.Event{
+				Status:    fmt.Sprint(res.ExitCode),
+				EventType: utils.WebhookEntity,
+				Args:      sql.NullString{String: string(args), Valid: true},
+				Logs:      sql.NullString{String: string(res.Error), Valid: true},
+				WebhookID: sql.NullInt64{Int64: webhook.Webhook.ID, Valid: true},
+				BlockID:   webhook.Block.ID,
+			})
+
+			if err != nil {
+				rflog.Error("Error inserting event for webhook", "err", err)
+			}
+		}
+
+		defer insertEvent()
 
 		httpCode, ok := exitHttpPair[res.ExitCode]
 
@@ -116,7 +160,14 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			c.Status(http.StatusInternalServerError)
 		}
 
-		c.JSON(httpCode, res)
+		responseHeaders := webhook.Webhook.GetResponseHeaders()
+
+		if _, ok := responseHeaders["Content-Type"]; !ok {
+			responseHeaders["Content-Type"] = "text/html; charset=utf-8"
+		}
+
+		contentType := responseHeaders["Content-Type"].(string)
+		c.Data(httpCode, contentType, []byte(res.Output))
 	}
 }
 
@@ -126,12 +177,20 @@ func loginHandler() gin.HandlerFunc {
 	}
 }
 
+func logoutHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.SetCookie("token", "", -1, "/", "", false, true)
+		c.Redirect(http.StatusFound, "/")
+	}
+}
+
 func infoHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.HTML(http.StatusOK, "info", gin.H{
-			"version": buildVersion,
-			"package": packageVersion,
-			"license": config.License,
+			"version":     buildVersion,
+			"package":     packageVersion,
+			"license":     config.License,
+			"currentUser": getCurrentUser(c),
 		})
 	}
 }
@@ -167,7 +226,13 @@ func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
 
 		// Set the SameSite attribute for cookies to mitigate the risk of Cross-Site Request Forgery (CSRF) attacks.
 		// c.SetSameSite(http.SameSiteStrictMode)
-		c.SetCookie("token", token, 3600, "/", "", false, true)
+
+		if config.Get().Env == "production" {
+			c.SetCookie("token", token, 3600, "/", "", true, true)
+		} else {
+			c.SetCookie("token", token, 3600, "/", "", false, true)
+		}
+
 		c.Header("HX-Redirect", "/blocks")
 		c.Status(http.StatusFound)
 	}
@@ -217,7 +282,8 @@ func usersHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		c.HTML(http.StatusOK, "users", gin.H{
-			"Users": users,
+			"Users":       users,
+			"currentUser": getCurrentUser(c),
 		})
 	}
 }
@@ -249,7 +315,6 @@ func updateUserHandler(store *models.Store) gin.HandlerFunc {
 		user.PasswordHash = userInput.Password
 		user.Role = userInput.Role
 
-		rflog.Info("user", "user", user, "userInput", userInput)
 		err = store.UpdateUser(&user)
 
 		if err != nil {
@@ -342,21 +407,41 @@ func eventsDetailHandler(store *models.Store) gin.HandlerFunc {
 
 		tmpl := `<div class="container">
 		            <div id="payload">
-                      <sl-textarea label="Logs" disabled value={{defaultString .Logs "zzzzzz"}}></sl-textarea>
-                      <sl-textarea label="Args" disabled value={{defaultString .Args "&nbsp;"}}></sl-textarea>
+					  <sl-textarea style="font-family: monospace; width: 100%;" label="Logs" readonly value={{.Logs}}></sl-textarea>
+                      <sl-divider></sl-divider>
+					  <div style="font-family: monospace; font-size:1.2em;">Args</div>
+                      <div id="args"></div>
 		        	</div>
-		        </div>`
+		        </div>
+               <script>
+                  new JsonViewer({
+                    value: JSON.parse({{.Args}}),
+					displayDataTypes: false,
+					theme: 'auto',
+                    }).render('#args')
+                </script>`
 
-		outputHtml, err := utils.GenerateHTML(tmpl, event)
+		logs := `""`
+		if event.Logs.Valid && event.Logs.String != "" {
+			logs = event.Logs.String
+		}
+
+		args := `""`
+		if event.Args.Valid && event.Args.String != "" {
+			args = event.Args.String
+		}
+
+		data := map[string]string{
+			"Logs": logs,
+			"Args": args,
+		}
+
+		outputHtml, err := utils.GenerateHTML(tmpl, data)
 
 		if err != nil {
 			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
 			return
 		}
-
-		rflog.Info("|---|", "event logs", event.Logs)
-		rflog.Info("|---|", "event args", event.Args)
-		rflog.Info("event details", "event", outputHtml)
 
 		c.String(http.StatusOK, outputHtml)
 	}
@@ -424,7 +509,6 @@ func renameHandler(store *models.Store) gin.HandlerFunc {
 			c.Header(key, value)
 			return
 		}
-		rflog.Info("Block", "updatedName", updatedField)
 		c.Header("Content-Type", "text/html")
 		c.String(200, htmlContent)
 	}
@@ -561,6 +645,7 @@ func getBlockHandler(store *models.Store) gin.HandlerFunc {
 			"Type":                    utils.BlockEntity,
 			"webhooks":                webhookMaps,
 			"editableComponentParams": editableComponentArgs,
+			"currentUser":             getCurrentUser(c),
 		})
 	}
 }
@@ -783,7 +868,9 @@ func createWebhookHandler(store *models.Store) gin.HandlerFunc {
 }
 
 func blocksBaseHandler(c *gin.Context) {
-	c.HTML(http.StatusOK, "blocks_base", gin.H{})
+	c.HTML(http.StatusOK, "blocks_base", gin.H{
+		"currentUser": getCurrentUser(c),
+	})
 }
 
 func updateWebhookHandler(store *models.Store) gin.HandlerFunc {
@@ -858,6 +945,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			rflog.Error("failed to get webhook", err)
 			return
 		}
+
 		editableComponentArgs := utils.ToMap(webhookWithDetails.Webhook)
 		editableComponentArgs["Type"] = utils.WebhookEntity
 		editableComponentArgs["Field"] = webhookWithDetails.Webhook.Path
@@ -866,8 +954,9 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			"webhook":                 webhookWithDetails.Webhook,
 			"Type":                    utils.WebhookEntity,
 			"httpExitPair":            webhookWithDetails.Webhook.GetExitHttpPair(),
-			"fileContent":             utils.DefaultHtml(webhookWithDetails.File.Content, "echo 'Hello World!'"),
+			"fileContent":             utils.DefaultString(webhookWithDetails.File.Content, config.DefaultScript),
 			"editableComponentParams": editableComponentArgs,
+			"currentUser":             getCurrentUser(c),
 		})
 	}
 }
@@ -889,6 +978,7 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 			"Type":                    utils.PeriodicTaskEntity,
 			"fileContent":             utils.DefaultString(periodicTaskDetails.File.Content, "echo 'Hello World!'"),
 			"editableComponentParams": editableComponentArgs,
+			"currentUser":             getCurrentUser(c),
 		})
 	}
 }
@@ -1012,10 +1102,11 @@ func pagesHandler(store *models.Store) gin.HandlerFunc {
 				"error": err.Error(),
 			})
 		}
-
 		c.HTML(http.StatusOK, "page", gin.H{
-			"page":    page,
-			"baseUrl": config.BaseUrl(),
+			"page":        page,
+			"baseUrl":     config.BaseUrl(),
+			"blockId":     page.BlockID,
+			"currentUser": getCurrentUser(c),
 		})
 	}
 }
