@@ -10,8 +10,8 @@ version: 2
 
 release:
   github:
-    owner: eldemcan
-    name:  rapidforge-io/bin
+    owner: rapidforge-io
+    name:  bin
 
 before:
   hooks:
