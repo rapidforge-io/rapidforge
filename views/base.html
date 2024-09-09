@@ -2,62 +2,100 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ block "title" . }}RapidForge{{ end }}</title>
-    <link rel="stylesheet" href="/static/css/main.css" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>
+      {{ block "title" . }}RapidForge{{ end }}
+    </title>
+    <link rel="stylesheet" href="/static/css/main.css"/>
     <link rel="icon" type="image/x-icon" href="/static/img/rf.svg">
-  <link
+    <link
     rel="stylesheet"
-    media="(prefers-color-scheme:light)"
+    id="light-theme"
     href="/static/css/shoelace.2.16.0.light.css"
-  />
-  <link
+/>
+    <link
     rel="stylesheet"
-    media="(prefers-color-scheme:dark)"
+    id="dark-theme"
     href="/static/css/shoelace.2.16.0.dark.css"
     onload="document.documentElement.classList.add('sl-theme-dark');"
-  />
+/>
     <link rel="stylesheet" href="/static/css/bulma.1.0.0.min.css">
 
     <script type="module" src="/static/javascript/shoelace-autoloader.2.16.0.js"></script>
     <script type="module" src="/static/javascript/components/alert/alert.js"></script>
   </head>
   <body hx-ext="response-targets">
-   <sl-dialog label="Feedback" id="feedbackDialog">
-    <div id="feedbackResponse" class="mb-2"></div>
-     <sl-textarea name="feedback" id="feedbackComment" help-text="Please tell us what you think. Let us know if you encounter with any issues"> </sl-textarea>
-    <sl-button slot="footer" variant="primary"
+    <sl-dialog label="Feedback" id="feedbackDialog">
+      <div id="feedbackResponse" class="mb-2"></div>
+      <sl-textarea name="feedback" id="feedbackComment" help-text="Please tell us what you think. Let us know if you encounter with any issues"></sl-textarea>
+      <sl-button slot="footer" variant="primary"
         hx-include="#feedbackComment"
         hx-target="#feedbackResponse"
         hx-post="/feedback">
         Send
    </sl-dialog>
 
-    {{ template "navbar.html" . }}
-    <div id="content" class="content">
-      {{ template "content.html" . }}
-    </div>
+      {{ template "navbar.html" . }}
+      <div id="content" class="content">
+        {{ template "content.html" . }}
+      </div>
 
-  <script src="/static/javascript/jsonviewer.3.4.1.js"></script>
-  <script src="/static/javascript/htmx.2.0.1.js"></script>
-  <script src="/static/javascript/htmx-response-targets.2.0.0.js"></script>
-  </body>
-  <script>
-  function reloadEntities() {
-     // if the user is on the blocks page, we will trigger div load event
-    if (window.location.href.endsWith("blocks")) {
-      const blockList = document.getElementById('blockList');
-      if (blockList) {
-        htmx.ajax('GET', '/blocks/list',  { target: blockList });
+      <script src="/static/javascript/jsonviewer.3.4.1.js"></script>
+      <script src="/static/javascript/htmx.2.0.1.js"></script>
+      <script src="/static/javascript/htmx-response-targets.2.0.0.js"></script>
+    </body>
+
+    <script src="/static/javascript/theme.js"></script>
+    <script>
+      themeSwitch.addEventListener('sl-change', function (event) {
+      const value = event.target.value;
+       setTheme(value);
+       document.getElementById('sidebar').offsetHeight;
+      });
+
+      // On page load, apply the saved theme or default to light
+      window.addEventListener('load', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+      });
+
+      function reloadEntities() {
+        // if the user is on the blocks page, we will trigger div load event
+        if (window.location.href.endsWith("blocks")) {
+          const blockList = document.getElementById('blockList');
+          if (blockList) {
+            htmx.ajax('GET', '/blocks/list', {target: blockList});
+          }
+        } else {
+          const radioGroup = document.getElementById('entityRadioGroup');
+          const selectedButton = radioGroup.querySelector('sl-radio-button[checked]');
+          if (selectedButton) {
+            selectedButton.click();
+          }
+        }
       }
-    } else {
-      const radioGroup = document.getElementById('entityRadioGroup');
-      const selectedButton = radioGroup.querySelector('sl-radio-button[checked]');
-      if (selectedButton) {
-        selectedButton.click();
+
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
       }
-    }
-  }
-</script>
-</html>
+
+
+      function autoLogout(expiryTime) {
+          const time = Math.floor(Date.now()/ 1000);
+          const expirity = (expiryTime - time) * 1000;
+          setTimeout(function() {
+              alert('Your session has expired. Please log in again.');
+              window.location.href = '/login';
+          }, expirity);
+      }
+
+      const expTime = getCookie('exp');
+      if (expTime) {
+          autoLogout(expTime);
+      }
+
+    </script>
+  </html>

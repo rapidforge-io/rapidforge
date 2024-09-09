@@ -2,6 +2,7 @@
 <div>
     <div>
          <sl-alert  id="toastBox" variant="primary"> </sl-alert>
+         <div id="renameErr"></div>
         <div
             id="title-container"
             class="is-flex is-hidden is-flex-direction-row is-align-items-baseline"
@@ -28,6 +29,7 @@
                 id="saveNameButton"
                 hx-patch="/rename/{{index . "Type"}}/{{index . "ID"}}"
                 hx-target="#blockTitle"
+                hx-target-error="#renameErr"
                 hx-vals='js:{val: document.getElementById("titleInput").value, type: "{{index . "Type"}}"}'
             >
                 <sl-icon name="floppy2"></sl-icon></sl-button>

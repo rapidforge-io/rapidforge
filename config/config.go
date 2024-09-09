@@ -18,6 +18,7 @@ type Config struct {
 	Env               string `env:"RF_ENV,default=production"`
 	DatabaseUrl       string `env:"RF_DATABASE_URL, default=rapidforge.sqlite3"`
 	KVUrl             string `env:"RF_KV_URL"`
+	ErrorReport       string `env:"RF_ERROR_REPORT"`
 	Domain            string `env:"RF_DOMAIN, default=localhost"`
 	Port              string `env:"RF_PORT, default=:4000"`
 	PemData           string `env:"TLS_CERT"`

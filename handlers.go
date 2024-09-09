@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -71,6 +72,7 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 		origin := c.GetHeader("Origin")
 
 		if origin != "" && !isOriginAllowed(origin, webhook.Webhook.GetCors()) {
+			rflog.Error("Cors error", "path", path)
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		}
@@ -88,9 +90,30 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 		}
 
 		if httpVerb == "POST" || httpVerb == "PUT" || httpVerb == "PATCH" {
-			body, err := io.ReadAll(c.Request.Body)
+			var bodyBuffer bytes.Buffer
+			_, err := io.Copy(&bodyBuffer, c.Request.Body)
+
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
+				rflog.Error("failed to copy request body", "err", err)
+			}
+
+			c.Request.Body = io.NopCloser(bytes.NewReader(bodyBuffer.Bytes()))
+
+			err = c.Request.ParseForm()
+
+			if err != nil {
+				rflog.Error("failed to read request body", "err", err)
+			}
+
+			for k, v := range c.Request.Form {
+				key := fmt.Sprintf("FORM_%s", strings.ToUpper(k))
+				envVars[key] = strings.Join(v, ",")
+			}
+
+			payload := io.NopCloser(bytes.NewReader(bodyBuffer.Bytes()))
+			body, err := io.ReadAll(payload)
+			if err != nil {
+				c.String(http.StatusBadRequest, "Failed to read request body")
 				return
 			}
 
@@ -114,14 +137,14 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		// injecting request headers
 		for key, values := range headers {
-			strings.Join(values, ",")
-			for _, value := range values {
-				key := prefix + "_" + strings.Replace(strings.ToUpper(key), "-", "_", -1)
-				envVars[key] = value
-				// prep for recording event args
-				tmp := eventArgs["headers"].(map[string]any)
-				tmp[key] = value
-			}
+			value := strings.Join(values, ",")
+			// for _, value := range values {
+			key := prefix + "_" + strings.Replace(strings.ToUpper(key), "-", "_", -1)
+			envVars[key] = value
+			// prep for recording event args
+			tmp := eventArgs["headers"].(map[string]any)
+			tmp[key] = value
+			// }
 		}
 
 		envVars = utils.MergeMaps(envVars, webhookEnvVariables)
@@ -224,15 +247,15 @@ func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
 			return
 		}
 
-		// Set the SameSite attribute for cookies to mitigate the risk of Cross-Site Request Forgery (CSRF) attacks.
-		// c.SetSameSite(http.SameSiteStrictMode)
-
 		if config.Get().Env == "production" {
 			c.SetCookie("token", token, 3600, "/", "", true, true)
 		} else {
 			c.SetCookie("token", token, 3600, "/", "", false, true)
 		}
 
+		week := 3600 * 24 * 7
+		expirationTime := time.Now().UTC().Add(1 * time.Hour).Unix()
+		c.SetCookie("exp", fmt.Sprint(expirationTime), week, "/", "", false, false)
 		c.Header("HX-Redirect", "/blocks")
 		c.Status(http.StatusFound)
 	}
@@ -417,7 +440,7 @@ func eventsDetailHandler(store *models.Store) gin.HandlerFunc {
                   new JsonViewer({
                     value: JSON.parse({{.Args}}),
 					displayDataTypes: false,
-					theme: 'auto',
+					theme: localStorage.getItem('theme') || 'auto',
                     }).render('#args')
                 </script>`
 
@@ -492,6 +515,12 @@ func renameHandler(store *models.Store) gin.HandlerFunc {
 		tableType := c.Param("type")
 		intId := parseInt(id)
 		newName := c.PostForm("val")
+		newName = strings.Trim(newName, " ")
+		if newName == "" {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, "Name cannot be empty"))
+			return
+		}
+
 		var updatedField string
 		var err error
 		var htmlContent string
@@ -647,6 +676,42 @@ func getBlockHandler(store *models.Store) gin.HandlerFunc {
 			"editableComponentParams": editableComponentArgs,
 			"currentUser":             getCurrentUser(c),
 		})
+	}
+}
+
+type BlockForm struct {
+	Name        string `form:"name"`
+	Description string `form:"description"`
+	Active      bool   `form:"active"`
+	Env         string `form:"env"`
+}
+
+func updateBlockHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := utils.ParseInt64(c.Param("id"))
+		var blockForm BlockForm
+
+		c.Header("Content-Type", "text/html")
+		err := c.ShouldBind(&blockForm)
+		if err != nil {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		block := models.Block{
+			Name:         blockForm.Name,
+			Description:  blockForm.Description,
+			Active:       blockForm.Active,
+			EnvVariables: sql.NullString{String: blockForm.Env, Valid: true},
+		}
+
+		err = store.UpdateBlock(id, block)
+		if err != nil {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.String(http.StatusOK, utils.AlertBox(utils.Success, "Block updated"))
 	}
 }
 
@@ -1082,6 +1147,8 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 			return
 		}
+
+		rflog.Info("-----", "pageData", pageData)
 		err := store.UpdatePageByID(intId, pageData)
 
 		if err != nil {

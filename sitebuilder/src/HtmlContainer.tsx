@@ -63,6 +63,7 @@ export function HtmlEditor(props) {
           </OutsideClickHandler>
         ) : (
           <div
+            className="content"
             onClick={() => setEditMode(true)}
             style={{ width: "100%" }}
             dangerouslySetInnerHTML={{ __html: htmlContent }}

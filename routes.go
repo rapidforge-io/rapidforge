@@ -2,12 +2,14 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
@@ -120,6 +122,29 @@ func SkipLoggingForStatic() gin.HandlerFunc {
 func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	loginService := services.GetLoginService()
 	staticServer := http.FileServer(http.FS(staticFS))
+
+	var corsConfig cors.Config
+
+	if gin.Mode() == gin.ReleaseMode {
+		corsConfig = cors.Config{
+			AllowOrigins:     []string{fmt.Sprintf("^https://*.%s:%s$", config.Get().Domain, config.Get().Port)},
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+			ExposeHeaders:    []string{"Content-Length"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}
+	} else {
+		corsConfig = cors.Config{
+			AllowOrigins:     []string{"*"},
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+			ExposeHeaders:    []string{"Content-Length"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}
+	}
+
 	r.GET("/static/*filepath", func(c *gin.Context) {
 		cacheKey := config.Get().FECacheBuster
 		c.Request.URL.Path = "static" + c.Param("filepath")
@@ -154,7 +179,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// Block Routes
 	blockGroup := r.Group("/blocks")
-	blockGroup.Use(TimeoutMiddleware(), AuthMiddleware(loginService))
+	blockGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
 	{
 		blockGroup.GET("/list", blocksListHandler(store))
 		blockGroup.GET("/search", blocksSearchHandler(store))
@@ -162,12 +187,13 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		blockGroup.GET("/:id/entities/:type", getBlockEntitiesHandler(store))
 		blockGroup.GET("/:id/entities/search", blocksEntitiesSearchHandler(store))
 		blockGroup.POST("/create", createBlockHandler(store))
+		blockGroup.PATCH("/:id", updateBlockHandler(store))
 		blockGroup.GET("/", blocksBaseHandler)
 	}
 
 	// Webhook Routes
 	webhookGroup := r.Group("/webhooks")
-	webhookGroup.Use(TimeoutMiddleware(), AuthMiddleware(loginService))
+	webhookGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
 	{
 		webhookGroup.POST("/create", createWebhookHandler(store))
 		webhookGroup.PATCH("/:id", updateWebhookHandler(store))
@@ -185,7 +211,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// Page Routes
 	pageGroup := r.Group("/pages")
-	pageGroup.Use(TimeoutMiddleware(), AuthMiddleware(loginService))
+	pageGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
 	{
 		pageGroup.POST("/create", createPageHandler(store))
 		pageGroup.GET("/:id", pagesHandler(store))
@@ -194,7 +220,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// Event Routes
 	eventGroup := r.Group("/events")
-	eventGroup.Use(TimeoutMiddleware(), AuthMiddleware(loginService))
+	eventGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
 	{
 		eventGroup.GET("/:type/:id", eventsHandler(store))
 		eventGroup.GET("/details/:id", eventsDetailHandler(store))
@@ -202,7 +228,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// User Routes
 	userGroup := r.Group("/users")
-	userGroup.Use(TimeoutMiddleware(), AuthMiddleware(loginService))
+	userGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
 	{
 		userGroup.GET("/", usersHandler(store))
 		userGroup.POST("/:id/edit", updateUserHandler(store))
@@ -214,7 +240,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// Credential Routes
 	credentialGroup := r.Group("/credentials")
-	credentialGroup.Use(TimeoutMiddleware(), AuthMiddleware(loginService))
+	credentialGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
 	{
 		credentialGroup.GET("/", credentialsHandler())
 		credentialGroup.POST("/create", credentialsCreateHandlerGenerated(store))
@@ -225,8 +251,8 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	}
 
 	// Miscellaneous Routes
-	r.GET("/info", AuthMiddleware(loginService), infoHandler())
-	r.POST("/feedback", TimeoutMiddleware(), AuthMiddleware(loginService), feedbackHandler())
-	r.DELETE("/delete/:type/:id", TimeoutMiddleware(), AuthMiddleware(loginService), deleteHandler(store))
-	r.PATCH("/rename/:type/:id", TimeoutMiddleware(), AuthMiddleware(loginService), renameHandler(store))
+	r.GET("/info", cors.New(corsConfig), AuthMiddleware(loginService), infoHandler())
+	r.POST("/feedback", cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), feedbackHandler())
+	r.DELETE("/delete/:type/:id", cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), deleteHandler(store))
+	r.PATCH("/rename/:type/:id", cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), renameHandler(store))
 }

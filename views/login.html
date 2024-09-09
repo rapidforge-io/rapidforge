@@ -9,12 +9,12 @@
     </style>
   <link
     rel="stylesheet"
-    media="(prefers-color-scheme:light)"
+    id="light-theme"
     href="/static/css/shoelace.2.16.0.light.css"
   />
   <link
     rel="stylesheet"
-    media="(prefers-color-scheme:dark)"
+    id="dark-theme"
     href="/static/css/shoelace.2.16.0.dark.css"
     onload="document.documentElement.classList.add('sl-theme-dark');"
   >
@@ -58,7 +58,14 @@
       </sl-card>
     </div>
     </div>
+    <script src="/static/javascript/theme.js"></script>
     <script src="/static/javascript/htmx.2.0.1.js"></script>
     <script src="/static/javascript/htmx-response-targets.2.0.0.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+      });
+    </script>
   </body>
 </html>

@@ -4,13 +4,11 @@ package main
 import (
 	"crypto/tls"
 	"embed"
-	"fmt"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator"
@@ -58,6 +56,12 @@ var staticFS embed.FS
 // [x] remove console log in periodic tasks
 // [x] remove console log pages
 // [x] check form dark scheme
+// [x] inject environment variables for creds
+// [x] dark mode in page editor
+// [x] redirect to login page if user is logged out
+// [x] fix dark theme for event details
+// [x] don't allow empty name to be saved
+// [x] change editors background color to null by default
 
 // ------------------
 // [ ] PKCE flow
@@ -136,27 +140,6 @@ func main() {
 		v.RegisterValidation("cron", utils.IsCronValid)
 	}
 
-	if gin.Mode() == gin.ReleaseMode {
-		allowedOrigins := fmt.Sprintf("^https://*.%s:%s$", config.Get().Domain, config.Get().Port)
-
-		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{allowedOrigins},
-			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-			ExposeHeaders:    []string{"Content-Length"},
-			AllowCredentials: true,
-			MaxAge:           12 * time.Hour,
-		}))
-	} else {
-		r.Use(cors.New(cors.Config{
-			AllowOrigins:     []string{"*"},
-			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-			ExposeHeaders:    []string{"Content-Length"},
-			AllowCredentials: true,
-			MaxAge:           12 * time.Hour,
-		}))
-	}
 	r.HTMLRender = createMyRender(viewsFS)
 
 	services.SetupService(store)

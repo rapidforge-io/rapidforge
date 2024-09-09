@@ -85,7 +85,6 @@ func verifyJWT(tokenString string) (int64, error) {
 	claims := &jwt.MapClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
-
 		if token.Method != jwt.SigningMethodHS256 {
 			return nil, fmt.Errorf("invalid signing method")
 		} else {
@@ -99,6 +98,15 @@ func verifyJWT(tokenString string) (int64, error) {
 
 	if !token.Valid {
 		return 0, fmt.Errorf("invalid token")
+	}
+
+	if exp, ok := (*claims)["exp"].(float64); ok {
+		expirationTime := time.Unix(int64(exp), 0)
+		if expirationTime.Before(time.Now()) {
+			return 0, fmt.Errorf("token has expired")
+		}
+	} else {
+		return 0, fmt.Errorf("expiration time not found in token")
 	}
 
 	userID, ok := (*claims)["user_id"].(float64)

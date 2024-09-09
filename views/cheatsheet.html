@@ -2,9 +2,13 @@
  <sl-dialog id="codeHelper" label="Cheat Sheet">
    Special Environment Variables:
    <sl-divider></sl-divider>
-   <p> - <code>PAYLOAD_DATA</code> = Payload data for the webhook, whole payload will be assigned to text</p>
+   <p> - <code>PAYLOAD_DATA</code> = Request body data for the webhook, whole payload will be assigned to text.</p>
+   <p> - <code>FORM_{NAME} </code> = Parsed form data. Each field is accessible with FORM_NAME. i.e FROM_COMMENT if your submission has comment field </p>
+   <p> - <code>URL_PARAM_{NAME} </code> = Parsed from url params for GET requests only. Each field is accessible with URL_PARAM_NAME. i.e URL_PARAM_ID if your  url has `?id=1` </p>
    <p> - <code>HEADER_{HEADER_NAME}</code> = Header name e.g. HEADER_USER_AGENT</p>
    <p> - <code>CRED_{CREDENTIAL_NAME}</code> = Credential name e.g. CRED_GITHUB_OAUTH_TOKEN</p>
+
+   <p> For periodic tasks, environment variables regarding request will be empty </p>
 </sl-dialog>
 <script>
   const codeHelper = document.getElementById("codeHelper");

@@ -529,6 +529,13 @@ func (s *Store) InsertBlockWithAutoName(description string, active bool) (int64,
 	return id, nil
 }
 
+func (s *Store) UpdateBlock(id int64, block Block) error {
+	query := `UPDATE blocks SET name = ?, description = ?, active = ?, env_variables = ? WHERE id = ?`
+
+	_, err := s.db.Exec(query, block.Name, block.Description, block.Active, block.EnvVariables, id)
+	return err
+}
+
 // make it shorter
 func (s *Store) UpdateName(table string, id int64, newName string) (string, error) {
 	var query string
@@ -872,13 +879,13 @@ func (s *Store) SelectPageByPath(path string) (*Page, error) {
 }
 
 type PageData struct {
-	Path        string `json:"path"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Active      bool   `json:"active"`
-	Metadata    any    `json:"metadata"`
-	CanvasItems any    `json:"canvasItems"`
-	HtmlOutput  any    `json:"htmlOutput"`
+	Path        string         `json:"path"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Active      bool           `json:"active"`
+	Metadata    map[string]any `json:"metadata"`
+	CanvasItems any            `json:"canvasItems"`
+	HtmlOutput  any            `json:"htmlOutput"`
 }
 
 const pagesVersion = 1
@@ -892,9 +899,12 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 		return fmt.Errorf("failed to marshal CanvasItems: %w", err)
 	}
 
+	pageUrl := pageData.Metadata["pageUrl"].(string)
+
 	query := `
         UPDATE pages
         SET name = ?,
+		    path = ?,
 		    description = ?,
 		    canvas_state = ?,
 			html_output = ?,
@@ -905,6 +915,7 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 	// Execute the query
 	_, err = s.db.Exec(query,
 		pageData.Title,
+		pageUrl,
 		pageData.Description,
 		string(canvasItemsJSON),
 		pageData.HtmlOutput,

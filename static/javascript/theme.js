@@ -1,34 +1,10 @@
-<!doctype html>
-<html lang="en" >
-  <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title> RapidForge Page Builder</title>
-
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
-  >
-</head>
-  <body>
-    <script>
-      var pageData= {
-        baseUrl: "http://localhost:4000",
-        path: "pages-1",
-        canvasState: {},
-        active: true,
-        title: "Page Title",
-        description: "Page Description",
-        pageId: 1,
-        blockId:1,
-        };
-    </script>
-    <div id="app"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <script>
 function setTheme(theme) {
+    const lightThemeLink = document.getElementById('light-theme');
+    const darkThemeLink = document.getElementById('dark-theme');
 
     if (theme === 'dark') {
+        lightThemeLink.disabled = true;
+        darkThemeLink.disabled = false;
         document
             .documentElement
             .classList
@@ -46,6 +22,8 @@ function setTheme(theme) {
             .classList
             .remove('sl-theme-light');
     } else {
+        lightThemeLink.disabled = false;
+        darkThemeLink.disabled = true;
         document
             .documentElement
             .classList
@@ -66,11 +44,3 @@ function setTheme(theme) {
 
     localStorage.setItem('theme', theme);
 }
-
- window.addEventListener('load', function () {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
-      })
-    </script>
-  </body>
-</html>

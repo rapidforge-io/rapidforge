@@ -110,7 +110,8 @@
 </sl-tab-group>
 
 <script>
-  const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dracula' : 'default';
+  const currentTheme = localStorage.getItem('theme') || 'light';
+  const theme = currentTheme == 'dark' ? 'dracula' : 'default';
   const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
     lineNumbers: true,
     matchBrackets: true,

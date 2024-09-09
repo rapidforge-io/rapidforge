@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
@@ -92,6 +93,13 @@ func RemoveDbFile(filePath string) {
 }
 
 func SetupKV() {
+	cmd := exec.Command("sqlite3", "--version")
+	err := cmd.Run()
+
+	if err != nil {
+		rflog.Error("SQLite3 is not installed on this machine.", "err", err)
+		return
+	}
 
 	databaseName := config.Get().KVUrl
 	database, err := sqlx.Open(driver, databaseName+pragmas)

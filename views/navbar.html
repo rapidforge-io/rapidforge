@@ -25,19 +25,29 @@
     </div>
     <div>
      <sl-divider style="--width: 1px;"></sl-divider>
-    <div class="is-flex is-flex-direction-row m-2">
-      <div class="mr-2">
-      <sl-avatar shape="rounded"></sl-avatar>
-      </div>
-      <div class="is-flex is-flex-direction-column">
-      <p>{{.currentUser.Username}}</p>
-      <a href="/logout">Logout</a>
-      </div>
+    <div class="is-flex m-2 is-flex-direction-column">
+       <div class="mb-2">
+        <sl-radio-group id="themeSwitch" size="small">
+          <sl-radio-button value="light"><sl-icon name="brightness-high"></sl-icon></sl-radio-button>
+          <sl-radio-button value="dark"><sl-icon name="moon"></sl-icon></sl-radio-button>
+        </sl-radio-group>
+       </div>
+       <div class="mr-2 is-flex is-flex-direction-row">
+        <div class="mr-2">
+       <sl-avatar shape="rounded"></sl-avatar>
+       </div>
+       <div class="is-flex is-flex-direction-column">
+       <p>{{.currentUser.Username}}</p>
+       <a href="/logout">Logout</a>
+       </div>
+       </div>
     </div>
     </div>
   </div>
   <script>
     const dialog = document.getElementById('feedbackDialog');
+    const themeSwitch = document.getElementById('themeSwitch');
+    themeSwitch.value = localStorage.getItem('theme') || 'light';
   </script>
 </html>
 {{end}}

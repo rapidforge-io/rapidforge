@@ -44,7 +44,7 @@ export const classMap = {
 // map of what is editable on right side of the screen
 export const editableProps = {
   CanvasDropZone: {
-    style: { backgroundColor: "white", width: "100%" },
+    style: { backgroundColor: "", width: "100%" },
     classes:'',
   },
   GridComponent: {
@@ -243,6 +243,17 @@ function TextAligner(handlePropOnChange, _) {
 function ColorPicker(handlePropOnChange, value) {
   const key = Object.keys(value)[0]
 
+  const onChange = (e) => {
+    const val = e.target.value;
+    const updatedObj= { [key]: val };
+    handlePropOnChange("style", { ...value, ...updatedObj});
+  }
+
+  const resetColor = (e) => {
+    const updatedObj= { [key]: "" };
+    handlePropOnChange("style", { ...value, ...updatedObj});
+  }
+
   return (
     <div>
       <div className="field is-horizontal m-1">
@@ -250,19 +261,14 @@ function ColorPicker(handlePropOnChange, value) {
           <p>{capitalize(key)}</p>
         </div>
         <div className="field-body">
-          <div className="field">
-            <div className="control">
-              <SlColorPicker
-                size="small"
-                label="Select a color"
-                onSlChange={(e) => {
-                  const val = e.target.inputValue;
-                  const updatedObj= { [key]: val };
-                  handlePropOnChange("style", { ...value, ...updatedObj});
-                }}
-                value={value[key]}
-              ></SlColorPicker>
-            </div>
+          <div className="is-flex is-align-items-center">
+           <SlButton onClick={resetColor} size="small" className="mr-1">Reset </SlButton>
+            <SlColorPicker
+              size="small"
+              label="Select a color"
+              onSlChange={onChange}
+              value={value[key]}
+            ></SlColorPicker>
           </div>
         </div>
       </div>

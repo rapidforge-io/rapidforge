@@ -77,20 +77,19 @@ const CanvasItemsContext = createContext<CanvasItemsContextType>({
 
 export const useCanvasItems = () => useContext(CanvasItemsContext);
 
+const setupTree = () => {
+  const tree = new Tree();
+  const rootNode = new TreeNode(
+    "dropzone",
+    "CanvasDropZone",
+    false,
+    editableProps["CanvasDropZone"]
+  );
+  tree.root = rootNode;
+  return tree;
+}
 // Provider component to wrap your app
 export const CanvasItemsProvider: React.FC = ({ children }) => {
-
-  const setupTree = () => {
-    const tree = new Tree();
-    const rootNode = new TreeNode(
-      "dropzone",
-      "CanvasDropZone",
-      false,
-      editableProps["CanvasDropZone"]
-    );
-    tree.root = rootNode;
-    return tree;
-  }
 
   const containerRef = useRef(null);
   const loadedTree = window.pageData.canvasState;
@@ -376,8 +375,6 @@ function wrapWithHTML(htmlContent, pageMetadata) {
         body {
           margin: 0;
           display: flex;
-          justify-content: center;
-          padding-top: 64px;
         }
 
       </style>
@@ -432,16 +429,10 @@ const Header = () => {
               "Are you sure you want to clear canvas?"
             );
             if (result) {
+              setupTree();
               setCanvasItems((_) => {
-                const newTree = new Tree();
-                const rootNode = new TreeNode(
-                  "dropzone",
-                  "CanvasDropZone",
-                  false
-                );
-                newTree.root = rootNode;
                 setActiveItem(null);
-                return newTree;
+                return setupTree();
               });
             }
           }}

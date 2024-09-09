@@ -80,9 +80,11 @@ func PrintBanner(viewsFS embed.FS, data any) {
 
 func AlertBox(messageType AlertType, message string) string {
 	alertTemplate := `
+	    <div class="m-2">
         <sl-alert variant={{.messageType}} open closable duration="2000">
         	{{.message}}
-        </sl-alert>`
+        </sl-alert>
+		</div>`
 	t, err := template.New("alertBox").Parse(alertTemplate)
 
 	if err != nil {

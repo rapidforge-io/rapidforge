@@ -6,7 +6,20 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-version: 2
+# version: {{.Version }}
+
+changelog:
+  use: github
+  format: "{{.Message}}"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
 
 release:
   github:
@@ -27,6 +40,12 @@ builds:
       - linux
       # - windows
       - darwin
+    # Custom ldflags.
+    #
+    # Default: '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'.
+    # Templates: allowed.
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Package=community
 
 archives:
   - format: tar.gz
@@ -42,10 +61,3 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"

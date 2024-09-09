@@ -23,6 +23,14 @@ func (s *Service) RunPeriodicPrograms() {
 		blockEnv := task.Block.GetEnvVars()
 		taskEnv := task.PeriodicTask.GetEnvVars()
 		env := utils.MergeMaps(blockEnv, taskEnv)
+
+		creds, err := s.store.ListCredentialsForEnv()
+		if err == nil {
+			env = utils.MergeMaps(env, creds)
+		} else {
+			rflog.Error("failed to get credentials", err)
+		}
+
 		go func() {
 			res, err := bashrunner.Run(task.File.Content, env)
 

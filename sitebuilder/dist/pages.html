@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" >
   <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,8 +9,8 @@
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
   >
-  <script type="module" crossorigin src="/static/assets/app-CUpzNB82.js"></script>
-  <link rel="stylesheet" crossorigin href="/static/assets/app-D4W1Yat8.css">
+  <script type="module" crossorigin src="/static/assets/app-SxFourWx.js"></script>
+  <link rel="stylesheet" crossorigin href="/static/assets/app-CvSOLyI3.css">
 <script>
         var pageData= {
              baseUrl: {{ .baseUrl }},
@@ -36,5 +36,52 @@
         };
     </script>
     <div id="app"></div>
+    <script>
+function setTheme(theme) {
+
+    if (theme === 'dark') {
+        document
+            .documentElement
+            .classList
+            .add('sl-theme-dark');
+        document
+            .documentElement
+            .setAttribute('data-theme', 'dark');
+
+        if (typeof editor !== 'undefined' && editor !== null) {
+            editor.setOption('theme', 'dracula');
+        }
+
+        document
+            .documentElement
+            .classList
+            .remove('sl-theme-light');
+    } else {
+        document
+            .documentElement
+            .classList
+            .add('sl-theme-light');
+        document
+            .documentElement
+            .setAttribute('data-theme', 'light');
+
+        if (typeof editor !== 'undefined' && editor !== null) {
+            editor.setOption('theme', 'default');
+        }
+
+        document
+            .documentElement
+            .classList
+            .remove('sl-theme-dark');
+    }
+
+    localStorage.setItem('theme', theme);
+}
+
+ window.addEventListener('load', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+      })
+    </script>
   </body>
 </html>

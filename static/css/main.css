@@ -22,17 +22,13 @@
  }
 
  /* Light theme */
- @media (prefers-color-scheme: light) {
-     #sidebar {
-         background-color: #f8f9fa;
-         /* Light mode background color */
-     }
- }
+[data-theme="light"] #sidebar {
+    background-color: #f8f9fa;
+    /* Light mode background color */
+}
 
- /* Dark theme */
- @media (prefers-color-scheme: dark) {
-     #sidebar {
-         background-color: #343a40;
-         /* Dark mode background color */
-     }
- }
+/* Dark theme */
+[data-theme="dark"] #sidebar {
+    background-color: #343a40;
+    /* Dark mode background color */
+}
