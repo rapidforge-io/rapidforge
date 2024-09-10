@@ -6,7 +6,7 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-# version: {{.Version }}
+version: 2
 
 changelog:
   use: github
@@ -24,7 +24,7 @@ changelog:
 release:
   github:
     owner: rapidforge-io
-    name:  bin
+    name:  release
 
 before:
   hooks:

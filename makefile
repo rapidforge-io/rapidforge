@@ -68,3 +68,7 @@ kill-port:
 dev:kill-port
 	@echo "Starting rapidforge in dev mode..."
 	air
+
+.PHONY: release
+release:
+	goreleaser release --clean
