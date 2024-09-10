@@ -97,7 +97,7 @@ func SetupKV() {
 	err := cmd.Run()
 
 	if err != nil {
-		rflog.Error("SQLite3 is not installed on this machine.", "err", err)
+		rflog.Info("SQLite3 is not installed on this machine, KV table won't be created", "err", err)
 		return
 	}
 
