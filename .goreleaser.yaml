@@ -8,19 +8,6 @@
 
 version: 2
 
-changelog:
-  use: github
-  format: "{{.Message}}"
-  groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
-    - title: "Bug fixes"
-      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
-      order: 1
-    - title: Others
-      order: 999
-
 release:
   github:
     owner: eldemcan
