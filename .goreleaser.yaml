@@ -23,8 +23,8 @@ changelog:
 
 release:
   github:
-    owner: rapidforge-io
-    name:  release
+    owner: eldemcan
+    name:  rapidforge-io/release
 
 before:
   hooks:
