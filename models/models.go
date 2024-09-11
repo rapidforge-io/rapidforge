@@ -125,17 +125,18 @@ func (w *Webhook) GetExitHttpPair() map[int]int {
 	return envVars
 }
 
-func (w *Webhook) GetResponseHeaders() map[string]any {
-	envVars := map[string]any{}
+func (w *Webhook) GetResponseHeaders() map[string]string {
+	headers := map[string]string{}
 
 	if w.ResponseHeaders.String == "" {
-		return envVars
+		return headers
 	}
 
-	pairs := strings.Split(w.ResponseHeaders.String, ";")
+	pairs := strings.Split(w.ResponseHeaders.String, "\n")
 
+	rflog.Info("-----", "pairs", pairs)
 	if len(pairs) == 0 {
-		return envVars
+		return headers
 	}
 
 	for _, pair := range pairs {
@@ -143,10 +144,10 @@ func (w *Webhook) GetResponseHeaders() map[string]any {
 		key := parts[0]
 		val := parts[1]
 
-		envVars[key] = val
+		headers[key] = val
 	}
 
-	return envVars
+	return headers
 }
 
 func (w *Webhook) GetCors() []string {
@@ -226,6 +227,7 @@ type PeriodicTask struct {
 type WebhookFormData struct {
 	ExitCodes         []string `form:"exitCode[]" binding:"dive"`
 	HTTPResponseCodes []string `form:"httpResponseCode[]" binding:"dive"`
+	ResponseHeaders   string   `form:"responseHeaders"`
 	Name              string   `form:"name"`
 	Description       string   `form:"description"`
 	Env               string   `form:"env"`
@@ -690,11 +692,21 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 	                              cors = ?,
 								  active = ?,
 								  http_method = ?,
-								  exit_http_pair = ?
+								  exit_http_pair = ?,
+								  response_headers = ?
 	                          WHERE id = ?`
 
 	exitHttpPair := constructKeyValueFormat(formData.ExitCodes, formData.HTTPResponseCodes)
-	_, err = tx.Exec(query, formData.Env, formData.Name, formData.Description, formData.Cors, formData.Active, formData.HttpVerb, exitHttpPair, webhookID)
+
+	_, err = tx.Exec(query, formData.Env,
+		formData.Name,
+		formData.Description,
+		formData.Cors,
+		formData.Active,
+		formData.HttpVerb,
+		exitHttpPair,
+		formData.ResponseHeaders,
+		webhookID)
 
 	if err != nil {
 		tx.Rollback()
@@ -829,7 +841,7 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 		SELECT
 			w.id AS "webhook.id", w.name AS "webhook.name", w.description AS "webhook.description", w.active AS "webhook.active",
 			w.env_variables AS "webhook.env_variables", w.block_id AS "webhook.block_id", w.path AS "webhook.path",
-			w.cors AS "webhook.cors", w.http_method AS "webhook.http_method", w.exit_http_pair AS "webhook.exit_http_pair",
+			w.cors AS "webhook.cors", w.http_method AS "webhook.http_method", w.exit_http_pair AS "webhook.exit_http_pair", w.response_headers AS "webhook.response_headers",
 			w.program_id AS "webhook.program_id", w.created_at AS "webhook.created_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",

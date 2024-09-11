@@ -125,40 +125,6 @@
     return editor.getValue();
   }
 
-  function addRow() {
-    const mappingsDiv = document.getElementById("mappings");
-    const newRow = document.createElement("div");
-    newRow.classList.add("mapping-row");
-    newRow.innerHTML = `
-        <div class="columns">
-        <div class="column">
-        <sl-input name="exitCode[]" type="number" label="Exit Code" placeholder="Enter exit code" required></sl-input>
-        </div>
-        <div class="column">
-        <sl-input name="httpResponseCode[]" type="number" label="HTTP Response Code" placeholder="Enter HTTP code" required></sl-input>
-        </div>
-        </div>
-        <div class="is-flex is-justify-content-space-around">
-          <sl-button
-            type="button"
-            variant="danger"
-            size="small"
-            onclick="deleteRow(this)"
-            >-</sl-button
-          >
-        </div>
-      `;
-    mappingsDiv.appendChild(newRow);
-  }
-
-  function deleteRow(button) {
-    // Navigate up the DOM tree to find the parent row
-    const row = button.closest(".mapping-row");
-    if (row) {
-      row.remove();
-    }
-  }
-
   function isValidCronExpression(expression) {
            var cronRegex = new RegExp(/^(\*\/\d{1,2}|\d{1,2}|\*)\s(\*|\d{1,2}|\*\/\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d|\d)\s?$/g)
             if (!cronRegex.test(expression)) {
