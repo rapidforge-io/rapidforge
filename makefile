@@ -71,4 +71,4 @@ dev:kill-port
 
 .PHONY: release
 release:
-	goreleaser release --clean
+	goreleaser release --clean --verbose
