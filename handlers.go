@@ -699,7 +699,6 @@ func updateBlockHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		block := models.Block{
-			Name:         blockForm.Name,
 			Description:  blockForm.Description,
 			Active:       blockForm.Active,
 			EnvVariables: sql.NullString{String: blockForm.Env, Valid: true},
@@ -1148,7 +1147,6 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		rflog.Info("-----", "pageData", pageData)
 		err := store.UpdatePageByID(intId, pageData)
 
 		if err != nil {

@@ -247,6 +247,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		credentialGroup.GET("/list", credentialsListHandler(store))
 		credentialGroup.DELETE("/:id", credentialsDeleteHandler(store))
 		credentialGroup.GET("/refresh/:id", refreshCredentialHandler(store))
+		credentialGroup.PATCH("/:id", updateCredentialHandler(store))
 		credentialGroup.GET("/search", credentialsSearchHandler(store))
 	}
 

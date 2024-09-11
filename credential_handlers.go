@@ -90,6 +90,7 @@ func credentialsCreateHandlerGenerated(store *models.Store) gin.HandlerFunc {
 			c.Status(http.StatusFound)
 			//c.Redirect(http.StatusFound, authURL)
 		} else {
+			credential.Value = sql.NullString{String: formData.Value, Valid: true}
 			c.Header("Content-Type", "text/html")
 			err = store.InsertCredential(&credential)
 			if err != nil {
@@ -290,6 +291,65 @@ func feedbackHandler() gin.HandlerFunc {
 		}
 
 		c.String(http.StatusOK, utils.AlertBox(utils.Success, "Feedback submitted successfully"))
+	}
+}
+
+func updateCredentialHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var formData models.CredentialFormData
+
+		c.Header("Content-Type", "text/html")
+		err := c.ShouldBind(&formData)
+		if err != nil {
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		credential, err := store.FetchCredentialByID(utils.ParseInt64(id))
+		if err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		if formData.Name != "" {
+			credential.Name = formData.Name
+		}
+
+		if formData.Value != "" && credential.Type == "text" {
+			credential.Value = sql.NullString{String: formData.Value, Valid: true}
+		}
+
+		if credential.Type == "oauth" {
+			if formData.OauthUrl != "" {
+				credential.OauthUrl = sql.NullString{String: formData.OauthUrl, Valid: true}
+			}
+			if formData.TokenUrl != "" {
+				credential.OauthTokenUrl = sql.NullString{String: formData.TokenUrl, Valid: true}
+			}
+
+			credential.Scope = sql.NullString{String: formData.Scope, Valid: true}
+
+			if formData.ClientID != "" {
+				credential.ClientID = sql.NullString{String: formData.ClientID, Valid: true}
+			}
+
+			if formData.ClientSecret != "" {
+				credential.ClientSecret = sql.NullString{String: formData.ClientSecret, Valid: true}
+			}
+		}
+
+		err = store.UpdateCredential(credential)
+		if err != nil {
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
+			return
+		}
+
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, utils.AlertBox(utils.Success, "Credential updated"))
 	}
 }
 

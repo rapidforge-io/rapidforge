@@ -530,9 +530,9 @@ func (s *Store) InsertBlockWithAutoName(description string, active bool) (int64,
 }
 
 func (s *Store) UpdateBlock(id int64, block Block) error {
-	query := `UPDATE blocks SET name = ?, description = ?, active = ?, env_variables = ? WHERE id = ?`
+	query := `UPDATE blocks SET description = ?, active = ?, env_variables = ? WHERE id = ?`
 
-	_, err := s.db.Exec(query, block.Name, block.Description, block.Active, block.EnvVariables, id)
+	_, err := s.db.Exec(query, block.Description, block.Active, block.EnvVariables, id)
 	return err
 }
 
