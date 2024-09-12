@@ -134,7 +134,6 @@ func (w *Webhook) GetResponseHeaders() map[string]string {
 
 	pairs := strings.Split(w.ResponseHeaders.String, "\n")
 
-	rflog.Info("-----", "pairs", pairs)
 	if len(pairs) == 0 {
 		return headers
 	}

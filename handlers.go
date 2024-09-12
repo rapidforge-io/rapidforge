@@ -185,8 +185,6 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		responseHeaders := webhook.Webhook.GetResponseHeaders()
 
-		rflog.Info("-----", "responseHeaders", responseHeaders)
-
 		for header, value := range webhook.Webhook.GetResponseHeaders() {
 			c.Header(header, value)
 		}

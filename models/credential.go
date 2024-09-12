@@ -214,7 +214,6 @@ func (s *Store) UpdateCredential(credential *Credential) error {
 
 	credential.UpdatedAt = time.Now().UTC()
 
-	rflog.Info("updating credential", "credential", credential)
 	_, err := s.db.Exec(query, credential.Type, credential.Name, credential.OauthUrl,
 		credential.OauthTokenUrl, credential.GrantType, credential.Scope,
 		credential.Value, credential.ClientID, credential.ClientSecret,
