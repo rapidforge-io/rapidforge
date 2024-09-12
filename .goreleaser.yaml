@@ -6,25 +6,13 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
-# version: {{.Version }}
-
-changelog:
-  use: github
-  format: "{{.Message}}"
-  groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
-    - title: "Bug fixes"
-      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
-      order: 1
-    - title: Others
-      order: 999
+version: 2
+project_name: rapidforge
 
 release:
   github:
     owner: rapidforge-io
-    name:  bin
+    name:  release
 
 before:
   hooks:
@@ -46,6 +34,8 @@ builds:
     # Templates: allowed.
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Package=community
+    id: rapidforge
+    binary: rapidforge
 
 archives:
   - format: tar.gz

@@ -185,11 +185,15 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		responseHeaders := webhook.Webhook.GetResponseHeaders()
 
+		for header, value := range webhook.Webhook.GetResponseHeaders() {
+			c.Header(header, value)
+		}
+
 		if _, ok := responseHeaders["Content-Type"]; !ok {
 			responseHeaders["Content-Type"] = "text/html; charset=utf-8"
 		}
 
-		contentType := responseHeaders["Content-Type"].(string)
+		contentType := responseHeaders["Content-Type"]
 		c.Data(httpCode, contentType, []byte(res.Output))
 	}
 }
@@ -699,7 +703,6 @@ func updateBlockHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		block := models.Block{
-			Name:         blockForm.Name,
 			Description:  blockForm.Description,
 			Active:       blockForm.Active,
 			EnvVariables: sql.NullString{String: blockForm.Env, Valid: true},
@@ -956,9 +959,11 @@ func updateWebhookHandler(store *models.Store) gin.HandlerFunc {
 			for _, err := range err.(validator.ValidationErrors) {
 				errs = append(errs, err.Field()+": "+err.ActualTag())
 			}
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
 			return
 		}
+
+		form.ResponseHeaders = strings.TrimSpace(form.ResponseHeaders)
 
 		err = store.UpdateFileContentByWebhookID(intId, form)
 
@@ -1148,7 +1153,6 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		rflog.Info("-----", "pageData", pageData)
 		err := store.UpdatePageByID(intId, pageData)
 
 		if err != nil {

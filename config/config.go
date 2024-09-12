@@ -115,14 +115,14 @@ func getEnvAsBool(name string, defaultVal bool) bool {
 }
 
 func httpProtocol() string {
-	if c.Env == "development" {
+	if c.Env == "development" || c.Domain == "localhost" {
 		return "http://"
 	}
 	return "https://"
 }
 
 func BaseUrl() string {
-	if c.Port == ":80" || c.Port == ":443" || c.LoadBalancer {
+	if c.Port == ":80" || c.Port == ":443" || (c.Domain != "localhost" && c.LoadBalancer) {
 		return httpProtocol() + c.Domain
 	} else {
 
