@@ -251,14 +251,16 @@ func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
 			return
 		}
 
+		day := int(config.Get().TokenExpiry.Seconds())
+
 		if config.Get().Env == "production" {
-			c.SetCookie("token", token, 3600, "/", "", true, true)
+			c.SetCookie("token", token, day, "/", "", true, true)
 		} else {
-			c.SetCookie("token", token, 3600, "/", "", false, true)
+			c.SetCookie("token", token, day, "/", "", false, true)
 		}
 
 		week := 3600 * 24 * 7
-		expirationTime := time.Now().UTC().Add(1 * time.Hour).Unix()
+		expirationTime := time.Now().UTC().Add(config.Get().TokenExpiry).Unix()
 		c.SetCookie("exp", fmt.Sprint(expirationTime), week, "/", "", false, false)
 		c.Header("HX-Redirect", "/blocks")
 		c.Status(http.StatusFound)
@@ -266,9 +268,19 @@ func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
 }
 
 func eventsHandler(store *models.Store) gin.HandlerFunc {
+	const limit = 100
 	return func(c *gin.Context) {
 		typeName := c.Param("type")
 		id := c.Param("id")
+		pageParam := c.Query("page")
+		page := 0
+
+		if pageParam != "" {
+			tpage, err := strconv.Atoi(pageParam)
+			if err == nil {
+				page = tpage
+			}
+		}
 
 		idField := map[string]string{
 			utils.WebhookEntity:      "webhook_id",
@@ -286,7 +298,7 @@ func eventsHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		events, err := store.FetchEvents(typeName, parseInt(id), idField[typeName])
+		events, err := store.FetchEvents(typeName, parseInt(id), idField[typeName], limit, page)
 
 		if err != nil {
 			c.String(http.StatusInternalServerError, utils.AlertBox(utils.Error, err.Error()))
@@ -295,6 +307,9 @@ func eventsHandler(store *models.Store) gin.HandlerFunc {
 
 		c.HTML(http.StatusOK, "event_table", gin.H{
 			"events": events,
+			"Page":   page,
+			"Type":   typeName,
+			"ID":     id,
 		})
 	}
 }

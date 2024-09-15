@@ -41,6 +41,14 @@ const (
 	driver  = "sqlite"
 )
 
+func (db *DbCon) BeginImmediateTransaction() (*sqlx.Tx, error) {
+	tx, err := db.Beginx()
+	if err == nil {
+		_, err = tx.Exec("ROLLBACK; BEGIN IMMEDIATE")
+	}
+	return tx, err
+}
+
 func GetDbConn(fileName string) *DbCon {
 	once.Do(func() {
 		instance = LoadConnection(fileName)

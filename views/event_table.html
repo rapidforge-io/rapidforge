@@ -24,6 +24,12 @@
       </sl-dialog>
     </div>
     {{end}}
+    {{if gt .Page 0}}
+        <sl-button hx-get="/events/{{.Type}}/{{.ID}}?page={{dec .Page }}"  hx-target="#eventList" hx-trigger="click">Prev</sl-button>
+    {{end}}
+    {{if gt (len .events) 0}}
+        <sl-button hx-get="/events/{{.Type}}/{{.ID}}?page={{inc .Page }}" hx-target="#eventList" hx-trigger="click">Next</sl-button>
+    {{end}}
     </div>
   </div>
 </div>

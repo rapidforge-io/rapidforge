@@ -4,6 +4,8 @@ import (
 	"log/slog"
 
 	"github.com/fatih/color"
+	"github.com/honeybadger-io/honeybadger-go"
+	"github.com/rapidforge-io/rapidforge/config"
 )
 
 type RfLogger struct {
@@ -40,6 +42,11 @@ func Error(message any, args ...interface{}) {
 		msg = v.Error()
 	}
 	color.Set(color.FgRed)
+
+	if config.Get().Cloud {
+		honeybadger.Notify(msg, args...)
+	}
+
 	logger.Error(msg, args...)
 	color.Unset()
 }

@@ -37,36 +37,44 @@ func (s *Store) InsertEvent(event Event) (sql.Result, error) {
 	return result, err
 }
 
-func (s *Store) FetchEventByBlockID(blockID int64) (*[]Event, error) {
+func (s *Store) FetchEventByBlockID(blockID int64, limit int, page int) (*[]Event, error) {
 	var events []Event
+	offset := page * limit
 
+	// Update query to include LIMIT and OFFSET for pagination
 	query := `SELECT id, status, created_at, event_type, args, webhook_id, periodic_task_id, logs, block_id
               FROM events
-              WHERE block_id = ? ORDER BY created_at DESC`
+              WHERE block_id = ?
+              ORDER BY created_at DESC
+              LIMIT ? OFFSET ?`
 
-	err := s.db.Select(&events, query, blockID)
+	err := s.db.Select(&events, query, blockID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	return &events, nil
 }
 
-func (s *Store) FetchEvents(eventType string, id int64, idColumn string) (*[]Event, error) {
+func (s *Store) FetchEvents(eventType string, id int64, idColumn string, limit int, page int) (*[]Event, error) {
 	if eventType == utils.BlockEntity {
-		return s.FetchEventByBlockID(id)
+		return s.FetchEventByBlockID(id, limit, page)
 	}
 
-	return s.FetchEventByTypeAndID(eventType, id, idColumn)
+	return s.FetchEventByTypeAndID(eventType, id, idColumn, limit, page)
 }
 
-func (s *Store) FetchEventByTypeAndID(eventType string, id int64, idColumn string) (*[]Event, error) {
+func (s *Store) FetchEventByTypeAndID(eventType string, id int64, idColumn string, limit int, page int) (*[]Event, error) {
 	var events []Event
+
+	offset := page * limit
 
 	query := fmt.Sprintf(`SELECT id, status, created_at, event_type, args, webhook_id, periodic_task_id, block_id
                          FROM events
-                         WHERE event_type = ? AND %s = ? ORDER BY created_at DESC`, idColumn)
+                         WHERE event_type = ? AND %s = ?
+                         ORDER BY created_at DESC
+                         LIMIT ? OFFSET ?`, idColumn)
 
-	err := s.db.Select(&events, query, eventType, id)
+	err := s.db.Select(&events, query, eventType, id, limit, offset)
 	if err != nil {
 		return nil, err
 	}

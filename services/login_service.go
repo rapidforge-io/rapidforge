@@ -120,7 +120,7 @@ func verifyJWT(tokenString string) (int64, error) {
 func generateJWT(user *models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
-		"exp":     time.Now().Add(time.Hour * 72).Unix(),
+		"exp":     time.Now().Add(config.Get().TokenExpiry).Unix(),
 	})
 
 	tokenString, err := token.SignedString(config.Get().JWTSecretKey())

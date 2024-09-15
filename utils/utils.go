@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/adhocore/gronx"
 	"github.com/go-playground/validator"
-	rflog "github.com/rapidforge-io/rapidforge/logger"
 )
 
 // Define a custom type for restricted strings
@@ -85,11 +85,7 @@ func AlertBox(messageType AlertType, message string) string {
         	{{.message}}
         </sl-alert>
 		</div>`
-	t, err := template.New("alertBox").Parse(alertTemplate)
-
-	if err != nil {
-		rflog.Error("failed to parse template for alert", err)
-	}
+	t, _ := template.New("alertBox").Parse(alertTemplate)
 
 	data := map[string]any{
 		"messageType": messageType,
@@ -221,7 +217,8 @@ func TransformToMaps[T any](items []T, typeName string) []map[string]any {
 		if typeName == WebhookEntity {
 			httpMethod, err := GetFieldValue(item, "HttpMethod")
 			if err != nil {
-				rflog.Error("failed to get http method", err)
+				// for circler dependency we can't use rflog
+				log.Fatalln("failed to get http method", err)
 			} else {
 				mapBlock["Badges"] = []string{"Hook", httpMethod.(string)}
 			}

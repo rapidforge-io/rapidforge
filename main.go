@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator"
+	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/rapidforge-io/rapidforge/config"
 	"github.com/rapidforge-io/rapidforge/database"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
@@ -86,6 +87,10 @@ var (
 )
 
 func main() {
+	if config.Get().Cloud {
+		honeybadger.Configure(honeybadger.Configuration{APIKey: "hbp_WvXKQD1pSbOyPOmBlENVIvRsWM7P5i2gHFcm"})
+		defer honeybadger.Monitor()
+	}
 
 	dbCon := database.GetDbConn("")
 	dbCon.RunMigrations()
@@ -177,7 +182,8 @@ func main() {
 }
 
 func startEventCleanupJob(store *models.Store) {
-	for range time.Tick(24 * time.Hour) {
+	const timeC = 12 * time.Hour
+	for range time.Tick(timeC) {
 		_, err := store.RemoveEventsOlderThanAWeek()
 		if err != nil {
 			rflog.Error("Failed to remove events older than a week", "err:", err)

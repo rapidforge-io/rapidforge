@@ -25,6 +25,12 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 	funcMap := template.FuncMap{
 		"defaultString":  utils.DefaultHtml,
 		"formatDateTime": utils.FormatDateTime,
+		"inc": func(i int) int {
+			return i + 1
+		},
+		"dec": func(i int) int {
+			return i - 1
+		},
 	}
 	basePages := []string{"views/base.html", "views/navbar.html"}
 

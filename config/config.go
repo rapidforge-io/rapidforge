@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/utils"
 	"github.com/sethvargo/go-envconfig"
 )
@@ -22,6 +21,8 @@ type Config struct {
 	Domain            string `env:"RF_DOMAIN, default=localhost"`
 	Port              string `env:"RF_PORT, default=:4000"`
 	PemData           string `env:"TLS_CERT"`
+	Cloud             bool
+	TokenExpiry       time.Duration
 	LoadBalancer      bool
 	FECacheBuster     string
 	Timeout           time.Duration
@@ -40,10 +41,12 @@ func load() {
 	c.Timeout = 30 * time.Second
 	secretKey, err := utils.GenerateRandomString(32)
 	if err != nil {
-		rflog.Error("failed to generate secret key", "err", err)
+		log.Fatal("failed to generate secret key", "err", err)
 	}
 	c.AuthSecretKey = secretKey
 	c.LoadBalancer = getEnvAsBool("RF_LB", true)
+	c.Cloud = getEnvAsBool("RF_CLOUD", false)
+	c.TokenExpiry = time.Hour * 24
 	c.FECacheBuster, _ = utils.GenerateRandomString(10)
 
 	c.AuthDuration = 1 * time.Hour

@@ -14,6 +14,7 @@ wait_timeout = "10m"
   RF_DOMAIN = "main.rapidforge.io"
   RF_DATABASE_URL = "/data/rapidforge.sqlite3"
   RF_KV_URL = "/data/rapidforgekv.sqlite3"
+  RF_CLOUD = "true"
 
 [build]
 

@@ -318,7 +318,7 @@ func (s *Store) SearchWebhooks(blockID int64, query string) ([]Webhook, error) {
 }
 
 func (s *Store) InsertPeriodicTaskWithAutoName(blockID int64) (int64, error) {
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginImmediateTransaction()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
 		return -1, err
@@ -384,7 +384,7 @@ func (s *Store) InsertPeriodicTaskWithAutoName(blockID int64) (int64, error) {
 }
 
 func (s *Store) InsertWebhookWithAutoName(blockID int64) (int64, error) {
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginImmediateTransaction()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
 		return -1, err
@@ -449,7 +449,7 @@ func (s *Store) InsertWebhookWithAutoName(blockID int64) (int64, error) {
 }
 
 func (s *Store) InsertPageWithAutoName(blockID int64) (int64, error) {
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginImmediateTransaction()
 	if err != nil {
 		rflog.Error("failed to begin transaction for page", err)
 		return -1, err
@@ -663,7 +663,7 @@ func constructKeyValueFormat(exitCodes, httpResponseCodes []string) string {
 }
 
 func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFormData) error {
-	tx, err := s.db.Beginx()
+	tx, err := s.db.BeginImmediateTransaction()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
 		return err
@@ -723,7 +723,7 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 }
 
 func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int64, formData PeriodicTaskFormData) error {
-	tx, err := s.db.Beginx()
+	tx, err := s.db.BeginImmediateTransaction()
 	if err != nil {
 		rflog.Error("failed to begin transaction", err)
 		return err
@@ -941,23 +941,10 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 	return nil
 }
 func (s *Store) DeleteBlockById(id int64) error {
-	tx, err := s.db.Beginx()
-	if err != nil {
-		rflog.Error("failed to begin transaction", err)
-		return err
-	}
-
 	query := "DELETE FROM blocks WHERE id = ?"
-	_, err = tx.Exec(query, id)
+	_, err := s.db.Exec(query, id)
 	if err != nil {
-		tx.Rollback()
 		rflog.Error("failed to delete block:", "err", err)
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
-		rflog.Error("failed to commit transaction", err)
 		return err
 	}
 
@@ -965,46 +952,21 @@ func (s *Store) DeleteBlockById(id int64) error {
 }
 
 func (s *Store) DeleteWebhookById(id int64) error {
-	tx, err := s.db.Beginx()
-	if err != nil {
-		rflog.Error("failed to begin transaction", err)
-		return err
-	}
-
 	query := "DELETE FROM webhooks WHERE id = ?"
-	_, err = tx.Exec(query, id)
+	_, err := s.db.Exec(query, id)
 	if err != nil {
-		tx.Rollback()
 		rflog.Error("failed to delete webhook:", "err", err)
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
-		rflog.Error("failed to commit transaction", err)
 		return err
 	}
 
 	return nil
 }
 func (s *Store) DeletePageById(id int64) error {
-	tx, err := s.db.Beginx()
-	if err != nil {
-		rflog.Error("failed to begin transaction", err)
-		return err
-	}
 
 	query := "DELETE FROM pages WHERE id = ?"
-	_, err = tx.Exec(query, id)
+	_, err := s.db.Exec(query, id)
 	if err != nil {
-		tx.Rollback()
 		rflog.Error("failed to delete page:", "err", err)
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
-		rflog.Error("failed to commit transaction", err)
 		return err
 	}
 
@@ -1012,23 +974,10 @@ func (s *Store) DeletePageById(id int64) error {
 }
 
 func (s *Store) DeletePeriodicTaskById(id int64) error {
-	tx, err := s.db.Beginx()
-	if err != nil {
-		rflog.Error("failed to begin transaction", err)
-		return err
-	}
-
 	query := "DELETE FROM periodic_tasks WHERE id = ?"
-	_, err = tx.Exec(query, id)
+	_, err := s.db.Exec(query, id)
 	if err != nil {
-		tx.Rollback()
 		rflog.Error("failed to delete periodic task:", "err", err)
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
-		rflog.Error("failed to commit transaction", err)
 		return err
 	}
 
