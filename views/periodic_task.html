@@ -12,6 +12,72 @@
 {{ template "editableTitle" .editableComponentParams }}
 </div>
 
+<sl-dialog label="cURL Command Generator" id="curlGenerator" style="--width: 550px;">
+    <div>
+            <sl-select size="small" label="HTTP Method" id="method" value="GET">
+                <sl-option value="GET">GET</sl-option>
+                <sl-option value="POST">POST</sl-option>
+                <sl-option value="PUT">PUT</sl-option>
+                <sl-option value="DELETE">DELETE</sl-option>
+                <sl-option value="PATCH">PATCH</sl-option>
+            </sl-select>
+
+            <sl-input
+              clearable
+              size="small"
+              type="url"
+              label="Request URL"
+              id="url"
+              sl-change="reportValidity()"
+              placeholder="https://example.com/api"></sl-input>
+
+            <sl-select size="small" label="Content-Type" id="content-type">
+                <sl-option value="application/json">application/json</sl-option>
+                <sl-option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</sl-option>
+                <sl-option value="text/plain">text/plain</sl-option>
+                <sl-option value="custom">Custom</sl-option>
+            </sl-select>
+
+            <sl-input size="small"label="Custom Content-Type" id="custom-content-type" style="display: none;"></sl-input>
+
+            <div id="headers-section">
+                <h4 class="mt-2">Headers</h4>
+                <div class="is-flex mb-10 header-row" style="gap: 10px;">
+                    <sl-input size="small" label="Header Name" class="header-name"></sl-input>
+                    <sl-input size="small" label="Header Value" class="header-value"></sl-input>
+                    <sl-button size="small" variant="danger" class="pt-5 remove-header">Remove</sl-button>
+                </div>
+
+                <div class="mt-2 mb-2">
+                    <sl-button size="small" id="add-header" variant="primary">Add Header</sl-button>
+                </div>
+            </div>
+
+            <sl-textarea size="small" label="Body (for POST/PUT)" id="request-body" rows="4" clearable></sl-textarea>
+
+            <sl-checkbox id="verbose">Verbose</sl-checkbox>
+            <sl-checkbox id="insecure">Insecure (skip SSL)</sl-checkbox>
+
+            <sl-input size="small" label="Timeout (seconds)" id="timeout" type="number" min="0"></sl-input>
+
+            <div class="mt-2 mb-2">
+              <sl-button size="small" variant="primary" id="generate-curl">Generate cURL</sl-button>
+              <sl-button size="small" id="clear-fields">Clear</sl-button>
+            </div>
+
+
+        <div class="is-flex is-align-items-center">
+        <div>
+        <code id="curl-output">
+            //output
+        </code>
+        </div>
+        <div>
+        <sl-copy-button from="curl-output.value" class="copy-code-button"></sl-copy-button>
+        </div>
+        </div>
+        </div>
+</sl-dialog>
 
 <sl-tab-group>
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
@@ -40,6 +106,12 @@
       {{template "cheatsheet.html" }}
       </div>
     </div>
+
+    {{ if .showCurlGenerator }}
+    <div class="is-flex m-2">
+     <sl-button size="small" onclick="curlGeneratorDialog.show()">cURL Generator</sl-button>
+   </div>
+   {{end}}
     <div class="m-2">
       <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
     </div>
@@ -110,6 +182,7 @@
 </sl-tab-group>
 
 <script src="/static/javascript/cronstrue.2.50.js" async></script>
+<script src="/static/javascript/curlgenerator.js"></script>
 <script>
   const currentTheme = localStorage.getItem('theme') || 'light';
   const theme = currentTheme == 'dark' ? 'dracula' : 'default';

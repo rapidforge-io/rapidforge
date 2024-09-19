@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
@@ -256,6 +257,11 @@ func GenerateRandomString(length int) (string, error) {
 
 // 	return json.Unmarshal(bytes, s)
 // }
+
+func IsCommandAvailable(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
+}
 
 // MergeMaps merges two maps. Values from map2 will overwrite values from map1 if keys are the same.
 func MergeMaps[K comparable, V any](map1, map2 map[K]V) map[K]V {

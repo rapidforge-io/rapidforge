@@ -24,6 +24,9 @@ import (
 	"github.com/rapidforge-io/rapidforge/utils"
 )
 
+// simple cache
+var cache = map[string]any{}
+
 func getCurrentUser(c *gin.Context) *models.User {
 	user, exists := c.Get("user")
 	if !exists {
@@ -1031,6 +1034,10 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
+		if cache["showCurlGenerator"] == nil {
+			cache["showCurlGenerator"] = utils.IsCommandAvailable("curl")
+		}
+
 		editableComponentArgs := utils.ToMap(webhookWithDetails.Webhook)
 		editableComponentArgs["Type"] = utils.WebhookEntity
 		editableComponentArgs["Field"] = webhookWithDetails.Webhook.Path
@@ -1042,6 +1049,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			"fileContent":             utils.DefaultString(webhookWithDetails.File.Content, config.DefaultScript),
 			"editableComponentParams": editableComponentArgs,
 			"currentUser":             getCurrentUser(c),
+			"showCurlGenerator":       cache["showCurlGenerator"],
 		})
 	}
 }
@@ -1055,6 +1063,11 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 			rflog.Error("failed to get periodic tasks", err)
 			return
 		}
+
+		if cache["showCurlGenerator"] == nil {
+			cache["showCurlGenerator"] = utils.IsCommandAvailable("curl")
+		}
+
 		editableComponentArgs := utils.ToMap(periodicTaskDetails.PeriodicTask)
 		editableComponentArgs["Type"] = utils.PeriodicTaskEntity
 		editableComponentArgs["Field"] = utils.DefaultString(periodicTaskDetails.PeriodicTask.Name, "No Name")
@@ -1064,6 +1077,7 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 			"fileContent":             utils.DefaultString(periodicTaskDetails.File.Content, "echo 'Hello World!'"),
 			"editableComponentParams": editableComponentArgs,
 			"currentUser":             getCurrentUser(c),
+			"showCurlGenerator":       cache["showCurlGenerator"],
 		})
 	}
 }

@@ -13,6 +13,8 @@ release:
   github:
     owner: rapidforge-io
     name:  release
+  extra_files:
+    - glob: LICENSE.md
 
 before:
   hooks:
