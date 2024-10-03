@@ -1038,11 +1038,14 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			cache["showCurlGenerator"] = utils.IsCommandAvailable("curl")
 		}
 
+		variables := getAutoCompleteVars(webhookWithDetails, store)
+
 		editableComponentArgs := utils.ToMap(webhookWithDetails.Webhook)
 		editableComponentArgs["Type"] = utils.WebhookEntity
 		editableComponentArgs["Field"] = webhookWithDetails.Webhook.Path
 		editableComponentArgs["Url"] = fmt.Sprintf("%s/webhook/%s", config.BaseUrl(), webhookWithDetails.Webhook.Path)
 		c.HTML(http.StatusOK, "webhook", gin.H{
+			"variables":               variables,
 			"webhook":                 webhookWithDetails.Webhook,
 			"Type":                    utils.WebhookEntity,
 			"httpExitPair":            webhookWithDetails.Webhook.GetExitHttpPair(),
@@ -1052,6 +1055,43 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			"showCurlGenerator":       cache["showCurlGenerator"],
 		})
 	}
+}
+
+// Define an interface for types that have GetEnvVars method
+type EnvVarProvider interface {
+	GetEnvVars() map[string]string
+}
+
+func getAutoCompleteVarsGeneric(envVarProvider EnvVarProvider, block models.Block, store *models.Store, defaults []string) []string {
+	keys := defaults
+	keys = append(keys, utils.GetMapKeys(envVarProvider.GetEnvVars())...)
+
+	keys = append(keys, utils.GetMapKeys(block.GetEnvVars())...)
+
+	creds, err := store.ListCredentialsForEnv()
+
+	if err == nil {
+		tmp := utils.GetMapKeys(creds)
+		keys = append(keys, tmp...)
+	}
+
+	keys = utils.RemoveDuplicates(keys)
+	return keys
+}
+
+func getAutoCompleteVars(details *models.WebhookDetail, store *models.Store) []string {
+	defaults := []string{
+		"PAYLOAD_DATA",
+		"FORM_{NAME}",
+		"URL_PARAM_{NAME}",
+		"HEADER_{HEADER_NAME}",
+	}
+	return getAutoCompleteVarsGeneric(&details.Webhook, details.Block, store, defaults)
+}
+
+func getAutoCompleteVarsPeriodic(details *models.PeriodicTaskDetail, store *models.Store) []string {
+	defaults := []string{}
+	return getAutoCompleteVarsGeneric(&details.PeriodicTask, details.Block, store, defaults)
 }
 
 func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
@@ -1068,10 +1108,13 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 			cache["showCurlGenerator"] = utils.IsCommandAvailable("curl")
 		}
 
+		variables := getAutoCompleteVarsPeriodic(periodicTaskDetails, store)
+
 		editableComponentArgs := utils.ToMap(periodicTaskDetails.PeriodicTask)
 		editableComponentArgs["Type"] = utils.PeriodicTaskEntity
 		editableComponentArgs["Field"] = utils.DefaultString(periodicTaskDetails.PeriodicTask.Name, "No Name")
 		c.HTML(http.StatusOK, "periodic_task", gin.H{
+			"variables":               variables,
 			"periodicTask":            periodicTaskDetails.PeriodicTask,
 			"Type":                    utils.PeriodicTaskEntity,
 			"fileContent":             utils.DefaultString(periodicTaskDetails.File.Content, "echo 'Hello World!'"),

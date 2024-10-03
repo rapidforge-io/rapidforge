@@ -245,6 +245,31 @@ func GenerateRandomString(length int) (string, error) {
 	return hex.EncodeToString(randomBytes), nil
 }
 
+func GetMapKeys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func RemoveDuplicates(input []string) []string {
+	// Create a map to track unique elements
+	uniqueMap := make(map[string]bool)
+	var result []string
+
+	// Iterate through the input slice
+	for _, val := range input {
+		// If the value is not already in the map, add it
+		if !uniqueMap[val] {
+			uniqueMap[val] = true
+			result = append(result, val)
+		}
+	}
+
+	return result
+}
+
 // Add this to merge maps
 // func (s *Settings) Merge(other *Settings) error {
 // 	s.mux.Lock()

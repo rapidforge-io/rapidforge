@@ -2,8 +2,10 @@
 <link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
 <link rel="stylesheet" href="/static/css/dracula.min.css">
 <link rel="stylesheet" href="/static/css/codemirror.css">
+<link rel="stylesheet" href="/static/css/show-hint.6.65.7.css"/>
 <script src="/static/javascript/codemirror.6.65.7.js"></script>
 <script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
+<script src="/static/javascript/show-hint.6.65.7.js"></script>
 
 <div>
   <label>Url Path</label>
@@ -247,6 +249,29 @@
     mode: "shell",
     indentUnit: 2,
     theme: theme,
+  });
+
+function customAutocomplete(editor) {
+       var cursor = editor.getCursor();
+       var token = editor.getTokenAt(cursor);
+
+       var customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
+
+       var filteredWords = customWords.filter(function(word) {
+           return word.startsWith(token.string);
+       });
+
+       return {
+           list: filteredWords.length ? filteredWords : customWords,
+           from: CodeMirror.Pos(cursor.line, token.start),
+           to: CodeMirror.Pos(cursor.line, token.end)
+       };
+}
+
+  editor.on("inputRead", function (cm, event) {
+    if (!cm.state.completionActive && event.text[0].match(/\w/)) {
+        cm.showHint({ hint: customAutocomplete, completeSingle: false });
+    }
   });
 
   function getEditorVal() {

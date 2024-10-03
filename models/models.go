@@ -796,6 +796,7 @@ type PeriodicTaskDetail struct {
 	PeriodicTask PeriodicTask `json:"periodicTask" db:"periodic_task"`
 	Program      Program      `json:"program" db:"program"`
 	File         File         `json:"file" db:"file"`
+	Block        Block        `json:"block" db:"block"`
 }
 
 func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, error) {
@@ -809,13 +810,16 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, er
 			pt.created_at AS "periodic_task.created_at", pt.updated_at AS "periodic_task.updated_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
-			f.filename AS "file.filename", f.content AS "file.content"
+			f.filename AS "file.filename", f.content AS "file.content",
+			b.env_variables AS "block.env_variables"
 		FROM
 			periodic_tasks pt
 		JOIN
 			programs p ON pt.program_id = p.id
 		JOIN
 			files f ON p.id = f.program_id
+    	JOIN
+		    blocks b ON b.id = pt.block_id
 		WHERE
 			pt.id = ?`
 
@@ -829,6 +833,7 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, er
 
 type WebhookDetail struct {
 	Webhook Webhook `json:"webhook"`
+	Block   Block   `json:"block"`
 	Program Program `json:"program"`
 	File    File    `json:"file"`
 }
@@ -844,13 +849,16 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 			w.program_id AS "webhook.program_id", w.created_at AS "webhook.created_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
-			f.filename AS "file.filename", f.content AS "file.content"
+			f.filename AS "file.filename", f.content AS "file.content",
+			b.env_variables AS "block.env_variables"
 		FROM
 			webhooks w
 		JOIN
 			programs p ON w.program_id = p.id
 		JOIN
 			files f ON p.id = f.program_id
+		JOIN
+		    blocks b ON b.id = w.block_id
 		WHERE
 			w.id = ?`
 
