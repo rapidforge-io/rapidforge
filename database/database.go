@@ -34,6 +34,7 @@ type DbCon struct {
 var (
 	once     sync.Once
 	instance *sqlx.DB
+	kbDB     *sqlx.DB
 )
 
 const (
@@ -47,6 +48,15 @@ func (db *DbCon) BeginImmediateTransaction() (*sqlx.Tx, error) {
 		_, err = tx.Exec("ROLLBACK; BEGIN IMMEDIATE")
 	}
 	return tx, err
+}
+
+func GetKvDbConn() *DbCon {
+	once.Do(func() {
+		fileName := config.Get().KVUrl
+		kbDB = LoadConnection(fileName)
+	})
+
+	return &DbCon{DB: kbDB}
 }
 
 func GetDbConn(fileName string) *DbCon {
@@ -128,7 +138,7 @@ func SetupKV() {
 		rflog.Error("Failed to create table", "err:", err)
 	}
 
-	fmt.Println("KeyValueStore table created successfully.")
+	rflog.Info("KeyValueStore table created successfully.")
 }
 
 func LoadConnection(databaseName string) *sqlx.DB {
@@ -136,8 +146,6 @@ func LoadConnection(databaseName string) *sqlx.DB {
 	if databaseName == "" {
 		databaseName = config.Get().DatabaseUrl
 	}
-
-	rflog.Info("[LoadConnection]", "database_name", config.Get().DatabaseUrl)
 
 	CreateDbFile(databaseName)
 
