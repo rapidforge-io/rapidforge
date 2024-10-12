@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -15,9 +16,8 @@ type ScriptResult struct {
 	Error    string `json:"error,omitempty"`
 }
 
-// ExecuteBashScriptWithEnv takes a string representing a Bash script, a map of environment variables, writes the script to a temporary file, executes it, and returns the result as a ScriptResult struct.
+// Run executes a script with optional shebang support.
 func Run(script string, envVars map[string]string) (ScriptResult, error) {
-
 	fileName := fmt.Sprintf("script-%d.sh", time.Now().Unix())
 	tmpFile, err := os.CreateTemp(os.TempDir(), fileName)
 	if err != nil {
@@ -38,10 +38,19 @@ func Run(script string, envVars map[string]string) (ScriptResult, error) {
 		return ScriptResult{}, err
 	}
 
-	// Create a new command to execute the temporary bash script file
-	cmd := exec.Command("bash", tmpFile.Name())
+	var cmd *exec.Cmd
 
-	// Create a buffer to capture the standard output
+	// Check if the script starts with a shebang line
+	scriptTrimmed := strings.TrimLeft(script, " \t\r\n")
+	if strings.HasPrefix(scriptTrimmed, "#!") {
+		// Execute the script directly
+		cmd = exec.Command(tmpFile.Name())
+	} else {
+		// No shebang, assume bash script
+		cmd = exec.Command("bash", tmpFile.Name())
+	}
+
+	// Create a buffer to capture the standard output and error
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

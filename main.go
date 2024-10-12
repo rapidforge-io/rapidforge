@@ -105,8 +105,58 @@ func handleCLI() {
 	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
 	sqlCmd := flag.NewFlagSet("sql", flag.ExitOnError)
 
+	setCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge set --key <key> --value <value>
+
+        Description:
+            Sets the value for a given key.
+        `)
+	}
+
+	getCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge get -key <key>
+
+        Description:
+            Gets the value of a given key.
+        `)
+	}
+
+	listCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge list
+
+        Description:
+            Lists all keys in the store.
+        `)
+	}
+
+	sqlCmd.Usage = func() {
+		fmt.Println(`
+      Usage:
+        ./rapidforge sql <SQL query>
+
+      Description:
+          Executes a custom SQL query against the kv database.
+      `)
+	}
+
+	delCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+           ./rapidforge del --key <key>
+
+        Description:
+            Deletes a given key.
+        `)
+	}
+
 	if len(os.Args) < 2 {
-		fmt.Println("Expected 'set', 'get', 'del', or 'list' subcommands")
+		fmt.Println("Expected 'set', 'get', 'del', or 'list' subcommands --help for list of all commands")
 		os.Exit(1)
 	}
 
@@ -137,10 +187,8 @@ func handleCLI() {
 		}
 		kv.Del(*key)
 	case "list":
-		listCmd.Parse(os.Args[2:])
 		kv.List()
 	case "sql":
-		// Handle 'sql' command
 		sqlStmt := sqlCmd.String("query", "", "SQL query to execute")
 		sqlCmd.Parse(os.Args[2:])
 		if *sqlStmt == "" {
@@ -148,10 +196,32 @@ func handleCLI() {
 			os.Exit(1)
 		}
 		kv.ExecuteSQL(*sqlStmt)
+	case "help":
+		displayHelp()
 	default:
-		fmt.Println("Expected 'set', 'get', 'del', 'list', or 'sql' subcommands")
+		displayHelp()
+		// fmt.Println("Expected 'set', 'get', 'del', 'list', or 'sql' subcommands")
 		os.Exit(1)
 	}
+}
+
+func displayHelp() {
+	helpText := `
+Usage:
+    ./rapidforge this will run server by default
+    ./rapidforge <command> [options]
+
+Available Commands:
+    set     Set a key-value pair.
+    get     Get the value of a key.
+    del     Delete a key.
+    list    List all keys.
+    sql     Execute a custom SQL query.
+    help    Show this help message.
+
+Use "rapidforge <command> -h" for more information about a command.
+`
+	fmt.Println(helpText)
 }
 
 func runServer() {
