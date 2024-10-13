@@ -4,6 +4,8 @@ package main
 import (
 	"crypto/tls"
 	"embed"
+	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"runtime"
@@ -15,6 +17,7 @@ import (
 	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/rapidforge-io/rapidforge/config"
 	"github.com/rapidforge-io/rapidforge/database"
+	"github.com/rapidforge-io/rapidforge/kv"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
 	"github.com/rapidforge-io/rapidforge/services"
@@ -82,11 +85,146 @@ var staticFS embed.FS
 // - add action to send email using smtp
 
 var (
-	Version = "0.8.4"
+	Version = "0.8.5"
 	Package = "community"
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		handleCLI()
+	} else {
+		runServer()
+	}
+}
+
+func handleCLI() {
+	// Define subcommands
+	setCmd := flag.NewFlagSet("set", flag.ExitOnError)
+	getCmd := flag.NewFlagSet("get", flag.ExitOnError)
+	delCmd := flag.NewFlagSet("del", flag.ExitOnError)
+	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
+	sqlCmd := flag.NewFlagSet("sql", flag.ExitOnError)
+
+	setCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge set --key <key> --value <value>
+
+        Description:
+            Sets the value for a given key.
+        `)
+	}
+
+	getCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge get -key <key>
+
+        Description:
+            Gets the value of a given key.
+        `)
+	}
+
+	listCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge list
+
+        Description:
+            Lists all keys in the store.
+        `)
+	}
+
+	sqlCmd.Usage = func() {
+		fmt.Println(`
+      Usage:
+        ./rapidforge sql <SQL query>
+
+      Description:
+          Executes a custom SQL query against the kv database.
+      `)
+	}
+
+	delCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+           ./rapidforge del --key <key>
+
+        Description:
+            Deletes a given key.
+        `)
+	}
+
+	if len(os.Args) < 2 {
+		fmt.Println("Expected 'set', 'get', 'del', or 'list' subcommands --help for list of all commands")
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "set":
+		key := setCmd.String("key", "", "Key to set")
+		value := setCmd.String("value", "", "Value to set")
+		setCmd.Parse(os.Args[2:])
+		if *key == "" || *value == "" {
+			setCmd.PrintDefaults()
+			os.Exit(1)
+		}
+		kv.Set(*key, *value)
+	case "get":
+		key := getCmd.String("key", "", "Key to get")
+		getCmd.Parse(os.Args[2:])
+		if *key == "" {
+			getCmd.PrintDefaults()
+			os.Exit(1)
+		}
+		kv.Get(*key)
+	case "del":
+		key := delCmd.String("key", "", "Key to delete")
+		delCmd.Parse(os.Args[2:])
+		if *key == "" {
+			delCmd.PrintDefaults()
+			os.Exit(1)
+		}
+		kv.Del(*key)
+	case "list":
+		kv.List()
+	case "sql":
+		sqlStmt := sqlCmd.String("query", "", "SQL query to execute")
+		sqlCmd.Parse(os.Args[2:])
+		if *sqlStmt == "" {
+			sqlCmd.PrintDefaults()
+			os.Exit(1)
+		}
+		kv.ExecuteSQL(*sqlStmt)
+	case "help":
+		displayHelp()
+	default:
+		displayHelp()
+		// fmt.Println("Expected 'set', 'get', 'del', 'list', or 'sql' subcommands")
+		os.Exit(1)
+	}
+}
+
+func displayHelp() {
+	helpText := `
+Usage:
+    ./rapidforge this will run server by default
+    ./rapidforge <command> [options]
+
+Available Commands:
+    set     Set a key-value pair.
+    get     Get the value of a key.
+    del     Delete a key.
+    list    List all keys.
+    sql     Execute a custom SQL query.
+    help    Show this help message.
+
+Use "rapidforge <command> -h" for more information about a command.
+`
+	fmt.Println(helpText)
+}
+
+func runServer() {
 	if config.Get().Cloud {
 		honeybadger.Configure(honeybadger.Configuration{APIKey: "hbp_WvXKQD1pSbOyPOmBlENVIvRsWM7P5i2gHFcm"})
 		defer honeybadger.Monitor()
@@ -123,7 +261,6 @@ func main() {
 		"AdminPassword": "******",
 	}
 
-	// this will be populated only for once in initial setup
 	if adminUser != nil {
 		bannerData["AdminUserName"] = adminUser.Username
 		bannerData["AdminPassword"] = adminUser.PasswordHash
@@ -131,8 +268,6 @@ func main() {
 
 	utils.PrintBanner(viewsFS, bannerData)
 
-	// to disable gin
-	// gin.DefaultWriter = io.Discard
 	r := gin.Default()
 
 	if config.Get().Env == "production" {
