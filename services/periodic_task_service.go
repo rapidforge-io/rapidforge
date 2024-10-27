@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/adhocore/gronx"
-	"github.com/rapidforge-io/rapidforge/bashrunner"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
 	"github.com/rapidforge-io/rapidforge/utils"
@@ -32,7 +31,8 @@ func (s *Service) RunPeriodicPrograms() {
 		}
 
 		go func() {
-			res, err := bashrunner.Run(task.File.Content, env)
+			runner := GetRunner(RunnerType(task.Program.ProgramType))
+			res, err := runner.Run(task.File.Content, env)
 
 			if err != nil {
 				rflog.Error("Problem occurred running periodic task", "err=", err)

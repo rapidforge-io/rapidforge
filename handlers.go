@@ -16,7 +16,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
-	"github.com/rapidforge-io/rapidforge/bashrunner"
 	"github.com/rapidforge-io/rapidforge/config"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
@@ -65,7 +64,6 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		path = strings.TrimPrefix(path, "/")
 		webhook, err := store.SelectWebhookByPath(path, httpVerb)
-
 		if errors.Is(err, sql.ErrNoRows) {
 			rflog.Error("failed to get webhook", err, "path", path)
 			c.Status(http.StatusNotFound)
@@ -153,8 +151,8 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 		envVars = utils.MergeMaps(envVars, webhookEnvVariables)
 
 		exitHttpPair := webhook.Webhook.GetExitHttpPair()
-
-		res, err := bashrunner.Run(webhook.File.Content, envVars)
+		runner := services.GetRunner(services.RunnerType(webhook.Program.ProgramType))
+		res, err := runner.Run(webhook.File.Content, envVars)
 
 		args, _ := json.Marshal(eventArgs)
 
@@ -1008,7 +1006,7 @@ func updatePeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 			for _, err := range err.(validator.ValidationErrors) {
 				errs = append(errs, err.Field()+": "+err.ActualTag())
 			}
-			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, strings.Join(errs, ", ")))
 			return
 		}
 
@@ -1016,6 +1014,7 @@ func updatePeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 
 		if err != nil {
 			rflog.Error("failed to update periodic task", err)
+			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
 			return
 		}
 
@@ -1047,6 +1046,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 		c.HTML(http.StatusOK, "webhook", gin.H{
 			"variables":               variables,
 			"webhook":                 webhookWithDetails.Webhook,
+			"programType":             webhookWithDetails.Program.ProgramType,
 			"Type":                    utils.WebhookEntity,
 			"httpExitPair":            webhookWithDetails.Webhook.GetExitHttpPair(),
 			"fileContent":             utils.DefaultString(webhookWithDetails.File.Content, config.DefaultScript),
@@ -1116,6 +1116,7 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 		c.HTML(http.StatusOK, "periodic_task", gin.H{
 			"variables":               variables,
 			"periodicTask":            periodicTaskDetails.PeriodicTask,
+			"programType":             periodicTaskDetails.Program.ProgramType,
 			"Type":                    utils.PeriodicTaskEntity,
 			"fileContent":             utils.DefaultString(periodicTaskDetails.File.Content, "echo 'Hello World!'"),
 			"editableComponentParams": editableComponentArgs,

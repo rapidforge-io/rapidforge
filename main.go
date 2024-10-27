@@ -89,6 +89,8 @@ var (
 	Package = "community"
 )
 
+// Runner defines the interface for script execution
+
 func main() {
 	if len(os.Args) > 1 {
 		handleCLI()
