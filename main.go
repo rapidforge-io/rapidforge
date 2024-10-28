@@ -85,9 +85,11 @@ var staticFS embed.FS
 // - add action to send email using smtp
 
 var (
-	Version = "0.8.5"
+	Version = "0.8.8"
 	Package = "community"
 )
+
+// Runner defines the interface for script execution
 
 func main() {
 	if len(os.Args) > 1 {

@@ -7,7 +7,7 @@
 <script src="/static/javascript/codemirror.6.65.7.js"></script>
 <script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
 <script src="/static/javascript/show-hint.6.65.7.js"></script>
-
+<script src="/static/javascript/codemirrorlua.6.65.js"></script>
 
 <div class="is-flex is-align-items-baseline">
 <sl-icon-button name="arrow-left" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
@@ -98,6 +98,7 @@
           hx-patch="/periodic_tasks/{{.periodicTask.ID}}"
           hx-include="[name]"
           hx-target="#alertBox"
+          hx-target-error="#alertBox"
           hx-vals="js:{editor: getEditorVal()}"
         >
           Save
@@ -109,18 +110,24 @@
       </div>
     </div>
 
-    {{ if .showCurlGenerator }}
-    <div class="is-flex m-2">
-     <sl-button size="small" onclick="curlGeneratorDialog.show()">cURL Generator</sl-button>
-   </div>
-   {{end}}
+      <div class="is-flex m-2">
+      <sl-select id="programType" name="programType" size="small" value={{.programType}}>
+       <sl-option value="bash">Bash</sl-option>
+       <sl-option value="lua">Lua</sl-option>
+     </sl-select>
+      {{ if .showCurlGenerator }}
+        <div id="curlGeneratorContainer" class="is-flex ml-2">
+         <sl-button size="small" onclick="curlGeneratorDialog.show()">cURL Generator</sl-button>
+        </div>
+      {{end}}
+    </div>
     <div class="m-2">
       <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
     </div>
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal()}" hx-target="#alertBoxSettings">
+    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal(), programType: getProgramType()}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -185,6 +192,7 @@
 
 <script src="/static/javascript/cronstrue.2.50.js" async></script>
 <script src="/static/javascript/curlgenerator.js"></script>
+<script src="/static/javascript/editorcommon.js"></script>
 <script>
   const currentTheme = localStorage.getItem('theme') || 'light';
   const theme = currentTheme == 'dark' ? 'dracula' : 'default';
@@ -200,6 +208,14 @@
   function getEditorVal() {
     return editor.getValue();
   }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const programType = document.getElementById("programType").value || {{.programType}};
+    hideOrShowCurlGenerator(programType);
+    setEditorMode(programType);
+  });
+
+  document.getElementById("programType").addEventListener("sl-change", changeEditor);
 
   function customAutocomplete(editor) {
        var cursor = editor.getCursor();

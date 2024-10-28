@@ -35,9 +35,10 @@ type Block struct {
 }
 
 type Program struct {
-	ID        int64     `json:"id" db:"id"`
-	Name      string    `json:"name" db:"name"`
-	CreatedAt time.Time `json:"createdAt" db:"created_at"`
+	ID          int64     `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name"`
+	ProgramType string    `json:"programType" db:"type"`
+	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
 }
 
 type File struct {
@@ -228,6 +229,7 @@ type WebhookFormData struct {
 	HTTPResponseCodes []string `form:"httpResponseCode[]" binding:"dive"`
 	ResponseHeaders   string   `form:"responseHeaders"`
 	Name              string   `form:"name"`
+	ProgramType       string   `form:"programType"`
 	Description       string   `form:"description"`
 	Env               string   `form:"env"`
 	Active            bool     `form:"active" `
@@ -245,6 +247,7 @@ type PeriodicTaskFormData struct {
 	FileContent string `form:"editor" `
 	Cron        string `form:"cron" validate:"cron"`
 	Code        string `form:"editor"`
+	ProgramType string `form:"programType"`
 }
 
 type Store struct {
@@ -613,6 +616,7 @@ type WebHookDetail struct {
 	Webhook Webhook `json:"periodicTask" db:"webhook"`
 	File    File    `json:"file" db:"file"`
 	Block   Block   `json:"block" db:"block"`
+	Program Program `json:"program" db:"program"`
 }
 
 func (s *Store) SelectWebhookByPath(path string, verb string) (*WebHookDetail, error) {
@@ -624,7 +628,7 @@ func (s *Store) SelectWebhookByPath(path string, verb string) (*WebHookDetail, e
 		   w.response_headers AS "webhook.response_headers",
 		   w.exit_http_pair AS "webhook.exit_http_pair",
 		   b.env_variables AS "block.env_variables",
-		   b.id AS "block.id"
+		   b.id AS "block.id", p.type AS "program.type"
 	FROM
 		webhooks w
 	JOIN
@@ -685,6 +689,23 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 		rflog.Error("failed to update file content:", "err", err)
 		return err
 	}
+
+	query = `
+	    UPDATE programs
+          SET type = ?
+	    WHERE id = (
+	    	SELECT program_id
+	    	FROM webhooks
+	    	WHERE id = ?
+	    )`
+
+	_, err = tx.Exec(query, formData.ProgramType, webhookID)
+	if err != nil {
+		tx.Rollback()
+		rflog.Error("failed to update program type for webhook:", "err", err)
+		return err
+	}
+
 	query = ` UPDATE webhooks SET env_variables = ?,
 	              		          name = ?,
 						          description = ?,
@@ -745,6 +766,24 @@ func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int64, formData Periodic
 		rflog.Error("failed to update file content:", "err", err)
 		return err
 	}
+
+	query = `
+		UPDATE programs
+		SET type = ?
+		WHERE id = (
+			SELECT program_id
+			FROM periodic_tasks
+			WHERE id = ?
+		)
+	`
+	_, err = tx.Exec(query, formData.ProgramType, periodicTaskID)
+
+	if err != nil {
+		tx.Rollback()
+		rflog.Error("failed to update program type:", "err", err)
+		return err
+	}
+
 	query = `UPDATE periodic_tasks SET env_variables = ?,
 	              		               name = ?,
 						               description = ?,
@@ -811,7 +850,7 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, er
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
 			f.filename AS "file.filename", f.content AS "file.content",
-			b.env_variables AS "block.env_variables"
+			b.env_variables AS "block.env_variables", p.type AS "program.type"
 		FROM
 			periodic_tasks pt
 		JOIN
@@ -850,7 +889,7 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
 			f.filename AS "file.filename", f.content AS "file.content",
-			b.env_variables AS "block.env_variables"
+			b.env_variables AS "block.env_variables", p.type AS "program.type"
 		FROM
 			webhooks w
 		JOIN
