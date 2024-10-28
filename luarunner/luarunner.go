@@ -160,35 +160,6 @@ func (lr *LuaRunner) Run(script string, envVars map[string]string) (runner.Scrip
 	} else {
 		result.ExitCode = 0 // Success
 	}
-	fmt.Println("---------------")
-	fmt.Printf("%v\n", result)
+
 	return result, nil
 }
-
-// func main() {
-// 	// Step 1: Initialize LuaRunner
-// 	luaRunner, err := NewLuaRunner()
-// 	if err != nil {
-// 		log.Fatalf("failed to initialize LuaRunner: %s\n", err)
-// 	}
-// 	defer luaRunner.Cleanup()
-
-// 	// Step 2: Run a Lua script that uses the JSON library
-// 	script := `
-// 		local json = require("json")
-// 		local data = {
-// 			name = "test",
-// 			value = 123
-// 		}
-// 		print(json.encode(data))
-// 	`
-
-// 	result, err := luaRunner.Run(script, nil)
-// 	if err != nil {
-// 		log.Fatalf("Lua script execution failed: %s\n", err)
-// 	}
-
-// 	// Step 3: Display the result
-// 	resultJSON, _ := json.MarshalIndent(result, "", "  ")
-// 	fmt.Println(string(resultJSON))
-// }
