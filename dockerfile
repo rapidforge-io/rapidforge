@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     jq \
     sqlite3 \
-    lua5.4 \
     gh \
     && rm -rf /var/lib/apt/lists/*
 

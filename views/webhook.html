@@ -128,7 +128,7 @@
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="webhookConfig" hx-patch="/webhooks/{{.webhook.ID}}" hx-include="#webhookConfig [name]"  hx-vals="js:{editor: getEditorVal()}" hx-target="#alertBoxSettings">
+    <form id="webhookConfig" hx-patch="/webhooks/{{.webhook.ID}}" hx-include="#webhookConfig [name]"  hx-vals="js:{editor: getEditorVal(), programType: getProgramType()}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -289,6 +289,11 @@ function customAutocomplete(editor) {
         cm.showHint({ hint: customAutocomplete, completeSingle: false });
     }
   });
+
+
+  function getProgramType() {
+    return document.getElementById("programType").value;
+  }
 
   function getEditorVal() {
     return editor.getValue();

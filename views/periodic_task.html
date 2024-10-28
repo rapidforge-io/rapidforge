@@ -127,7 +127,7 @@
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal()}" hx-target="#alertBoxSettings">
+    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal(), programType: getProgramType()}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"

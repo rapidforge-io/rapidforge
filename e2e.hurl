@@ -40,3 +40,24 @@ GET https://main.rapidforge.io/webhook/periodic-task
 HTTP 200
 [Asserts]
 jsonpath "$.RESULT" == "true"
+
+# Make a GET request to the specified URL with echo=true as a query parameter
+GET https://main.rapidforge.io/webhook/lua-env
+
+HTTP 201
+[Asserts]
+# Check that the status is 200
+status == 200
+
+# Check that the response body matches the expected JSON structure
+jsonpath "$.BLOCK_LEVEL" == "true"
+jsonpath "$.PLAIN_CRED" == "true"
+jsonpath "$.WEBHOOK_LEVEL" == "true"
+jsonpath "$.URL_PARAM_ECHO" == "true"
+jsonpath "$.OVERWRITE" == "true"
+
+# Test periodic task lua
+GET https://main.rapidforge.io/webhook/event-count-lua
+HTTP 200
+[Asserts]
+jsonpath "$.RESULT" == "true"
