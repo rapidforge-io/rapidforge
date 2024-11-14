@@ -39,7 +39,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/honeybadger-io/honeybadger-go v0.7.0
+	github.com/honeybadger-io/honeybadger-go v0.8.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
