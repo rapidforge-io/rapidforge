@@ -1,3 +1,7 @@
+function getProgramType() {
+    return document.getElementById("programType").value;
+  }
+
 function hideOrShowCurlGenerator(programType) {
     const curlContainer = document.getElementById("curlGeneratorContainer");
     if (programType === "bash") {
