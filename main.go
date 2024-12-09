@@ -85,7 +85,7 @@ var staticFS embed.FS
 // - add action to send email using smtp
 
 var (
-	Version = "0.8.8"
+	Version = "0.8.9"
 	Package = "community"
 )
 
