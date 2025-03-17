@@ -1,6 +1,7 @@
 module github.com/rapidforge-io/rapidforge
 
 go 1.22.4
+toolchain go1.24.1
 
 require (
 	github.com/fatih/color v1.17.0
@@ -59,7 +60,7 @@ require (
 	golang.org/x/arch v0.14.0 // indirect
 	golang.org/x/crypto v0.33.0
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/oauth2 v0.21.0
+	golang.org/x/oauth2 v0.28.0
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
