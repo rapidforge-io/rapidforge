@@ -57,10 +57,12 @@ type CanvasItemsContextType = {
   setCanvasItems: React.Dispatch<React.SetStateAction<Tree>>;
   activeItem: ActiveItem | null;
   setActiveItem: React.Dispatch<React.SetStateAction<ActiveItem> | null>;
-  containerRef: React.MutableRefObject | null;
+  containerRef: React.MutableRefObject<HTMLElement | null>;
 
   pageMetaData: {};
   setPageMetadata: React.Dispatch<React.SetStateAction<PageMetaData>>;
+  previewTab: Window | null;
+  setPreviewTab: React.Dispatch<React.SetStateAction<Window | null>>;
 };
 
 const CanvasItemsContext = createContext<CanvasItemsContextType>({
@@ -89,7 +91,7 @@ const setupTree = () => {
   return tree;
 }
 // Provider component to wrap your app
-export const CanvasItemsProvider: React.FC = ({ children }) => {
+export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const containerRef = useRef(null);
   const loadedTree = window.pageData.canvasState;
@@ -123,7 +125,7 @@ export const CanvasItemsProvider: React.FC = ({ children }) => {
       activeData.currentParent !== over.id
     ) {
       // somehow drop event ends up like this
-      const activeNode = canvasItems.search(active.id);
+      const activeNode = canvasItems.search(active.id.toString());
       const collidingChild = activeNode.children.find(
         (child) => child.id === over.id
       );
