@@ -279,7 +279,7 @@ const Canvas = (props) => {
                 Enabled/Disabled
               </SlSwitch>
             </div>
-            <div className="is-flex mb-2 is-align-items-center">
+            <div className="mb-2 ml-1 mr-1">
               <SlInput
                 label="Page Url"
                 id="pageUrl"
@@ -292,7 +292,7 @@ const Canvas = (props) => {
                 }
               />
             </div>
-            <div className="is-flex mb-2">
+            <div className="mb-2 ml-1 mr-1">
               <SlInput
                 label="Page Title"
                 value={pageMetaData.title}
@@ -304,7 +304,7 @@ const Canvas = (props) => {
                 }
               />
             </div>
-            <div className="is-flex ">
+            <div className=" mb-2 ml-1 mr-1">
               <SlTextarea
                 label="Page description"
                 value={pageMetaData.description}
@@ -662,11 +662,11 @@ function PropEditor() {
     });
   }
 
-  function renderTabBody() {
-    if (activeTab === "props") {
-      return <>{propsRender()}</>;
-    } else if (activeTab === "layout") return <LayoutEditor />;
-  }
+  // function renderTabBody() {
+  //   if (activeTab === "props") {
+  //     return <>{propsRender()}</>;
+  //   } else if (activeTab === "layout") return <LayoutEditor />;
+  // }
 
   return (
     <aside className={`rightAside ${isVisible ? "show" : ""}`}>
@@ -675,15 +675,13 @@ function PropEditor() {
       </button>
 
       <div className="flex-grid has-1-cols">
-        <div>
-          <SlTabGroup onClick={(e) => setActiveTab(e.target.id)}>
-            <SlTab slot="nav" panel="props" id="props">
-              Props
-            </SlTab>
-          </SlTabGroup>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <h2>
+            <b>Props</b>
+          </h2>
         </div>
-
-        <div className="container pt-3 pl-3">{renderTabBody()}</div>
+        <SlDivider />
+        <div className="container pt-3 pl-3">{propsRender()}</div>
       </div>
     </aside>
   );

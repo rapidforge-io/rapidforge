@@ -15,10 +15,14 @@ export const ComponentPanel = (props) => {
   return (
     <aside className={`leftAside ${isVisible ? "show" : ""}`}>
       <button className="menuLeftbtn" onClick={toggleVisibility}>
-      <SlIcon name="arrow-right"></SlIcon>
+        <SlIcon name="arrow-right"></SlIcon>
       </button>
       <div className="container">
-        <h2>Components</h2>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <h2>
+            <b>Components</b>
+          </h2>
+        </div>
         <SlDivider />
         <Accordion />
       </div>

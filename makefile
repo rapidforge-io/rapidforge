@@ -69,6 +69,11 @@ dev:kill-port
 	@echo "Starting rapidforge in dev mode..."
 	air
 
+.PHONY: e2e
+e2e:
+	@echo "Running end-to-end tests..."
+	hurl --test e2e.hurl
+
 .PHONY: release
 release:
 	goreleaser release --clean --verbose
