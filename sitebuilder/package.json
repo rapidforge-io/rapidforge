@@ -27,7 +27,7 @@
     "marked": "^15.0.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "uuid": "^11.0.5"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/quill": "^2.0.10",
