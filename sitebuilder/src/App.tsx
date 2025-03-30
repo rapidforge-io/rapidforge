@@ -476,63 +476,6 @@ const Header = () => {
   );
 };
 
-function LayoutEditor() {
-  // when hover on item circle canvas item
-  // don't allow dropzone to be moved
-  const Tree = () => {
-    const { canvasItems } = useCanvasItems();
-
-    const TreeNodeComponent = ({ node }) => {
-      const [open, setOpen] = useState(true);
-
-      const handleToggle = () => {
-        setOpen(!open);
-      };
-
-      return (
-        <li data-id={node.id}>
-          <div onClick={handleToggle} style={{ cursor: "pointer" }}>
-            {node.children.length > 0 && (
-              <i
-                className={`fa ${open ? "fa-angle-down" : "fa-angle-right"}`}
-                style={{ marginRight: "5px" }}
-              />
-            )}
-            {node.componentName}
-          </div>
-          <ul className={`list-unstyled ${open ? "show" : "collapse"}`}>
-            {node.children.map((child) => (
-              <TreeNodeComponent key={child.id} node={child} />
-            ))}
-          </ul>
-        </li>
-      );
-    };
-
-    const pointerSensor = useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    });
-
-    const sensors = useSensors(pointerSensor);
-
-    return (
-      <DndContext sensors={sensors}>
-        <ul className="list-unstyled">
-          <TreeNodeComponent node={canvasItems.root} />
-        </ul>
-      </DndContext>
-    );
-  };
-
-  return (
-    <>
-      <Tree />
-    </>
-  );
-}
-
 function PropEditor() {
   const [isVisible, setIsVisible] = useState(false);
   const { activeItem, canvasItems, setCanvasItems } = useCanvasItems();
