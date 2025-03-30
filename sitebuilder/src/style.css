@@ -106,8 +106,9 @@ body {
 }
 
 .dropzone-elem {
-  padding: 12%;
+  padding-bottom: 20px;
   margin: 10px;
+  min-width: 100%;
   display: flex;
   flex-direction: column;
 }

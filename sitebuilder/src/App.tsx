@@ -18,15 +18,34 @@ import {
   SlTabPanel,
 } from "@shoelace-style/shoelace/dist/react";
 
-// import SlIcon from '@shoelace-style/shoelace/dist/react/icon';
+// import type { DragDropEvents } from '@dnd-kit/abstract';
+// type DragEndEvent = DragDropEvents<any, any, any>['dragend'];
+// import {
+//   DragDropProvider,
+//   PointerSensor,
+//   KeyboardSensor,
+//   RestrictToWindow,
+// } from '@dnd-kit/react';
+ import { PointerSensor } from "@dnd-kit/dom";
+import {cloneDeep} from 'lodash';
 
-import {
-  DndContext,
-  DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { DragDropProvider} from "@dnd-kit/react";
+// import { PointerSensor } from "@dnd-kit/core";
+
+// import {
+//   PointerSensor,
+// } from '@dnd-kit/dom/sensors';
+
+import { DragDropManager } from '@dnd-kit/dom';
+// import {PointerSensor} from '@dnd-kit/dom/sensors';
+
+// import {
+  // DndContext,
+  // DragEndEvent,
+  // PointerSensor,
+  // useSensor,
+  // useSensors,
+// } from "@dnd-kit/core";
 import { v4 as uuid } from "uuid";
 import CodeMirrorComponent  from "./CodeMirrorComponent";
 
@@ -113,48 +132,66 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   });
   const [previewTab, setPreviewTab] = useState(null);
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    const dropZone = over?.data?.current.dropZone || false;
-    const overData = over?.data?.current || {};
-    const activeData = active?.data?.current || {};
+  function handleDragEnd(event, manager: DragDropManager) {
+    const {operation, canceled} = event;
+    const {source, target} = operation;
+
+    if (target == null || canceled) {
+      return;
+    }
+
+    // const { active, over } = event;
+    const dropZone = target?.data?.dropZone || false;
+    const overData = target?.data || {};
+    const activeData = source?.data || {};
+
+    console.group("drag end");
+    console.trace("source", source);
+    console.trace("target", target);
+    console.trace("activeData", activeData);
+    console.trace("overData", overData);
+    console.groupEnd();
 
     if (
       activeData.onCanvas === true &&
       dropZone === true &&
-      activeData.currentParent !== over.id
+      activeData.currentParent !== target.id
     ) {
       // somehow drop event ends up like this
-      const activeNode = canvasItems.search(active.id.toString());
+      const activeNode = canvasItems.search(source.id.toString());
       const collidingChild = activeNode.children.find(
-        (child) => child.id === over.id
+        (child) => child.id === target.id
       );
+
       if (collidingChild) {
         return;
       }
-
-      canvasItems.moveNode(active.id, over.id);
+      canvasItems.moveNode(source.id, target.id);
       setCanvasItems((prevTree) => {
-        const newTree = new Tree();
-        newTree.root = prevTree.root;
-        return newTree;
+        // const newTree = new Tree();
+        // newTree.root = cloneDeep(prevTree.root);
+        // newTree.root = prevTree.root;
+        // return newTree;
+        return cloneDeep(prevTree);
       });
       //  dropping item to canvas
-    } else if (dropZone === true && activeData.currentParent !== over.id) {
+    } else if (dropZone === true && activeData.currentParent !== target.id) {
       const id = `${uuid()}-${activeData.componentName}`;
       let obj = { ...editableProps[activeData.componentName] };
       let tmp = new TreeNode(id, activeData.componentName, false, obj || {});
+      console.trace("tmp", tmp);
 
       for (let i = 1; i <= activeData.dropzoneCount; i++) {
         const childNode = new TreeNode(
-          `${activeData.dropzoneComponentName}-${uuid()}`,
+          `${uuid()}-${activeData.dropzoneComponentName}`,
           activeData.dropzoneComponentName,
           false
         );
+        console.trace("childNode", childNode);
         tmp.children.push(childNode);
       }
 
-      const targetId = over.id;
+      const targetId = target.id;
       const targetNode = canvasItems.search(targetId.toString());
       targetNode.children.push(tmp);
       setCanvasItems((prevTree) => {
@@ -170,8 +207,14 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     ) {
       const currentNode = canvasItems.search(activeData.currentParent);
       const cloneChildren = [...currentNode.children];
-      const activeIndex = activeData.sortable.index;
-      const overIndex = overData.sortable.index;
+
+      console.trace("activeData", activeData);
+      console.trace("overData", overData);
+
+      const activeIndex = source.sortable.index;
+      const overIndex = source.sortable.initialIndex;
+      // const overIndex = target.sortable.index;
+
       const tmp = cloneChildren[activeIndex];
       cloneChildren[activeIndex] = cloneChildren[overIndex];
       cloneChildren[overIndex] = tmp;
@@ -184,14 +227,28 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }
 
-  const pointerSensor = useSensor(PointerSensor, {
-    // Require the mouse to move by 10 pixels before activating
-    activationConstraint: {
-      distance: 10,
-    },
-  });
+  // const pointerSensor = useSensor(PointerSensor, {
+  //   // Require the mouse to move by 10 pixels before activating
+  //   activationConstraint: {
+  //     distance: 10,
+  //   },
+  // });
 
-  const sensors = useSensors(pointerSensor);
+  // const sensors = useSensors(pointerSensor);
+
+  //  <DragDropProvider sensors={[
+  //       PointerSensor.configure({
+  //     activationConstraints: {
+  //       distance: {
+  //         value: 10
+  //       },
+  //       delay: {
+  //         value: 10,
+  //         tolerance: 100
+  //       }
+  //     }
+  //       })
+  //     ]} onDragEnd={handleDragEnd}></DragDropProvider>
 
   return (
     <CanvasItemsContext.Provider
@@ -207,9 +264,9 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setPageMetadata,
       }}
     >
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DragDropProvider onDragEnd={handleDragEnd}>
         {children}
-      </DndContext>
+      </DragDropProvider>
     </CanvasItemsContext.Provider>
   );
 };
@@ -526,62 +583,63 @@ const Header = () => {
   );
 };
 
-function LayoutEditor() {
-  // when hover on item circle canvas item
-  // don't allow dropzone to be moved
-  const Tree = () => {
-    const { canvasItems } = useCanvasItems();
+// function LayoutEditor() {
+//   // when hover on item circle canvas item
+//   // don't allow dropzone to be moved
+//   const Tree = () => {
+//     const { canvasItems } = useCanvasItems();
 
-    const TreeNodeComponent = ({ node }) => {
-      const [open, setOpen] = useState(true);
+//     const TreeNodeComponent = ({ node }) => {
+//       const [open, setOpen] = useState(true);
 
-      const handleToggle = () => {
-        setOpen(!open);
-      };
+//       const handleToggle = () => {
+//         setOpen(!open);
+//       };
 
-      return (
-        <li data-id={node.id}>
-          <div onClick={handleToggle} style={{ cursor: "pointer" }}>
-            {node.children.length > 0 && (
-              <i
-                className={`fa ${open ? "fa-angle-down" : "fa-angle-right"}`}
-                style={{ marginRight: "5px" }}
-              />
-            )}
-            {node.componentName}
-          </div>
-          <ul className={`list-unstyled ${open ? "show" : "collapse"}`}>
-            {node.children.map((child) => (
-              <TreeNodeComponent key={child.id} node={child} />
-            ))}
-          </ul>
-        </li>
-      );
-    };
+//       return (
+//         <li data-id={node.id}>
+//           <div onClick={handleToggle} style={{ cursor: "pointer" }}>
+//             {node.children.length > 0 && (
+//               <i
+//                 className={`fa ${open ? "fa-angle-down" : "fa-angle-right"}`}
+//                 style={{ marginRight: "5px" }}
+//               />
+//             )}
+//             {node.componentName}
+//           </div>
+//           <ul className={`list-unstyled ${open ? "show" : "collapse"}`}>
+//             {node.children.map((child) => (
+//               <TreeNodeComponent key={child.id} node={child} />
+//             ))}
+//           </ul>
+//         </li>
+//       );
+//     };
 
-    const pointerSensor = useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    });
+//     const pointerSensor = useSensor(PointerSensor, {
+//       activationConstraint: {
+//         distance: 10,
+//         tolerance: 10,
+//       },
+//     });
 
-    const sensors = useSensors(pointerSensor);
+//     const sensors = useSensors(pointerSensor);
 
-    return (
-      <DndContext sensors={sensors}>
-        <ul className="list-unstyled">
-          <TreeNodeComponent node={canvasItems.root} />
-        </ul>
-      </DndContext>
-    );
-  };
+//     return (
+//       <DndContext sensors={sensors}>
+//         <ul className="list-unstyled">
+//           <TreeNodeComponent node={canvasItems.root} />
+//         </ul>
+//       </DndContext>
+//     );
+//   };
 
-  return (
-    <>
-      <Tree />
-    </>
-  );
-}
+//   return (
+//     <>
+//       <Tree />
+//     </>
+//   );
+// }
 
 function PropEditor() {
   const [isVisible, setIsVisible] = useState(false);

@@ -5,7 +5,7 @@ import { marked } from 'marked';
 import { SlTextarea } from "@shoelace-style/shoelace/dist/react";
 
 export function MarkdownContainer(props) {
-  const { id, onCanvas, label, name, currentParent, markdown, active } = props;
+  const { id, onCanvas, label, name, currentParent, markdown, active, index } = props;
   const { canvasItems } = useCanvasItems();
   const componentName = 'MarkdownContainer';
 
@@ -18,6 +18,7 @@ export function MarkdownContainer(props) {
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}

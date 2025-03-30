@@ -2,10 +2,15 @@ import { DragEvent, SyntheticEvent, useEffect, useRef, useState } from "react";
 import { useCanvasItems } from "./App";
 import { Tree, TreeNode } from "./tree";
 import React from "react";
-import { useSortable } from "@dnd-kit/sortable";
 import { HtmlContainer } from "./HtmlContainer";
-import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { SortableContext } from "@dnd-kit/sortable";
+import { useDraggable, useDroppable } from "@dnd-kit/react";
+import {useSortable} from '@dnd-kit/react/sortable';
+import {cloneDeep} from 'lodash';
+
+
+// import { useDraggable, useDroppable } from "@dnd-kit/core";
+// import { useSortable } from "@dnd-kit/sortable";
+// import { SortableContext } from "@dnd-kit/sortable";
 import { MarkdownContainer } from "./MarkdownContainer";
 import {
   SlColorPicker,
@@ -432,22 +437,8 @@ export function ButtonTypePropEditor(handlePropOnChange, value) {
   );
 }
 
-export function BaseDropZone(props) {
-  const { children, id, componentName } = props;
-  const { setNodeRef } = useDroppable({
-    id: id,
-    data: { dropZone: true, componentName: componentName },
-  });
-
-  return (
-    <div id={id} ref={setNodeRef} className="dropzone">
-      {children}
-    </div>
-  );
-}
-
 export function CanvasDropZone(props) {
-  const { children, style, classes } = props;
+  const { children, style, classes,index } = props;
   const { canvasItems, setActiveItem, containerRef  } = useCanvasItems();
   const id = "dropzone";
   const componentName = 'CanvasDropZone';
@@ -457,14 +448,15 @@ export function CanvasDropZone(props) {
     data: { dropZone: true },
   };
 
-  const { isOver, setNodeRef } = useDroppable(settings);
+  const droppable = useDroppable(settings);
 
   const defaultStyle = {
-    backgroundColor: isOver ? "#eaeaea" : undefined,
+    // backgroundColor: isOver ? "#eaeaea" : undefined,
+    backgroundColor: undefined,
   };
 
   const updatedStyle = {...defaultStyle, ...style}
-  const ids = canvasItems.root.children.map((x) => x.id);
+  // const ids = canvasItems.root.children.map((x) => x.id);
 
   const handleSetActiveItem = (e) => {
     e.preventDefault();
@@ -479,11 +471,12 @@ export function CanvasDropZone(props) {
   };
 
   return (
-    <SortableContext items={ids}>
+    // <SortableContext items={ids}>
       <div ref={containerRef}>
         <div
           id={id}
-          ref={setNodeRef}
+          key={id}
+          ref={droppable.ref}
           className={`dropzone  ${classes}`}
           style={updatedStyle}
           onClick={(e) => handleSetActiveItem(e)}
@@ -491,18 +484,19 @@ export function CanvasDropZone(props) {
           <div>{children}</div>
         </div>
       </div>
-    </SortableContext>
+    // </SortableContext>
   );
 }
 
 export function TextInputComponent(props) {
-  const { id, onCanvas, name, currentParent, type, active } = props;
+  const { id, onCanvas, name, currentParent, type, active, index } = props;
   const componentName = "TextInputComponent";
 
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -518,13 +512,14 @@ export function TextInputComponent(props) {
 
 // TODO: check this
 export function CheckboxComponent(props) {
-  const { id, onCanvas, name, items, currentParent, active } = props;
+  const { id, onCanvas, name, items, currentParent, active, index } = props;
   const componentName = "CheckboxComponent";
 
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -548,12 +543,13 @@ export function CheckboxComponent(props) {
 }
 
 export function RadioboxComponent(props) {
-  const { id, onCanvas, name, items, label, currentParent, active } = props;
+  const { id, onCanvas, name, items, label, currentParent, active,index } = props;
   const componentName = "RadioboxComponent";
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -576,13 +572,14 @@ export function RadioboxComponent(props) {
 }
 
 export function TextAreaComponent(props) {
-  const { id, onCanvas, name, currentParent, active } = props;
+  const { id, onCanvas, name, currentParent, active, index } = props;
   const componentName = "TextAreaComponent";
 
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -597,13 +594,13 @@ export function TextAreaComponent(props) {
 }
 
 export function ButtonComponent(props) {
-  const { id, onCanvas, label, name, currentParent, style, active, type} = props;
+  const { id, onCanvas, label, name, currentParent, style, active, type, index } = props;
   const componentName = "ButtonComponent";
 
   function Body() {
     return (
       <div className="is-flex">
-      <button className="button is-primary is-link" name={name} type={type} style={style}>
+      <button key={`${id}-${name}`} className="button is-primary is-link" name={name} type={type} style={style}>
         {label}
       </button>
       </div>
@@ -613,6 +610,7 @@ export function ButtonComponent(props) {
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -627,13 +625,14 @@ export function ButtonComponent(props) {
 }
 
 export function FormComponent(props) {
-  const { id, currentParent, onCanvas, action, children, active } = props;
+  const { id, currentParent, onCanvas, action, children, active, index } = props;
   const componentName = "FormComponent";
 
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -656,7 +655,7 @@ export function FormComponent(props) {
 }
 
 export function DividerComponent(props) {
-  const { id, currentParent, onCanvas, active } = props;
+  const { id, currentParent, onCanvas, active, index } = props;
   const componentName = "DividerComponent";
 
 
@@ -664,6 +663,7 @@ export function DividerComponent(props) {
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -689,13 +689,14 @@ export function ComponentHelper(name: string, iconClass: string) {
 }
 
 export function ParagraphComponent(props) {
-const { id, currentParent, onCanvas, label, style, active } = props;
+const { id, currentParent, onCanvas, label, style, active, index } = props;
   const componentName = "ParagraphComponent";
 
   return onCanvas === true ? (
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
@@ -712,6 +713,7 @@ const { id, currentParent, onCanvas, label, style, active } = props;
 export function BaseSortable(props) {
   const {
     id,
+    index,
     onCanvas,
     componentName,
     children,
@@ -730,18 +732,24 @@ export function BaseSortable(props) {
     },
   };
 
-  const { attributes, listeners, setNodeRef, transform } =
-    useSortable(settings);
+  // console.trace("index", index);
 
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const sortable = useSortable({id: id, index: index, data: settings.data, group: currentParent});
 
+  // const { attributes, listeners, setNodeRef, transform } =
+  //   useSortable(settings);
+
+  // const style = transform
+  //   ? {
+  //       transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  //     }
+  //   : undefined;
   return (
     <>
       <div
+        key={id}
+        id={id}
+        ref={sortable.ref}
         onClick={(e) => {
           e.stopPropagation();
           const item = canvasItems.search(id);
@@ -758,19 +766,21 @@ export function BaseSortable(props) {
         });
 
         setCanvasItems((prevTree) => {
-          const newTree = new Tree();
-          newTree.root = prevTree.root;
-          return newTree;
+          // const newTree = new Tree();
+
+          // Perform deep cloning to ensure immutability
+          // const newTree = cloneDeep(prevTree);
+          return cloneDeep(prevTree);
+          // newTree.root = cloneDeep(prevTree.root);
+          // return newTree;
+          // const newTree = new Tree();
+          // newTree.root = prevTree.root;
+          // return newTree;
         });
         }}
         className={`base-component ${active === true ? "selected-item" : ""}`}
       >
-        <div
-          ref={setNodeRef}
-          style={style}
-          {...listeners}
-          {...attributes}
-        >
+        <div >
           {children}
         </div>
       </div>
@@ -798,23 +808,26 @@ export function BaseDrag(props) {
     },
   };
 
-  const { attributes, listeners, setNodeRef, transform } =
-    useDraggable(settings);
+  const draggable = useDraggable(settings);
 
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 9999,
-      }
-    : undefined;
+  // const { attributes, listeners, setNodeRef, transform } =
+  //   useDraggable(settings);
+
+  // const style = transform
+  //   ? {
+  //       transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  //       zIndex: 9999,
+  //     }
+  //   : undefined;
 
   return (
     <div
       draggable={true}
-      style={style}
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      // style={style}
+      ref={draggable.ref}
+      // ref={setNodeRef}
+      // {...listeners}
+      // {...attributes}
     >
       {children}
     </div>
@@ -822,7 +835,7 @@ export function BaseDrag(props) {
 }
 
 export function ContainerComponent(props) {
-  const { id, currentParent, onCanvas, children, classes, active } = props;
+  const { id, currentParent, onCanvas, children, classes, active, index } = props;
   const componentName = "ContainerComponent";
   return onCanvas !== true ? (
     <BaseDrag
@@ -839,6 +852,7 @@ export function ContainerComponent(props) {
       id={id}
       onCanvas={true}
       active={active}
+      index={index}
       currentParent={currentParent}
       componentName={componentName}
     >
@@ -850,7 +864,7 @@ export function ContainerComponent(props) {
 }
 
 export function GridComponent(props) {
-  const { id, currentParent, onCanvas, children, active} = props;
+  const { id, currentParent, onCanvas, children, active, index} = props;
   const componentName = "GridComponent";
   const [columnsCount, setColumnsCount] = useState(2);
 
@@ -880,6 +894,7 @@ export function GridComponent(props) {
   ) : (
     <BaseSortable
       id={id}
+      index={index}
       onCanvas={true}
       active={active}
       currentParent={currentParent}
@@ -893,45 +908,51 @@ export function GridComponent(props) {
 }
 
 export function Dropzone(props) {
-  const { id, children, onCanvas } = props;
+  const { id, children, currentParent } = props;
   const componentName = "Dropzone";
-  const { isOver, setNodeRef } = useDroppable({
+
+  const settings = {
     id: id,
     data: { dropZone: true, componentName: componentName },
-  });
-
-  let ids = [];
-
-  if (children !== undefined && onCanvas === true) {
-    ids = children.map((x) => x.props.id);
   }
+  const {ref, isDropTarget} = useDroppable(settings);
+  // let ids = [];
+
+  // console.trace("children", children);
+
+  // if (children !== undefined && onCanvas === true) {
+  //   ids = children.map((x) => x.props.id);
+  // }
 
   const classes = () => {
-    let base = "column base-component dropzone-elem";
+    let base = "dropzone-elem";
     if (!children) {
       base = `${base} innCol`;
     }
 
-    if (isOver) {
-      base = `${base} border-2 border-dotted`;
+    if (isDropTarget) {
+      base = `${base} has-background-grey-lighter`;
     }
 
     return base;
   };
 
+  //  {React.Children.map(children, (child, index) =>
+  //         React.isValidElement(child)
+  //           ? React.cloneElement(child, { key: index })
+  //           : child
+  //       )}
+
     return (
-      <>
-        <SortableContext items={ids}>
-          <div id={id} ref={setNodeRef} className={classes()}>
-            {children}
-          </div>
-        </SortableContext>
-      </>
+
+      <div id={id} ref={ref} className={classes()}>
+        {children}
+      </div>
     );
 }
 
 export function DropdownComponent(props) {
-  const { id, currentParent, name, onCanvas, items, label,active } = props;
+  const { id, currentParent, name, onCanvas, items, label, active, index } = props;
   const componentName = "DropdownComponent";
 
   return onCanvas !== true ? (
@@ -947,6 +968,7 @@ export function DropdownComponent(props) {
   ) : (
     <BaseSortable
       id={id}
+      index={index}
       onCanvas={true}
       active={active}
       currentParent={currentParent}
