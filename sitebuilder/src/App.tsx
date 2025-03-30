@@ -2,23 +2,19 @@ import React, { useState, useContext, createContext, useRef } from "react";
 import { ComponentPanel } from "./Editor";
 import { TreeNode, Tree } from "./tree";
 import { editableProps, editablePropsRender } from "./Components";
+import { PageSettings } from "./PageSettings";
 
 import {
   SlTab,
   SlTabGroup,
-  SlInput,
   SlDivider,
   SlButton,
   SlIcon,
-  SlSwitch,
   SlCopyButton,
   SlIconButton,
-  SlTextarea,
   SlAlert,
   SlTabPanel,
 } from "@shoelace-style/shoelace/dist/react";
-
-// import SlIcon from '@shoelace-style/shoelace/dist/react/icon';
 
 import {
   DndContext,
@@ -28,7 +24,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { v4 as uuid } from "uuid";
-import CodeMirrorComponent  from "./CodeMirrorComponent";
+import CodeMirrorComponent from "./CodeMirrorComponent";
 
 interface ActiveItem {
   id: string;
@@ -89,10 +85,11 @@ const setupTree = () => {
   );
   tree.root = rootNode;
   return tree;
-}
+};
 // Provider component to wrap your app
-export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-
+export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const containerRef = useRef(null);
   const loadedTree = window.pageData.canvasState;
   let tree = null;
@@ -214,123 +211,70 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
 };
 
-const App = () => {
-  return (
-    <>
-      <CanvasItemsProvider>
-        <Header />
-        <ComponentPanel />
-        <Canvas />
-        <PropEditor />
-      </CanvasItemsProvider>
-    </>
-  );
-};
-
-const Canvas = (props) => {
-  const {
-    containerRef,
-    canvasItems,
-    pageMetaData,
-    setPageMetadata,
-  } = useCanvasItems();
-
-  function renderCanvasItems() {
-    return canvasItems.renderTreeStructure(canvasItems.root);
-  }
+const Canvas = () => {
+  const { canvasItems, pageMetaData, setPageMetadata } =
+    useCanvasItems();
 
   return (
     <div id="builder-container">
       <SlTabGroup>
-        <SlTab slot="nav" panel="canvas" id="canvas">
+        <SlTab slot="nav" panel="canvas">
           Canvas
         </SlTab>
-        <SlTab slot="nav" panel="pageGlobals" id="pageGlobals">
+        <SlTab slot="nav" panel="pageGlobals">
           Settings
         </SlTab>
-        <SlTab slot="nav" panel="css" id="css">
+        <SlTab slot="nav" panel="css">
           CSS
         </SlTab>
-        <SlTab slot="nav" panel="js" id="js">
+        <SlTab slot="nav" panel="js">
           Javascript
         </SlTab>
 
-        <SlTabPanel name="canvas">{renderCanvasItems()}</SlTabPanel>
+        <SlTabPanel name="canvas">
+          {canvasItems.renderTreeStructure(canvasItems.root)}
+        </SlTabPanel>
+
         <SlTabPanel name="css">
           <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
-          <CodeMirrorComponent
+            <CodeMirrorComponent
               language="css"
-              defaultText={"/* Write css code  */"}
+              defaultText="/* Write css code  */"
               setCode={(value) =>
-                setPageMetadata({ ...pageMetaData, ["css"]: value })
+                setPageMetadata({ ...pageMetaData, css: value })
               }
-            ></CodeMirrorComponent>
+            />
           </div>
         </SlTabPanel>
+
         <SlTabPanel name="pageGlobals">
-          <div className="is-flex is-justify-content-space-between is-flex-direction-column">
-            <div className="is-flex mb-2 mt-2">
-              <SlSwitch
-                checked={pageMetaData.active}
-                onClick={(e) =>
-                  setPageMetadata({ ...pageMetaData, active: e.target.checked })
-                }
-              >
-                Enabled/Disabled
-              </SlSwitch>
-            </div>
-            <div className="mb-2 ml-1 mr-1">
-              <SlInput
-                label="Page Url"
-                id="pageUrl"
-                value={pageMetaData.pageUrl}
-                onSlInput={(e) =>
-                  setPageMetadata({
-                    ...pageMetaData,
-                    pageUrl: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="mb-2 ml-1 mr-1">
-              <SlInput
-                label="Page Title"
-                value={pageMetaData.title}
-                onSlInput={(e) =>
-                  setPageMetadata({
-                    ...pageMetaData,
-                    title: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className=" mb-2 ml-1 mr-1">
-              <SlTextarea
-                label="Page description"
-                value={pageMetaData.description}
-                onSlInput={(e) =>
-                  setPageMetadata({
-                    ...pageMetaData,
-                    description: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
+          <PageSettings />
         </SlTabPanel>
+
         <SlTabPanel name="js">
           <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
             <CodeMirrorComponent
               language="js"
-              defaultText={"/* Write javascript code  */"}
+              defaultText="/* Write javascript code  */"
               setCode={(value) =>
-                setPageMetadata({ ...pageMetaData, ["js"]: value })
+                setPageMetadata({ ...pageMetaData, js: value })
               }
-            ></CodeMirrorComponent>
+            />
           </div>
         </SlTabPanel>
       </SlTabGroup>
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <CanvasItemsProvider>
+      <Header />
+      <ComponentPanel />
+      <Canvas />
+      <PropEditor />
+    </CanvasItemsProvider>
   );
 };
 
@@ -418,8 +362,12 @@ const Header = () => {
         <br />
       </SlAlert>
       <div className="is-flex is-align-items-center mr-8">
-        <SlIconButton name="arrow-left" label="Back" href={backUrl}  className="mr-2" >
-        </SlIconButton>
+        <SlIconButton
+          name="arrow-left"
+          label="Back"
+          href={backUrl}
+          className="mr-2"
+        ></SlIconButton>
         <p id="pageUrl">{url}</p>
         <SlCopyButton from="pageUrl" />
       </div>
@@ -466,15 +414,17 @@ const Header = () => {
           <SlIcon slot="prefix" name="easel3"></SlIcon>
           Preview
         </SlButton>
-        {import.meta.env.MODE == 'development' && <SlButton
-          size="small"
-          onClick={() => {
-            console.log("canvasItems", canvasItems);
-          }}
-        >
-          {" "}
-          Debug{" "}
-        </SlButton>}
+        {import.meta.env.MODE == "development" && (
+          <SlButton
+            size="small"
+            onClick={() => {
+              console.log("canvasItems", canvasItems);
+            }}
+          >
+            {" "}
+            Debug{" "}
+          </SlButton>
+        )}
         <SlButton
           size="small"
           onClick={async () => {
@@ -585,10 +535,8 @@ function LayoutEditor() {
 
 function PropEditor() {
   const [isVisible, setIsVisible] = useState(false);
-  const { activeItem, canvasItems, setCanvasItems } =
-    useCanvasItems(CanvasItemsContext);
+  const { activeItem, canvasItems, setCanvasItems } = useCanvasItems();
 
-  const [activeTab, setActiveTab] = useState("props");
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
   };
@@ -596,10 +544,8 @@ function PropEditor() {
   function propsRender() {
     function handlePropOnChange(propKey: string, newValue: string | Object) {
       const canvasItem = canvasItems.search(activeItem?.id);
-      // debugger;
       if (canvasItem === null) return;
-      // TODO: add default editable keys when dropped into canvas
-      // debugger;
+
       if (canvasItem.editableProps == undefined) {
         canvasItem.editableProps = { [propKey]: newValue };
       } else {
@@ -636,15 +582,12 @@ function PropEditor() {
     }
 
     return Object.entries(propEntries).map(([key, renderFunc], index) => {
-      // style: { color: "black", fontSize: "10px" },
-      // nested props
       if (key === "style" && Array.isArray(renderFunc)) {
         const currentValues = canvasItem.editableProps[key];
-
         return Object.entries(currentValues).map(([key, value], idx) => {
           let obj = { [key]: value };
           return (
-            <div className="columns pl-1 pr-1">
+            <div className="columns pl-1 pr-1" key={`style-${key}-${idx}`}>
               <SlDivider />
               {renderFunc[idx](handlePropOnChange, obj)}
               <SlDivider />
@@ -654,7 +597,7 @@ function PropEditor() {
       } else {
         const currentValue = canvasItem.editableProps[key];
         return (
-          <div className="columns p-1">
+          <div className="columns p-1" key={`prop-${key}`}>
             {renderFunc(handlePropOnChange, currentValue)}
           </div>
         );
@@ -662,18 +605,11 @@ function PropEditor() {
     });
   }
 
-  // function renderTabBody() {
-  //   if (activeTab === "props") {
-  //     return <>{propsRender()}</>;
-  //   } else if (activeTab === "layout") return <LayoutEditor />;
-  // }
-
   return (
     <aside className={`rightAside ${isVisible ? "show" : ""}`}>
       <button className="menuRightbtn" onClick={toggleVisibility}>
         <SlIcon name="arrow-left"></SlIcon>
       </button>
-
       <div className="flex-grid has-1-cols">
         <div style={{ display: "flex", justifyContent: "center" }}>
           <h2>
