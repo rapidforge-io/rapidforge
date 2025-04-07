@@ -1,5 +1,5 @@
 import React from "react";
-import { CanvasDropZone, classMap } from "./Components";
+import { ButtonComponent, CanvasDropZone, classMap } from "./Components";
 
 export class TreeNode {
   id: string;
@@ -35,6 +35,7 @@ export class Tree {
       return null;
     }
   }
+
 
   findParentNode(
     nodeId: string,
@@ -121,6 +122,8 @@ export class Tree {
     // Add the source node as a child of the destination node
     destinationNode.children.push(sourceNode);
 
+    console.trace("tree",this.root );
+
     return true;
   }
 
@@ -138,9 +141,35 @@ export class Tree {
     return this.root;
   }
 
-  renderTreeStructure(node: TreeNode, parentId?: String) {
+  renderTreeStructure(node: TreeNode, index: number = 0, parentId?: string) {
+    const Component = this.renderTree(node);
+    if (!Component) return null;
+
+    console.log("here node", node);
+
+    return (
+      <Component
+        id={node.id}
+        onCanvas={true}
+        index={index}
+        currentParent={parentId}
+        active={node.active}
+        {...node.editableProps}
+      >
+        {node.children.length > 0 && node.children.map((child, idx) =>
+          this.renderTreeStructure(child, idx, node.id)
+        )}
+      </Component>
+    );
+  }
+
+  renderTreeStructureOld(node: TreeNode, index: number = 0, parentId?: String) {
     // Render the current node
     const Component = this.renderTree(node);
+
+    if (Component == ButtonComponent) {
+      console.trace("index", index, "node", node);
+    }
 
     // If the current node has children, recursively render them
     if (node.children.length > 0) {
@@ -150,12 +179,13 @@ export class Tree {
             <Component
               id={node.id}
               onCanvas={true}
+              index={index}
               currentParent={parentId}
               active={node.active}
               {...node.editableProps}
             >
-              {node.children.map((child) =>
-                this.renderTreeStructure(child, node.id)
+              {node.children.map((child, idx) =>
+                this.renderTreeStructure(child, idx, node.id)
               )}
             </Component>
           }
@@ -166,6 +196,7 @@ export class Tree {
         <Component
           id={node.id}
           active={node.active}
+          index={index}
           currentParent={parentId}
           onCanvas={true}
           {...node.editableProps}

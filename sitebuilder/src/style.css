@@ -106,8 +106,9 @@ body {
 }
 
 .dropzone-elem {
-  padding: 12%;
+  padding-bottom: 20px;
   margin: 10px;
+  min-width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -174,9 +175,10 @@ body {
 
 .rightAside {
   position: fixed;
-  right: -1px;
+  right: 5px;
   top: 65px;
   border: 1px solid var(--primary-border-color);
+  color: var(--text-color);
   background: var(--background-color);
   width: 260px;
   height: var(--bar-height);

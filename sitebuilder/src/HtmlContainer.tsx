@@ -4,7 +4,7 @@ import { useCanvasItems } from "./App";
 import { SlTextarea } from "@shoelace-style/shoelace/dist/react";
 
 export function HtmlContainer(props) {
-  const { id, onCanvas, label, name, currentParent, html, active } = props;
+  const { id, onCanvas, label, name, currentParent, html, active, index } = props;
   const { canvasItems } = useCanvasItems();
   const componentName = 'HtmlContainer';
   function handlerUpdateProp(htmlContent) {
@@ -16,6 +16,7 @@ export function HtmlContainer(props) {
     <BaseSortable
       onCanvas={true}
       id={id}
+      index={index}
       active={active}
       currentParent={currentParent}
       componentName={componentName}
