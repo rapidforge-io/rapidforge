@@ -139,39 +139,32 @@ export class Tree {
   }
 
   renderTreeStructure(node: TreeNode, parentId?: String) {
-    // Render the current node
-    const Component = this.renderTree(node);
+    if (!node) return null;
 
-    // If the current node has children, recursively render them
-    if (node.children.length > 0) {
+    const Component = this.renderTree(node);
+    if (!Component) return null;
+
+    const commonProps = {
+      id: node.id,
+      onCanvas: true,
+      currentParent: parentId,
+      active: node.active,
+      ...node.editableProps
+    };
+
+    const hasChildren = node.children.length > 0;
+
+    if (hasChildren) {
       return (
-        <>
-          {
-            <Component
-              id={node.id}
-              onCanvas={true}
-              currentParent={parentId}
-              active={node.active}
-              {...node.editableProps}
-            >
-              {node.children.map((child) =>
-                this.renderTreeStructure(child, node.id)
-              )}
-            </Component>
-          }
-        </>
-      );
-    } else {
-      return (
-        <Component
-          id={node.id}
-          active={node.active}
-          currentParent={parentId}
-          onCanvas={true}
-          {...node.editableProps}
-        />
+        <Component {...commonProps}>
+          {node.children.map((child) =>
+            this.renderTreeStructure(child, node.id)
+          )}
+        </Component>
       );
     }
+
+    return <Component {...commonProps} />;
   }
 
   search(id: string, node: TreeNode = this.root): TreeNode | null {
