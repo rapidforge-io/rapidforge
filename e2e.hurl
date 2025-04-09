@@ -42,9 +42,9 @@ HTTP 200
 jsonpath "$.RESULT" == "true"
 
 # Make a GET request to the specified URL with echo=true as a query parameter
-GET https://main.rapidforge.io/webhook/lua-env
+GET https://main.rapidforge.io/webhook/lua-env?echo=true
 
-HTTP 201
+HTTP 200
 [Asserts]
 # Check that the status is 200
 status == 200
