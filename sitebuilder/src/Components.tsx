@@ -507,7 +507,7 @@ export function TextInputComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <input className="input" type="text" name={name} type={type || "text"}></input>
+      <input className="input" type="text" name={name}></input>
     </BaseSortable>
   ) : (
     <BaseDrag id={id} onCanvas={onCanvas} componentName={componentName}>
@@ -638,9 +638,7 @@ export function FormComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <div className="base-component m-4">
-        <form className="form-gap is-flex is-align-items-center" action={action} method="POST">{children}</form>
-      </div>
+      <form className="form-gap is-flex is-align-items-center" action={action} method="POST">{children}</form>
     </BaseSortable>
   ) : (
     <BaseDrag

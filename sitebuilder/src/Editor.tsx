@@ -36,7 +36,7 @@ function Accordion() {
   return (
     <div>
       {Object.values(componentNames).map((Component) => (
-        <Component id={`${Component.name}-lib`} />
+        <Component id={`${Component.name}-lib`} key={`${Component.name}-lib`} />
       ))}
     </div>
   );
