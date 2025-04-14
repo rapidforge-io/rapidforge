@@ -36,14 +36,10 @@ interface PageMetaData {
   css: string;
   title: string;
   pageUrl: string;
+  baseUrl: string;
   description: string;
   enabled: boolean;
-}
-
-interface PageData {
-  metadata: PageMetaData;
-  canvasItems: Tree;
-  htmlOutput: string;
+  webhookPaths: string[];
 }
 
 // component library components ids are missing
@@ -107,6 +103,8 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
     description: window.pageData.description || "description",
     active: window.pageData.active || true,
     pageUrl: window.pageData.path,
+    baseUrl: window.pageData.baseUrl,
+    webhookPaths: window.pageData.webhookPaths || [],
   });
   const [previewTab, setPreviewTab] = useState(null);
 
@@ -438,7 +436,7 @@ const Header = () => {
             const htmlOutput = wrapWithHTML(htmlContent, pageMetaData);
             const { title, description, active, path, ...otherMetaData } =
               pageMetaData;
-            const pageData: PageData = {
+            const pageData = {
               title: title,
               path: url,
               description: description,

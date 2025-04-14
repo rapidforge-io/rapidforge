@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rapidforge-io/rapidforge/config"
 	"github.com/rapidforge-io/rapidforge/database"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/utils"
@@ -57,6 +58,7 @@ type Webhook struct {
 	EnvVariables    sql.NullString `json:"envVariables" db:"env_variables"`
 	BlockID         int            `json:"blockId" db:"block_id"`
 	Path            string         `json:"path" db:"path"`
+	FullPath        string         `json:"fullPath" db:"-"`
 	Cors            sql.NullString `json:"cors" db:"cors"`
 	HttpMethod      string         `json:"httpMethod" db:"http_method"`
 	ResponseHeaders sql.NullString `json:"responseHeaders" db:"response_headers"`
@@ -599,6 +601,11 @@ func (s *Store) ListWebhooksByBlockID(blockID int64) ([]Webhook, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	for i := range webhooks {
+		webhooks[i].FullPath = fmt.Sprintf("%s/webhook/%s", config.BaseUrl(), webhooks[i].Path)
+	}
+
 	return webhooks, nil
 }
 
@@ -909,14 +916,32 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 	return &webhookDetail, nil
 }
 
-func (s *Store) SelectPageById(id int64) (*Page, error) {
-	var page Page
-	query := `SELECT id, path, name, description, active, block_id, canvas_state
-			  FROM pages WHERE id = ?`
+type PageWithMeta struct {
+	Page
+	WebhookPathsRaw string   `db:"paths"` // raw comma-separated string
+	WebhookPaths    []string `db:"-"`
+}
+
+func (s *Store) SelectPageById(id int64) (*PageWithMeta, error) {
+	var page PageWithMeta
+	query := `SELECT
+              pages.*,
+              GROUP_CONCAT(webhooks.path) AS paths
+            FROM
+              pages
+              JOIN blocks ON pages.block_id = blocks.id
+              JOIN webhooks ON blocks.id = webhooks.block_id
+            WHERE
+              pages.id = ? AND webhooks.http_method = 'POST' AND webhooks.active = 1
+            GROUP BY
+              pages.id;`
+
 	err := s.db.Get(&page, query, id)
 	if err != nil {
 		return nil, err
 	}
+	page.WebhookPaths = strings.Split(page.WebhookPathsRaw, ",")
+
 	return &page, nil
 }
 

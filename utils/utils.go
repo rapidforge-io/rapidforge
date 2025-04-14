@@ -179,9 +179,10 @@ func ToMap(data any) map[string]any {
 
 	if val.Kind() == reflect.Struct {
 		typ := val.Type()
-		for i := 0; i < val.NumField(); i++ {
-			fieldName := typ.Field(i).Name
-			fieldValue := val.Field(i).Interface()
+
+		for field := range val.NumField() {
+			fieldName := typ.Field(field).Name
+			fieldValue := val.Field(field).Interface()
 			result[fieldName] = fieldValue
 		}
 	}

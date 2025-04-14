@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 const iconsPath = 'node_modules/@shoelace-style/shoelace/dist/assets/icons';
-import { resolve } from 'path';
 import injectHtml from './vite-plugin-inject-html';
 
 

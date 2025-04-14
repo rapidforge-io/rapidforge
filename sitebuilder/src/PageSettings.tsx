@@ -1,5 +1,6 @@
 import { SlInput, SlSwitch, SlTextarea } from "@shoelace-style/shoelace/dist/react";
 import { useCanvasItems } from "./App";
+import React from "react";
 
 export const PageSettings = () => {
   const { pageMetaData, setPageMetadata } = useCanvasItems();

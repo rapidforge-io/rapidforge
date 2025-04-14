@@ -25,7 +25,15 @@
          hx-on::after-request="reloadEntities()"
          >Delete</a>
     </div>
-    {{ defaultString (index . "Description") "No Description" }}
+
+    <div class="mt-2">
+     {{ if eq (index . "Type") "webhooks"}}
+     Path: {{ (index . "FullPath") }} <sl-copy-button value={{ (index . "FullPath") }}></sl-copy-button>
+     {{end}}
+    </div>
+    <div>
+     Description: {{ defaultString (index . "Description") "N/A" }}
+    </div>
   </div>
 </sl-details>
 {{end}}

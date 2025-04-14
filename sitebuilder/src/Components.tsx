@@ -21,6 +21,7 @@ import {
   SlOption,
   SlRange,
 } from "@shoelace-style/shoelace/dist/react";
+import AutocompleteInput from "./AutocompleteInput";
 
 
 export const classMap = {
@@ -390,7 +391,12 @@ export function NamePropEditor(handlePropOnChange, value) {
 }
 
 export function FormActionPropEditor(handlePropOnChange, value) {
-  return InputPropEditorHelper(handlePropOnChange, value, "action")
+  const { pageMetaData } = useCanvasItems();
+  return (
+    <div className="is-flex is-flex-direction-column is-align-items-flex-start block">
+      <AutocompleteInput options={pageMetaData.webhookPaths} handlePropOnChange={handlePropOnChange} value={value} />
+    </div>
+  );
 }
 
 export function ClassPropEditor(handlePropOnChange, value) {
