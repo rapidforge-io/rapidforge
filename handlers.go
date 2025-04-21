@@ -9,13 +9,18 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"os/exec"
+
+	"github.com/creack/pty"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
+	"github.com/gorilla/websocket"
 	"github.com/rapidforge-io/rapidforge/config"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
@@ -955,6 +960,73 @@ func blocksBaseHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "blocks_base", gin.H{
 		"currentUser": getCurrentUser(c),
 	})
+}
+
+var upgrader = websocket.Upgrader{}
+
+func terminalViewHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		allowed := os.Getenv("RF_TERM")
+
+		if config.Get().Env == "production" && allowed != "true" {
+			c.String(http.StatusOK, "Change the environment variable RF_TERM to true to enable terminal")
+			return
+		}
+
+		c.HTML(http.StatusOK, "terminal-view", gin.H{})
+	}
+}
+
+func terminalHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		allowed := os.Getenv("RF_TERM")
+
+		if config.Get().Env == "production" && allowed != "true" {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			return
+		}
+		cmd := exec.Command("bash")
+
+		if _, err := exec.LookPath("bash"); err != nil {
+			cmd = exec.Command("sh")
+		}
+
+		ptmx, err := pty.Start(cmd)
+		if err != nil {
+			return
+		}
+
+		defer func() {
+			ptmx.Close()
+			cmd.Process.Kill()
+		}()
+
+		go func() {
+			buf := make([]byte, 1024)
+			for {
+				n, err := ptmx.Read(buf)
+				if err != nil {
+					break
+				}
+				conn.WriteMessage(websocket.TextMessage, buf[:n])
+			}
+		}()
+
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				break
+			}
+			ptmx.Write(msg)
+		}
+	}
 }
 
 func updateWebhookHandler(store *models.Store) gin.HandlerFunc {
