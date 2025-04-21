@@ -1130,7 +1130,7 @@ func createPageHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		blockId := parseInt(c.PostForm("blockId"))
 
-		webhookId, err := store.InsertPageWithAutoName(blockId)
+		pageId, err := store.InsertPageWithAutoName(blockId)
 
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "error", gin.H{
@@ -1139,7 +1139,7 @@ func createPageHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		redirectTo := fmt.Sprintf("/pages/%d", webhookId)
+		redirectTo := fmt.Sprintf("/pages/%d", pageId)
 		c.Header("HX-Redirect", redirectTo)
 		c.Status(http.StatusFound)
 	}
@@ -1241,6 +1241,7 @@ func pagesHandler(store *models.Store) gin.HandlerFunc {
 		id := c.Param("id")
 		intId := parseInt(id)
 		page, err := store.SelectPageById(intId)
+
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "error", gin.H{
 				"error": err.Error(),

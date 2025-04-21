@@ -57,6 +57,7 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		"info":          {"views/info.html"},
 		"users":         {"views/users.html", "views/user_cards.html"},
 		"credentials":   {"views/credentials.html"},
+		"error":         {"views/error.html"},
 	}
 
 	for name, pages := range templatesWithBase {

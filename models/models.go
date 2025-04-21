@@ -924,17 +924,20 @@ type PageWithMeta struct {
 
 func (s *Store) SelectPageById(id int64) (*PageWithMeta, error) {
 	var page PageWithMeta
+
 	query := `SELECT
-              pages.*,
-              GROUP_CONCAT(webhooks.path) AS paths
-            FROM
-              pages
-              JOIN blocks ON pages.block_id = blocks.id
-              JOIN webhooks ON blocks.id = webhooks.block_id
-            WHERE
-              pages.id = ? AND webhooks.http_method = 'POST' AND webhooks.active = 1
-            GROUP BY
-              pages.id;`
+             pages.*,
+ 		     COALESCE(GROUP_CONCAT(webhooks.path), '') AS paths
+           FROM
+             pages
+             JOIN blocks ON pages.block_id = blocks.id
+             LEFT JOIN webhooks ON blocks.id = webhooks.block_id
+             AND webhooks.http_method = 'POST'
+             AND webhooks.active = 1
+           WHERE
+             pages.id = ?
+           GROUP BY
+             pages.id;`
 
 	err := s.db.Get(&page, query, id)
 	if err != nil {
