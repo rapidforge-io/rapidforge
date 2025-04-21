@@ -34,7 +34,7 @@
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@types/uuid": "^9.0.8",
-    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/eslint-plugin": "^8.30.1",
     "@typescript-eslint/parser": "^7.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^8.56.0",
