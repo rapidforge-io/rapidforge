@@ -58,6 +58,7 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		"users":         {"views/users.html", "views/user_cards.html"},
 		"credentials":   {"views/credentials.html"},
 		"error":         {"views/error.html"},
+		"terminal-view": {"views/terminal.html"},
 	}
 
 	for name, pages := range templatesWithBase {
@@ -183,6 +184,9 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	// Public Routes
 	r.Any("/webhook/*path", webhookHandlers(store))
 	r.GET("/page/:path", pageHandler(store))
+
+	r.GET("/terminal", AuthMiddleware(loginService), terminalHandler(store))
+	r.GET("/terminal-view", AuthMiddleware(loginService), terminalViewHandler(store))
 
 	// Block Routes
 	blockGroup := r.Group("/blocks")
