@@ -59,7 +59,7 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.14.0 // indirect
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.35.0
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.31.0
 	golang.org/x/sync v0.15.0 // indirect
