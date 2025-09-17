@@ -54,13 +54,9 @@ sitebuilder/dist
 sitebuilder/static
 sitebuilder/tmp
 
-# Sqlite
-*.sqlite3
-*.sqlite3-shm
-*.sqlite3-wal
-rapidforge.sqlite3
-rapidforge.sqlite3-shm
-rapidforge.sqlite3-wal
+# SQLite databases
+**/*.sqlite3
+**/*.sqlite3-*
 
 # Logs
 logs
