@@ -25,13 +25,13 @@
     "@shoelace-style/shoelace": "^2.20.1",
     "codemirror": "^6.0.1",
     "marked": "^15.0.7",
-    "react": "^18.2.0",
+    "react": "^19.0.0",
     "react-dom": "^18.2.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/quill": "^2.0.10",
-    "@types/react": "^18.2.56",
+    "@types/react": "^19.0.12",
     "@types/react-dom": "^18.2.19",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
