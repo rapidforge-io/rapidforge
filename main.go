@@ -85,7 +85,7 @@ var staticFS embed.FS
 // - add action to send email using smtp
 
 var (
-	Version = "0.9.5"
+	Version = "0.9.6"
 	Package = "community"
 )
 
@@ -272,10 +272,10 @@ func runServer() {
 
 	r := gin.Default()
 
-	if config.Get().Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	} else {
+	if config.Get().Env == "development" {
 		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
