@@ -504,26 +504,32 @@ func pageHandler(store *models.Store) gin.HandlerFunc {
 		if err != nil {
 			rflog.Error("failed to get page", err)
 			c.Status(http.StatusNotFound)
+			return
 		}
 
 		html := utils.DefaultString(page.HTMLOutput, "<p>Page is empty</p>")
 
-		etag := fmt.Sprintf("%d-%s", page.ID, page.UpdatedAt.Format(http.TimeFormat))
+		etag := fmt.Sprintf(`"p%d-%d"`, page.ID, page.UpdatedAt.Unix())
 
-		// Handle conditional requests
-		if match := c.GetHeader("If-None-Match"); match != "" {
-			if match == etag {
-				c.Status(http.StatusNotModified)
-				return
+		// If-None-Match may contain multiple values: "etag1", "etag2"
+		if inm := c.GetHeader("If-None-Match"); inm != "" {
+			fmt.Printf("etag=%s inm=%s", etag, inm)
+			for _, v := range strings.Split(inm, ",") {
+				if strings.TrimSpace(v) == etag {
+					c.Status(http.StatusNotModified)
+					return
+				}
 			}
 		}
 
-		// Browser cache
+		// Optional Last-Modified validation (secondary)
 		if modifiedSince := c.GetHeader("If-Modified-Since"); modifiedSince != "" {
-			t, err := time.Parse(http.TimeFormat, modifiedSince)
-			if err == nil && page.UpdatedAt.Before(t.Add(1*time.Second)) {
-				c.Status(http.StatusNotModified)
-				return
+			if t, err := time.Parse(http.TimeFormat, modifiedSince); err == nil {
+				// Allow 1s skew
+				if page.UpdatedAt.Before(t.Add(1 * time.Second)) {
+					c.Status(http.StatusNotModified)
+					return
+				}
 			}
 		}
 
