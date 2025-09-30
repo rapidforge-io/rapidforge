@@ -17,6 +17,8 @@ export default function injectHtml() {
              pageId: {{ .page.ID }},
              blockId: {{ .blockId }},
              webhookPaths: {{ .page.WebhookPaths }},
+             css: {{ .css }},
+             js: {{ .js }},
          };</script>`
       );
     },

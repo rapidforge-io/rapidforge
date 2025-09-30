@@ -37,8 +37,6 @@ interface PageMetaData {
   title: string;
   pageUrl: string;
   baseUrl: string;
-  description: string;
-  enabled: boolean;
   webhookPaths: string[];
 }
 
@@ -104,6 +102,8 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
     active: window.pageData.active || true,
     pageUrl: window.pageData.path,
     baseUrl: window.pageData.baseUrl,
+    js: window.pageData.js || "",
+    css: window.pageData.css || "",
     webhookPaths: window.pageData.webhookPaths || [],
   });
   const [previewTab, setPreviewTab] = useState(null);
@@ -236,8 +236,9 @@ const Canvas = () => {
         <SlTabPanel name="css">
           <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
             <CodeMirrorComponent
+              key="css-editor"
               language="css"
-              defaultText="/* Write css code  */"
+              value={pageMetaData.css}
               setCode={(value) =>
                 setPageMetadata({ ...pageMetaData, css: value })
               }
@@ -252,7 +253,9 @@ const Canvas = () => {
         <SlTabPanel name="js">
           <div style={{ height: "100%", width: "100%", overflow: "hidden" }}>
             <CodeMirrorComponent
+              key="js-editor"
               language="js"
+              value={pageMetaData.js}
               defaultText="/* Write javascript code  */"
               setCode={(value) =>
                 setPageMetadata({ ...pageMetaData, js: value })
@@ -276,15 +279,23 @@ const App = () => {
   );
 };
 
+function safeForScriptTag(js: string) {
+  return js.replace(/<\/script>/gi, "<\\/script>");
+}
+
+function safeForStyleTag(css: string) {
+  return css.replace(/<\/style>/gi, "<\\/style>");
+}
+
 function wrapWithHTML(htmlContent, pageMetadata) {
   let scriptTag = "";
   if (pageMetadata.js) {
-    scriptTag = `<script>${pageMetadata.js}</script>`;
+    scriptTag = `<script id="rfJsEditor">${safeForScriptTag(pageMetadata.js)}</script>`;
   }
 
   let styleTag = "";
   if (pageMetadata.css) {
-    styleTag = `<style>${pageMetadata.css}</style>`;
+    styleTag = `<style id="rfCssEditor">${safeForStyleTag(pageMetadata.css)}</style>`;
   }
 
   const fullHTML = `
@@ -292,7 +303,6 @@ function wrapWithHTML(htmlContent, pageMetadata) {
     <html lang="en">
     <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="description" content="${pageMetadata.description}" >
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"/>

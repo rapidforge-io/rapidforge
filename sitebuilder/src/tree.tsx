@@ -230,4 +230,3 @@ export class Tree {
 // tree.moveNode("2", "3");
 
 // // Output the HTML content of node3 after the move
-// console.log(tree.search("3").html);

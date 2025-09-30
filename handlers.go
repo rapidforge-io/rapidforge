@@ -1295,10 +1295,15 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 		var pageData models.PageData
 
 		if err := c.ShouldBindJSON(&pageData); err != nil {
-			// Return error messages if validation fails
+			rflog.Error("failed to bind JSON", "error", err.Error())
+
 			var errs []string
-			for _, err := range err.(validator.ValidationErrors) {
-				errs = append(errs, err.Field()+": "+err.ActualTag())
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				for _, err := range validationErrors {
+					errs = append(errs, err.Field()+": "+err.ActualTag())
+				}
+			} else {
+				errs = append(errs, err.Error())
 			}
 			c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 			return
@@ -1308,6 +1313,8 @@ func updatePageHandler(store *models.Store) gin.HandlerFunc {
 
 		if err != nil {
 			rflog.Error("failed to update page", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 
 		c.Status(http.StatusOK)
@@ -1324,14 +1331,36 @@ func pagesHandler(store *models.Store) gin.HandlerFunc {
 			c.HTML(http.StatusInternalServerError, "error", gin.H{
 				"error": err.Error(),
 			})
+			return
 		}
+
+		jsContent, cssContent := extractEditorAssets(page.HTMLOutput.String)
+
 		c.HTML(http.StatusOK, "page", gin.H{
 			"page":        page,
 			"baseUrl":     config.BaseUrl(),
 			"blockId":     page.BlockID,
+			"js":          jsContent,
+			"css":         cssContent,
 			"currentUser": getCurrentUser(c),
 		})
 	}
+}
+
+var (
+	// Use non-greedy (.*?) — previous (.-) was a Lua-style idea and literally matched a dot + hyphen, so no capture.
+	reEditorScript = regexp.MustCompile(`(?is)<script[^>]*id=["']rfJsEditor["'][^>]*>(.*?)</script>`)
+	reEditorStyle  = regexp.MustCompile(`(?is)<style[^>]*id=["']rfCssEditor["'][^>]*>(.*?)</style>`)
+)
+
+func extractEditorAssets(html string) (js, css string) {
+	if m := reEditorScript.FindStringSubmatch(html); len(m) > 1 {
+		js = strings.TrimSpace(m[1])
+	}
+	if m := reEditorStyle.FindStringSubmatch(html); len(m) > 1 {
+		css = strings.TrimSpace(m[1])
+	}
+	return
 }
 
 func parseInt(s string) int64 {

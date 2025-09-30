@@ -9,7 +9,7 @@
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"
   >
-  <script type="module" crossorigin src="/static/assets/app-CjPxfJWV.js"></script>
+  <script type="module" crossorigin src="/static/assets/app-pQLn6GXG.js"></script>
   <link rel="stylesheet" crossorigin href="/static/assets/app-Ddsue04E.css">
 <script>
         var pageData= {
@@ -22,6 +22,8 @@
              pageId: {{ .page.ID }},
              blockId: {{ .blockId }},
              webhookPaths: {{ .page.WebhookPaths }},
+             css: {{ .css }},
+             js: {{ .js }},
          };</script>
   <body>
     <script>
@@ -34,6 +36,8 @@
         description: "Page Description",
         pageId: 1,
         blockId:1,
+        css:"p { color: red}",
+        js: "console.log('hello')",
         webhookPaths: ["/webhook/1", "/webhook/2", "/webhook/3"],
         };
     </script>
