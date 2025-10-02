@@ -15,6 +15,8 @@ import (
 	"github.com/rapidforge-io/rapidforge/utils"
 )
 
+const AdminRole = "admin"
+
 type User struct {
 	ID           int64          `json:"id" db:"id"`
 	Username     string         `json:"username" db:"username"`

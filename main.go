@@ -317,6 +317,11 @@ func runServer() {
 		rflog.Error("Failed to start server", "err:", err)
 		os.Exit(1)
 	}
+
+	err = store.UnlockStalePeriodicTasks()
+	if err != nil {
+		rflog.Error("Failed to unlock stale periodic tasks at startup", err)
+	}
 }
 
 func startEventCleanupJob(store *models.Store) {

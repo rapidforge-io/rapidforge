@@ -8,18 +8,22 @@
 
         <sl-tree-item>
     Settings
-    <sl-tree-item>
+    {{if eq .currentUser.Role "admin"}}
+          <sl-tree-item>
             <a href="/users">Users</a>
           </sl-tree-item>
+    {{end}}
           <sl-tree-item>
             <a href="/info">Info</a>
           </sl-tree-item>
           <sl-tree-item>
             <a href="/credentials">Credentials</a>
           </sl-tree-item>
+    {{if eq .currentUser.Role "admin"}}
           <sl-tree-item>
             <a href="/terminal-view">Terminal</a>
           </sl-tree-item>
+    {{end}}
         </sl-tree-item>
         <sl-tree-item>
           <div onclick="dialog.show()"> Feedback</div>
@@ -41,6 +45,7 @@
        </div>
        <div class="is-flex is-flex-direction-column">
        <p>{{.currentUser.Username}}</p>
+       <p class="is-size-7">{{if eq .currentUser.Role "admin"}}Administrator{{else}}User{{end}}</p>
        <a href="/logout">Logout</a>
        </div>
        </div>

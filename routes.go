@@ -83,6 +83,32 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 	return r
 }
 
+func AdminOnlyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userInterface, exists := c.Get("user")
+		if !exists {
+			c.Redirect(http.StatusFound, "/blocks")
+			c.Abort()
+			return
+		}
+
+		user, ok := userInterface.(*models.User)
+		if !ok {
+			c.Redirect(http.StatusFound, "/blocks")
+			c.Abort()
+			return
+		}
+
+		if user.Role != models.AdminRole {
+			c.Redirect(http.StatusFound, "/blocks")
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func AuthMiddleware(loginService *services.LoginService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("token")
@@ -185,8 +211,8 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	r.Any("/webhook/*path", webhookHandlers(store))
 	r.GET("/page/:path", pageHandler(store))
 
-	r.GET("/terminal", AuthMiddleware(loginService), terminalHandler(store))
-	r.GET("/terminal-view", AuthMiddleware(loginService), terminalViewHandler(store))
+	r.GET("/terminal", AuthMiddleware(loginService), AdminOnlyMiddleware(), terminalHandler(store))
+	r.GET("/terminal-view", AuthMiddleware(loginService), AdminOnlyMiddleware(), terminalViewHandler(store))
 
 	// Block Routes
 	blockGroup := r.Group("/blocks")
@@ -239,7 +265,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// User Routes
 	userGroup := r.Group("/users")
-	userGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
+	userGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), AdminOnlyMiddleware())
 	{
 		userGroup.GET("/", usersHandler(store))
 		userGroup.POST("/:id/edit", updateUserHandler(store))

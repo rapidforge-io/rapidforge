@@ -17,12 +17,6 @@ var (
 	LService *LoginService
 )
 
-const periodicTaskInterval = 30 * time.Second
-
-func GetLoginService() *LoginService {
-	return LService
-}
-
 func SetupService(s *models.Store) {
 	once.Do(func() {
 		instance = &Service{s}
