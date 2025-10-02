@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/pressly/goose/v3 v3.20.0
 	github.com/sethvargo/go-envconfig v1.1.0
-	modernc.org/sqlite v1.38.2
+	modernc.org/sqlite v1.39.0
 )
 
 require (
