@@ -25,8 +25,8 @@ github.com/gin-contrib/multitemplate v1.1.0 h1:LEzcDTBHWn9cRjWDxCbFl45iUpWSwFhYB
 github.com/gin-contrib/multitemplate v1.1.0/go.mod h1:IlJBDN5jTZnSACa3zgE0RqkF+Oxeint17nWv+rTvFg8=
 github.com/gin-contrib/sse v1.1.0 h1:n0w2GMuUpWDVp7qSpvze6fAu9iRxJY4Hmj6AmBOU05w=
 github.com/gin-contrib/sse v1.1.0/go.mod h1:hxRZ5gVpWMT7Z0B0gSNYqqsSCNIJMjzvm6fqCz9vjwM=
-github.com/gin-contrib/timeout v1.0.1 h1:OV3uH0MSbWQdy8Q9KdGSze8e2sgShPC8Qxw/3Ct7+Ng=
-github.com/gin-contrib/timeout v1.0.1/go.mod h1:m/IWlsEvNRinlQV/cSDdTGZfKTTe0Guy8YHbhKYylwE=
+github.com/gin-contrib/timeout v1.1.0 h1:WAmWseo5gfBUbMrMJu5hJxDclehfSJUmK2wGwCC/EFw=
+github.com/gin-contrib/timeout v1.1.0/go.mod h1:NpRo4gd1Ad8ZQ4T6bQLVFDqiplCmPRs2nvfckxS2Fw4=
 github.com/gin-gonic/gin v1.11.0 h1:OW/6PLjyusp2PPXtyxKHU0RbX6I/l28FTdDlae5ueWk=
 github.com/gin-gonic/gin v1.11.0/go.mod h1:+iq/FyxlGzII0KHiBGjuNn4UNENUlKbGlNmc+W50Dls=
 github.com/go-ole/go-ole v1.2.6 h1:/Fpf6oFPoeFik9ty7siob0G6Ke8QvQEuVcuChpwXzpY=

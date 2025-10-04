@@ -38,7 +38,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-contrib/sse v1.1.0 // indirect
-	github.com/gin-contrib/timeout v1.0.1
+	github.com/gin-contrib/timeout v1.1.0
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.27.0 // indirect
