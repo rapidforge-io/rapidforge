@@ -54,6 +54,9 @@ sitebuilder/dist
 sitebuilder/static
 sitebuilder/tmp
 
+codemirroreditor/node_modules
+codemirroreditor/.vscode
+
 # SQLite databases
 **/*.sqlite3
 **/*.sqlite3-*
