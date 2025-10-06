@@ -133,9 +133,6 @@ func AuthMiddleware(loginService *services.LoginService) gin.HandlerFunc {
 func TimeoutMiddleware() gin.HandlerFunc {
 	return timeout.New(
 		timeout.WithTimeout(30*time.Second),
-		timeout.WithHandler(func(c *gin.Context) {
-			c.Next()
-		}),
 		timeout.WithResponse(func(ctx *gin.Context) {
 			ctx.String(http.StatusRequestTimeout, "timeout")
 		}),

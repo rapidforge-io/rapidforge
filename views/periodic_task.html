@@ -1,13 +1,4 @@
-
 {{ define "title" }}{{defaultString .periodicTask.Name "periodicTask"}}{{end }} {{define "content.html"}}
-<link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
-<link rel="stylesheet" href="/static/css/dracula.min.css">
-<link rel="stylesheet" href="/static/css/codemirror.css">
-<link rel="stylesheet" href="/static/css/show-hint.6.65.7.css"/>
-<script src="/static/javascript/codemirror.6.65.7.js"></script>
-<script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
-<script src="/static/javascript/show-hint.6.65.7.js"></script>
-<script src="/static/javascript/codemirrorlua.6.65.js"></script>
 
 <div class="is-flex is-align-items-baseline">
 <sl-icon-button name="arrow-left" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
@@ -121,8 +112,7 @@
         </div>
       {{end}}
     </div>
-    <div class="m-2">
-      <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
+    <div id="codeEditor">
     </div>
   </sl-tab-panel>
   <sl-tab-panel name="settings">
@@ -192,55 +182,8 @@
 
 <script src="/static/javascript/cronstrue.2.50.js" async></script>
 <script src="/static/javascript/curlgenerator.js"></script>
-<script src="/static/javascript/editorcommon.js"></script>
 <script>
-  const currentTheme = localStorage.getItem('theme') || 'light';
-  const theme = currentTheme == 'dark' ? 'dracula' : 'default';
-  const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
-    lineNumbers: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    mode: "shell",
-    indentUnit: 2,
-    theme: theme,
-  });
-
-  function getEditorVal() {
-    return editor.getValue();
-  }
-
-  document.addEventListener("DOMContentLoaded", function() {
-    const programType = document.getElementById("programType").value || {{.programType}};
-    hideOrShowCurlGenerator(programType);
-    setEditorMode(programType);
-  });
-
-  document.getElementById("programType").addEventListener("sl-change", changeEditor);
-
-  function customAutocomplete(editor) {
-       var cursor = editor.getCursor();
-       var token = editor.getTokenAt(cursor);
-
-       var customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
-
-       var filteredWords = customWords.filter(function(word) {
-           return word.startsWith(token.string);
-       });
-
-       return {
-           list: filteredWords.length ? filteredWords : customWords,
-           from: CodeMirror.Pos(cursor.line, token.start),
-           to: CodeMirror.Pos(cursor.line, token.end)
-       };
-}
-
-  editor.on("inputRead", function (cm, event) {
-    if (!cm.state.completionActive && event.text[0].match(/\w/)) {
-        cm.showHint({ hint: customAutocomplete, completeSingle: false });
-    }
-  });
-
-  function isValidCronExpression(expression) {
+    function isValidCronExpression(expression) {
            var cronRegex = new RegExp(/^(\*\/\d{1,2}|\d{1,2}|\*)\s(\*|\d{1,2}|\*\/\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d|\d)\s?$/g)
             if (!cronRegex.test(expression)) {
                 return false;
@@ -251,7 +194,6 @@
             }
             return true;
   }
-
   const cronInput = document.getElementById("cron");
   const saveButton = document.getElementById("saveButton");
   cronInput.addEventListener('sl-input', function() {
@@ -266,7 +208,88 @@
                     saveButton.disabled = true;
                 }
   });
+</script>
 
+<script type="module">
+  import { lintConfig, EditorState, EditorView,
+            basicSetup, luaLanguage, languageConfig,
+            autocompletion, themeConfig,
+            dracula,
+            shellLanguage,
+            lintGutter,
+            luaLinter } from '/static/javascript/codemirror-bundle.js';
+  import {hideOrShowCurlGenerator, getProgramType, generateCustomWordSuggestions } from '/static/javascript/editorcommon.js';
+  import { luaSnippets } from '/static/javascript/luasnippets.js'
+  import { bashSnippets } from '/static/javascript/bashsnippets.js'
+
+  var customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
+  customWords.push('PAYLOAD_DATA', 'HEADER_NAME', 'URL_PARAM_NAME', 'FORM_NAME')
+  const { bash: bashCustomWords, lua: luaCustomWords } = generateCustomWordSuggestions(customWords);
+
+  const currentTheme = localStorage.getItem('theme') || 'light';
+  const theme = currentTheme == 'dark' ? dracula : [];
+
+
+
+
+  function switchMode(mode) {
+    if (mode === "bash") {
+      switchShell()
+    } else if (mode === "lua") {
+      switchLua()
+    }
+  }
+
+  document.getElementById("programType").addEventListener("sl-change", function (e) {
+      const programType = e.target.value;
+      hideOrShowCurlGenerator(programType);
+      switchMode(programType)
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const programType = document.getElementById("programType").value || {{.programType}};
+    switchMode(programType)
+  });
+
+ const  view = new EditorView({
+   state: EditorState.create({
+     doc: "{{ .fileContent }}",
+     extensions: [basicSetup, autocompletion(), languageConfig.of(luaLanguage),
+       luaLanguage.data.of({
+         autocomplete: [...luaCustomWords ,...luaSnippets]
+       }),
+       shellLanguage.data.of({
+        autocomplete: [...bashCustomWords, ...bashSnippets]
+       }),
+       themeConfig.of(theme),lintConfig.of(luaLinter), lintGutter(),
+     ]
+   }),
+   parent: document.getElementById('codeEditor'),
+ })
+
+  function switchLua() {
+  view.dispatch({
+    effects: [
+      languageConfig.reconfigure(luaLanguage),
+      lintConfig.reconfigure(luaLinter),
+    ]
+  });
+}
+
+  function switchShell() {
+    view.dispatch({
+      effects: [
+        languageConfig.reconfigure(shellLanguage),
+        lintConfig.reconfigure([]),
+      ]
+    });
+  }
+
+
+ window.getEditorVal = function() {
+   return view.state.doc.toString()
+ }
 
 </script>
+
 {{end}}
