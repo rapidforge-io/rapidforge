@@ -92,6 +92,7 @@ var (
 // Runner defines the interface for script execution
 
 func main() {
+	fmt.Println("Debug: Command arguments:", os.Args)
 	if len(os.Args) > 1 {
 		handleCLI()
 	} else {
@@ -106,6 +107,7 @@ func handleCLI() {
 	delCmd := flag.NewFlagSet("del", flag.ExitOnError)
 	listCmd := flag.NewFlagSet("list", flag.ExitOnError)
 	sqlCmd := flag.NewFlagSet("sql", flag.ExitOnError)
+	updateCmd := flag.NewFlagSet("update", flag.ExitOnError)
 
 	setCmd.Usage = func() {
 		fmt.Println(`
@@ -157,6 +159,18 @@ func handleCLI() {
         `)
 	}
 
+	// Add usage info for update command
+	updateCmd.Usage = func() {
+		fmt.Println(`
+        Usage:
+            ./rapidforge update [--force]
+
+        Description:
+            Updates RapidForge to the latest version.
+            --force: Force update even if already on latest version.
+        `)
+	}
+
 	if len(os.Args) < 2 {
 		fmt.Println("Expected 'set', 'get', 'del', or 'list' subcommands --help for list of all commands")
 		os.Exit(1)
@@ -198,6 +212,10 @@ func handleCLI() {
 			os.Exit(1)
 		}
 		kv.ExecuteSQL(*sqlStmt)
+	case "update":
+		force := updateCmd.Bool("force", false, "Force update even if on latest version")
+		updateCmd.Parse(os.Args[2:])
+		updateSelf(*force)
 	case "help":
 		displayHelp()
 	default:
@@ -219,6 +237,7 @@ Available Commands:
     del     Delete a key.
     list    List all keys.
     sql     Execute a custom SQL query.
+    update  Update RapidForge to the latest version.
     help    Show this help message.
 
 Use "rapidforge <command> -h" for more information about a command.

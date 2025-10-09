@@ -15,6 +15,7 @@ release:
     name:  release
   extra_files:
     - glob: LICENSE.md
+    - glob: updater.sh
 
 before:
   hooks:
