@@ -2,25 +2,37 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
       {{ block "title" . }}RapidForge{{ end }}
     </title>
-    <link rel="stylesheet" href="/static/css/main.css"/>
-    <link rel="icon" type="image/x-icon" href="/static/img/rf.svg">
+
+    <!-- Import maps -->
+    <script type="importmap">
+      {
+        "imports": {
+          "codemirror": "/static/javascript/codemirror-bundle.js"
+        }
+      }
+    </script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/main.css" />
+    <link rel="icon" type="image/x-icon" href="/static/img/rf.svg" />
     <link
-    rel="stylesheet"
-    id="light-theme"
-    href="/static/css/shoelace.2.16.0.light.css"
-/>
+      rel="stylesheet"
+      id="light-theme"
+      href="/static/css/shoelace.2.16.0.light.css"
+    />
     <link
-    rel="stylesheet"
-    id="dark-theme"
-    href="/static/css/shoelace.2.16.0.dark.css"
-    onload="document.documentElement.classList.add('sl-theme-dark');"
-/>
-    <link rel="stylesheet" href="/static/css/bulma.1.0.0.min.css">
+      rel="stylesheet"
+      id="dark-theme"
+      href="/static/css/shoelace.2.16.0.dark.css"
+      onload="document.documentElement.classList.add('sl-theme-dark');"
+    />
+    <link rel="stylesheet" href="/static/css/bulma.1.0.0.min.css" />
+    <link rel="stylesheet" href="/static/css/xterm5.5.0.css" />
 
     <style>
       #terminal {
@@ -29,31 +41,45 @@
       }
     </style>
 
-    <link rel="stylesheet" href="/static/css/xterm5.5.0.css" />
+    <!-- Shoelace and Components -->
     <script type="module" src="/static/javascript/shoelace-autoloader.2.16.0.js"></script>
     <script type="module" src="/static/javascript/components/alert/alert.js"></script>
   </head>
+
   <body hx-ext="response-targets">
+    <!-- Feedback Dialog -->
     <sl-dialog label="Feedback" id="feedbackDialog">
       <div id="feedbackResponse" class="mb-2"></div>
-      <sl-textarea name="feedback" id="feedbackComment" help-text="Please tell us what you think. Let us know if you encounter with any issues"></sl-textarea>
-      <sl-button slot="footer" variant="primary"
+
+      <sl-textarea
+        name="feedback"
+        id="feedbackComment"
+        help-text="Please tell us what you think. Let us know if you encounter any issues"
+      ></sl-textarea>
+
+      <sl-button
+        slot="footer"
+        variant="primary"
         hx-include="#feedbackComment"
         hx-target="#feedbackResponse"
-        hx-post="/feedback">
+        hx-post="/feedback"
+      >
         Send
-   </sl-dialog>
+      </sl-button>
+    </sl-dialog>
 
-      {{ template "navbar.html" . }}
-      <div id="content" class="content">
-        {{ template "content.html" . }}
-      </div>
+    <!-- Navbar -->
+    {{ template "navbar.html" . }}
 
-      <script src="/static/javascript/jsonviewer.3.4.1.js"></script>
-      <script src="/static/javascript/htmx.2.0.1.js"></script>
-      <script src="/static/javascript/htmx-response-targets.2.0.0.js"></script>
-    </body>
+    <!-- Main Content -->
+    <div id="contentId" class="content">
+      {{ template "content.html" . }}
+    </div>
 
+    <!-- JS Libraries -->
+    <script src="/static/javascript/jsonviewer.3.4.1.js"></script>
+    <script src="/static/javascript/htmx.2.0.1.js"></script>
+    <script src="/static/javascript/htmx-response-targets.2.0.0.js"></script>
     <script src="/static/javascript/theme.js"></script>
     <script>
       themeSwitch.addEventListener('sl-change', function (event) {
@@ -106,4 +132,5 @@
       }
 
     </script>
-  </html>
+  </body>
+</html>

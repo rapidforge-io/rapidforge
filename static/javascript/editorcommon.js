@@ -48,17 +48,3 @@ export function generateCustomWordSuggestions(words ) {
   });
   return { bash, lua };
 }
-
-function setEditorMode(programType) {
-    if (programType === "bash") {
-        editor.setOption("mode", "shell");
-    } else if (programType === "lua") {
-        editor.setOption("mode", "lua");
-    }
-}
-
-function changeEditor(e) {
-  const programType = e.target.value;
-  hideOrShowCurlGenerator(programType);
-  setEditorMode(programType);
-}

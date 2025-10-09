@@ -1,7 +1,7 @@
 {{ define "title" }}{{defaultString .periodicTask.Name "periodicTask"}}{{end }} {{define "content.html"}}
 
 <div class="is-flex is-align-items-baseline">
-<sl-icon-button name="arrow-left" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
+<sl-icon-button name="arrow-left" id="backButton" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
 {{ template "editableTitle" .editableComponentParams }}
 </div>
 
@@ -72,7 +72,7 @@
         </div>
 </sl-dialog>
 
-<sl-tab-group>
+<sl-tab-group id="periodicTaskTabGroup">
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
   <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.periodicTask.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
@@ -87,7 +87,7 @@
           class="ml-2"
           variant="primary"
           hx-patch="/periodic_tasks/{{.periodicTask.ID}}"
-          hx-include="[name]"
+          hx-include="#periodicTaskTabGroup [name]"
           hx-target="#alertBox"
           hx-target-error="#alertBox"
           hx-vals="js:{editor: getEditorVal()}"
@@ -117,7 +117,7 @@
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal(), programType: getProgramType()}" hx-target="#alertBoxSettings">
+    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal(), programType: document.getElementById('programType').value}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -211,85 +211,34 @@
 </script>
 
 <script type="module">
-  import { lintConfig, EditorState, EditorView,
-            basicSetup, luaLanguage, languageConfig,
-            autocompletion, themeConfig,
-            dracula,
-            shellLanguage,
-            lintGutter,
-            luaLinter } from '/static/javascript/codemirror-bundle.js';
-  import {hideOrShowCurlGenerator, getProgramType, generateCustomWordSuggestions } from '/static/javascript/editorcommon.js';
-  import { luaSnippets } from '/static/javascript/luasnippets.js'
-  import { bashSnippets } from '/static/javascript/bashsnippets.js'
+  import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
+  import { createEditor } from '/static/javascript/editorsetup.js';
 
-  var customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
-  customWords.push('PAYLOAD_DATA', 'HEADER_NAME', 'URL_PARAM_NAME', 'FORM_NAME')
-  const { bash: bashCustomWords, lua: luaCustomWords } = generateCustomWordSuggestions(customWords);
+  const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
+  const programType = document.getElementById("programType")?.value || "{{.programType}}";
 
-  const currentTheme = localStorage.getItem('theme') || 'light';
-  const theme = currentTheme == 'dark' ? dracula : [];
+  const editor = createEditor({
+    fileContent: `{{ .fileContent }}`,
+    customWords: customWords,
+    parentElementId: 'codeEditor',
+    initialMode: programType
+  });
 
-
-
-
-  function switchMode(mode) {
-    if (mode === "bash") {
-      switchShell()
-    } else if (mode === "lua") {
-      switchLua()
-    }
-  }
+  window.getEditorVal = editor.getContent;
 
   document.getElementById("programType").addEventListener("sl-change", function (e) {
-      const programType = e.target.value;
-      hideOrShowCurlGenerator(programType);
-      switchMode(programType)
+    const programType = e.target.value;
+    hideOrShowCurlGenerator(programType);
+    editor.switchMode(programType);
   });
 
+  editor.view.focus();
+
+  // Handle initial load
   document.addEventListener("DOMContentLoaded", function() {
     const programType = document.getElementById("programType").value || {{.programType}};
-    switchMode(programType)
+    editor.switchMode(programType);
   });
-
- const  view = new EditorView({
-   state: EditorState.create({
-     doc: "{{ .fileContent }}",
-     extensions: [basicSetup, autocompletion(), languageConfig.of(luaLanguage),
-       luaLanguage.data.of({
-         autocomplete: [...luaCustomWords ,...luaSnippets]
-       }),
-       shellLanguage.data.of({
-        autocomplete: [...bashCustomWords, ...bashSnippets]
-       }),
-       themeConfig.of(theme),lintConfig.of(luaLinter), lintGutter(),
-     ]
-   }),
-   parent: document.getElementById('codeEditor'),
- })
-
-  function switchLua() {
-  view.dispatch({
-    effects: [
-      languageConfig.reconfigure(luaLanguage),
-      lintConfig.reconfigure(luaLinter),
-    ]
-  });
-}
-
-  function switchShell() {
-    view.dispatch({
-      effects: [
-        languageConfig.reconfigure(shellLanguage),
-        lintConfig.reconfigure([]),
-      ]
-    });
-  }
-
-
- window.getEditorVal = function() {
-   return view.state.doc.toString()
- }
-
 </script>
 
 {{end}}

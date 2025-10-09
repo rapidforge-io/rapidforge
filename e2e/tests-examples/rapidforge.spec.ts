@@ -16,19 +16,24 @@ test('test', async ({ page }) => {
   await page.locator('#entities').getByRole('button', { name: 'Create' }).click();
   await page.getByRole('link', { name: 'Back' }).click();
   await page.locator('#entities').getByRole('button', { name: 'Create' }).click();
-  await page.locator('.CodeMirror-scroll').click();
-  await page.getByLabel('Editor').locator('div').filter({ hasText: '# Special variables injected by RapidForge, check tooltip # echo \'You can write' }).getByRole('textbox').fill('i"');
+  await page.locator('#codeEditor').click();
+  await page.getByText('# Special variables injected')
   await page.getByRole('button', { name: 'Save' }).click();
-  await page.getByLabel('Blocks').click();
+  await page.locator('#backButton').click();
   await page.getByRole('radio', { name: 'Pages' }).click();
   await page.getByText('page-').click();
   await page.getByRole('link', { name: 'Edit' }).click();
   await page.getByRole('link', { name: 'Back' }).click();
+  await page.getByRole('radio', { name: 'Periodic Tasks' }).click();
+  await page.locator('#entities').getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await page.locator('#backButton').click();
+
   await page.getByText('webhook -').click();
   page.once('dialog', dialog => {
     console.log(`Dialog message: ${dialog.message()}`);
     dialog.dismiss().catch(() => {});
   });
   await page.getByText('Delete').click();
-  await page.getByLabel('Blocks').click();
+  await page.locator('#backButton').click();
 });

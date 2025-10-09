@@ -1,5 +1,7 @@
+import "@codemirror/view";
+
 import {basicSetup} from "codemirror"
-import { EditorState, Compartment } from "@codemirror/state"
+import { EditorState, Compartment, EditorSelection } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import {autocompletion } from "@codemirror/autocomplete"
 
@@ -30,105 +32,43 @@ const luaLinter = linter((view) => {
   return diagnostics;
 });
 
+const baseTheme = EditorView.baseTheme({});
 
+// Create compartments
+const themeConfig = new Compartment();
+const languageConfig = new Compartment();
+const lintConfig = new Compartment();
 
+// Create language definitions
+const shellLanguage = StreamLanguage.define(shell);
+const luaLanguage = StreamLanguage.define(lua);
 
-const luaSnippets = [
-  {
-    label: "for loop",
-    type: "snippet",
-    detail: "Lua for loop",
-    apply: `for i = 1, 10 do
-  print(i)
-end`
-  },
-  { label: "function", type: "keyword", apply: "function $1()\n  $2\nend" },
-  { label: "if", type: "keyword", apply: "if $1 then\n  $2\nend" },
-  { label: "for", type: "keyword", apply: "for $1 = 1, $2 do\n  $3\nend" }
-];
-
-const themeConfig = new Compartment()
-const languageConfig = new Compartment()
-const lintConfig = new Compartment()
-
-const shellLanguage = StreamLanguage.define(shell)
-const luaLanguage = StreamLanguage.define(lua)
-
-
+// Export everything your HTML needs
 export {
+  // Core CodeMirror
+  baseTheme,
   basicSetup,
-  dracula,
   EditorState,
   EditorView,
+  EditorSelection,
   autocompletion,
+
+  // Language support
   StreamLanguage,
-  Compartment,
-  lintGutter,
-  lua,
-  shell,
   shellLanguage,
   luaLanguage,
+
+  // Themes and configuration
+  dracula,
+  themeConfig,
   languageConfig,
   lintConfig,
-  themeConfig,
+
+  // Linting
+  linter,
+  lintGutter,
   luaLinter,
-}
 
-// const  view = new EditorView({
-//   state: EditorState.create({
-//     doc: "local aq =  1",
-//     extensions: [basicSetup, autocompletion(), languageConfig.of(luaLanguage),
-//       luaLanguage.data.of({
-//         autocomplete: ["os.getenv('id')", "name", "address" ,...luaSnippets]
-//       }),
-//       themeConfig.of([]),lintConfig.of(luaLinter), lintGutter(),
-//     ]
-//   }),
-//   parent: document.getElementById('app'),
-// })
-
-//window.view = view
-
-
-// window.getText = function() {
-//   return view.state.doc.toString()
-// }
-
-// window.changeLua = function() {
-//   view.dispatch({
-//     effects: [languageConfig.reconfigure(luaLanguage), lintConfig.reconfigure(luaLinter)]
-//   });
-// }
-
-// window.changeShell = function() {
-//    view.dispatch({
-//     effects: [languageConfig.reconfigure(shellLanguage), lintConfig.reconfigure([])]
-//   });
-// }
-
-// window.setValue = function(value) {
-//   view.dispatch({
-//     changes: {
-//       from: 0,
-//       to: view.state.doc.length,
-//       insert: value
-//     }
-//   });
-// }
-
-// window.changeThemeDark = function() {
-//   const theme =   {
-//     extension: dracula,
-//     name: 'dracula'
-//   }
-//   view.dispatch({
-//     effects: themeConfig.reconfigure([theme])
-//   })
-// }
-
-// window.changeThemeLight = function() {
-//   view.dispatch({
-//     effects: themeConfig.reconfigure([])
-//   })
-// }
-
+  // Utility
+  Compartment,
+};
