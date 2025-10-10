@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# just to make operational side easier with rapidforge
+# after you download you can use this optional script to start / stop the service
 # RapidForge Startup Script
 # This script manages RapidForge (start/stop/restart/update)
 # rapidforge binary itself does the update
