@@ -1,16 +1,7 @@
-
 {{ define "title" }}{{defaultString .periodicTask.Name "periodicTask"}}{{end }} {{define "content.html"}}
-<link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
-<link rel="stylesheet" href="/static/css/dracula.min.css">
-<link rel="stylesheet" href="/static/css/codemirror.css">
-<link rel="stylesheet" href="/static/css/show-hint.6.65.7.css"/>
-<script src="/static/javascript/codemirror.6.65.7.js"></script>
-<script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
-<script src="/static/javascript/show-hint.6.65.7.js"></script>
-<script src="/static/javascript/codemirrorlua.6.65.js"></script>
 
 <div class="is-flex is-align-items-baseline">
-<sl-icon-button name="arrow-left" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
+<sl-icon-button name="arrow-left" id="backButton" label="Block" href="/blocks/{{.periodicTask.BlockID}}"></sl-icon-button>
 {{ template "editableTitle" .editableComponentParams }}
 </div>
 
@@ -81,7 +72,7 @@
         </div>
 </sl-dialog>
 
-<sl-tab-group>
+<sl-tab-group id="periodicTaskTabGroup">
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
   <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.periodicTask.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
@@ -96,7 +87,7 @@
           class="ml-2"
           variant="primary"
           hx-patch="/periodic_tasks/{{.periodicTask.ID}}"
-          hx-include="[name]"
+          hx-include="#periodicTaskTabGroup [name]"
           hx-target="#alertBox"
           hx-target-error="#alertBox"
           hx-vals="js:{editor: getEditorVal()}"
@@ -121,13 +112,12 @@
         </div>
       {{end}}
     </div>
-    <div class="m-2">
-      <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
+    <div id="codeEditor">
     </div>
   </sl-tab-panel>
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal(), programType: getProgramType()}" hx-target="#alertBoxSettings">
+    <form id="periodicTaskConfig" hx-patch="/periodic_tasks/{{.periodicTask.ID}}" hx-include="#periodicTaskConfig [name]" hx-vals="js:{editor: getEditorVal(), programType: document.getElementById('programType').value}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -192,55 +182,8 @@
 
 <script src="/static/javascript/cronstrue.2.50.js" async></script>
 <script src="/static/javascript/curlgenerator.js"></script>
-<script src="/static/javascript/editorcommon.js"></script>
 <script>
-  const currentTheme = localStorage.getItem('theme') || 'light';
-  const theme = currentTheme == 'dark' ? 'dracula' : 'default';
-  const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
-    lineNumbers: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    mode: "shell",
-    indentUnit: 2,
-    theme: theme,
-  });
-
-  function getEditorVal() {
-    return editor.getValue();
-  }
-
-  document.addEventListener("DOMContentLoaded", function() {
-    const programType = document.getElementById("programType").value || {{.programType}};
-    hideOrShowCurlGenerator(programType);
-    setEditorMode(programType);
-  });
-
-  document.getElementById("programType").addEventListener("sl-change", changeEditor);
-
-  function customAutocomplete(editor) {
-       var cursor = editor.getCursor();
-       var token = editor.getTokenAt(cursor);
-
-       var customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
-
-       var filteredWords = customWords.filter(function(word) {
-           return word.startsWith(token.string);
-       });
-
-       return {
-           list: filteredWords.length ? filteredWords : customWords,
-           from: CodeMirror.Pos(cursor.line, token.start),
-           to: CodeMirror.Pos(cursor.line, token.end)
-       };
-}
-
-  editor.on("inputRead", function (cm, event) {
-    if (!cm.state.completionActive && event.text[0].match(/\w/)) {
-        cm.showHint({ hint: customAutocomplete, completeSingle: false });
-    }
-  });
-
-  function isValidCronExpression(expression) {
+    function isValidCronExpression(expression) {
            var cronRegex = new RegExp(/^(\*\/\d{1,2}|\d{1,2}|\*)\s(\*|\d{1,2}|\*\/\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d|\d)\s?$/g)
             if (!cronRegex.test(expression)) {
                 return false;
@@ -251,7 +194,6 @@
             }
             return true;
   }
-
   const cronInput = document.getElementById("cron");
   const saveButton = document.getElementById("saveButton");
   cronInput.addEventListener('sl-input', function() {
@@ -266,7 +208,37 @@
                     saveButton.disabled = true;
                 }
   });
-
-
 </script>
+
+<script type="module">
+  import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
+  import { createEditor } from '/static/javascript/editorsetup.js';
+
+  const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
+  const programType = document.getElementById("programType")?.value || "{{.programType}}";
+
+  const editor = createEditor({
+    fileContent: `{{ .fileContent }}`,
+    customWords: customWords,
+    parentElementId: 'codeEditor',
+    initialMode: programType
+  });
+
+  window.getEditorVal = editor.getContent;
+
+  document.getElementById("programType").addEventListener("sl-change", function (e) {
+    const programType = e.target.value;
+    hideOrShowCurlGenerator(programType);
+    editor.switchMode(programType);
+  });
+
+  editor.view.focus();
+
+  // Handle initial load
+  document.addEventListener("DOMContentLoaded", function() {
+    const programType = document.getElementById("programType").value || {{.programType}};
+    editor.switchMode(programType);
+  });
+</script>
+
 {{end}}

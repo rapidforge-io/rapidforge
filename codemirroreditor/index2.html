@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div>
+    <button type="button" onClick="switchShell()">Shell</button>
+    <button type="button" onClick="switchLua()">Lua</button>
+    <button type="button" onClick="changeThemeDark()">Dracula</button>
+    <button type="button" onClick="changeThemeLight()">Normal</button>
+    </div>
+
+<script type="module">
+  import { lintConfig, EditorState, EditorView,
+            basicSetup, luaLanguage, languageConfig,
+            autocompletion, themeConfig,
+            dracula,
+            shellLanguage,
+            lintGutter,
+            luaLinter } from '/dist/codemirror-bundle.js';
+const luaSnippets = [
+  {
+    label: "for loop",
+    type: "snippet",
+    detail: "Lua for loop",
+    apply: `for i = 1, 10 do
+  print(i)
+end`
+  },
+  { label: "function", type: "keyword", apply: "function $1()\n  $2\nend" },
+  { label: "if", type: "keyword", apply: "if $1 then\n  $2\nend" },
+  { label: "for", type: "keyword", apply: "for $1 = 1, $2 do\n  $3\nend" }
+];
+
+ const  view = new EditorView({
+   state: EditorState.create({
+     doc: "local aq =  1",
+     extensions: [basicSetup, autocompletion(), languageConfig.of(luaLanguage),
+       luaLanguage.data.of({
+         autocomplete: ["os.getenv('id')", "name", "address" ,...luaSnippets]
+       }),
+       themeConfig.of([]),lintConfig.of(luaLinter), lintGutter(),
+     ]
+   }),
+   parent: document.getElementById('app'),
+ })
+  //console.log(codemirrorModules)
+  const state = EditorState.create({
+    doc: "Hello, world!",
+    extensions: [basicSetup]
+  });
+
+  function switchLua() {
+    view.dispatch({
+     effects: [languageConfig.reconfigure(luaLanguage), lintConfig.reconfigure(luaLinter)]
+    });
+  }
+
+  function switchShell () {
+    view.dispatch({
+     effects: [languageConfig.reconfigure(shellLanguage), lintConfig.reconfigure([])]
+   });
+    // view.dispatch({
+    // effects: [languageConfig.reconfigure(luaLanguage), lintConfig.reconfigure(luaLinter)]
+    // });
+  }
+
+ window.changeThemeDark = function() {
+  const theme =   {
+    extension: dracula,
+    name: 'dracula'
+  }
+  view.dispatch({
+    effects: themeConfig.reconfigure([theme])
+  })
+}
+
+window.changeThemeLight = function() {
+  view.dispatch({
+    effects: themeConfig.reconfigure([])
+  })
+}
+
+  // Make functions accessible globally
+window.switchLua = switchLua;
+window.switchShell = switchShell;
+
+ // const view = new EditorView({
+ //   state,
+ //   parent: document.getElementById('app')
+ // });
+
+</script>
+
+
+  </body>
+</html>

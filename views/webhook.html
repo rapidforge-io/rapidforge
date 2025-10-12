@@ -1,90 +1,83 @@
-{{ define "title" }}{{defaultString .webhook.Name "webhook"}}{{end }} {{define "content.html"}}
-<link rel="stylesheet" href="/static/css/codemirror.6.65.7.min.css" />
-<link rel="stylesheet" href="/static/css/dracula.min.css">
-<link rel="stylesheet" href="/static/css/codemirror.css">
-<link rel="stylesheet" href="/static/css/show-hint.6.65.7.css"/>
-<script src="/static/javascript/codemirror.6.65.7.js"></script>
-<script src="/static/javascript/codemirrorshell.6.65.7.js"></script>
-<script src="/static/javascript/codemirrorlua.6.65.js"></script>
-<script src="/static/javascript/show-hint.6.65.7.js"></script>
+{{ define "title" }}{{ defaultString .webhook.Name "webhook" }}{{ end }}
+{{ define "content.html" }}
 
 <div>
   <label>Url Path</label>
   <sl-copy-button from="blockTitle"></sl-copy-button>
   <div class="is-flex is-align-items-baseline">
-  <sl-icon-button name="arrow-left" label="Blocks" href="/blocks/{{.webhook.BlockID}}"></sl-icon-button>
-  {{ template "editableTitle" .editableComponentParams }}
+    <sl-icon-button
+      name="arrow-left"
+      id="backButton"
+      label="Blocks"
+      href="/blocks/{{.webhook.BlockID}}"
+      aria-label="Go back to Blocks"
+    ></sl-icon-button>
+    {{ template "editableTitle" .editableComponentParams }}
   </div>
 </div>
 
 <sl-dialog label="cURL Command Generator" id="curlGenerator" style="--width: 550px;">
-    <div>
-            <sl-select size="small" label="HTTP Method" id="method" value="GET">
-                <sl-option value="GET">GET</sl-option>
-                <sl-option value="POST">POST</sl-option>
-                <sl-option value="PUT">PUT</sl-option>
-                <sl-option value="DELETE">DELETE</sl-option>
-                <sl-option value="PATCH">PATCH</sl-option>
-            </sl-select>
+  <div>
+    <sl-select size="small" label="HTTP Method" id="method" value="GET">
+      <sl-option value="GET">GET</sl-option>
+      <sl-option value="POST">POST</sl-option>
+      <sl-option value="PUT">PUT</sl-option>
+      <sl-option value="DELETE">DELETE</sl-option>
+      <sl-option value="PATCH">PATCH</sl-option>
+    </sl-select>
 
-            <sl-input
-              clearable
-              size="small"
-              type="url"
-              label="Request URL"
-              id="url"
-              sl-change="reportValidity()"
-              placeholder="https://example.com/api"></sl-input>
+    <sl-input
+      clearable
+      size="small"
+      type="url"
+      label="Request URL"
+      id="url"
+      placeholder="https://example.com/api"
+    ></sl-input>
 
-            <sl-select size="small" label="Content-Type" id="content-type">
-                <sl-option value="application/json">application/json</sl-option>
-                <sl-option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</sl-option>
-                <sl-option value="text/plain">text/plain</sl-option>
-                <sl-option value="custom">Custom</sl-option>
-            </sl-select>
+    <sl-select size="small" label="Content-Type" id="content-type">
+      <sl-option value="application/json">application/json</sl-option>
+      <sl-option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</sl-option>
+      <sl-option value="text/plain">text/plain</sl-option>
+      <sl-option value="custom">Custom</sl-option>
+    </sl-select>
 
-            <sl-input size="small"label="Custom Content-Type" id="custom-content-type" style="display: none;"></sl-input>
+    <sl-input size="small" label="Custom Content-Type" id="custom-content-type" style="display: none;"></sl-input>
 
-            <div id="headers-section">
-                <h4 class="mt-2">Headers</h4>
-                <div class="is-flex mb-10 header-row" style="gap: 10px;">
-                    <sl-input size="small" label="Header Name" class="header-name"></sl-input>
-                    <sl-input size="small" label="Header Value" class="header-value"></sl-input>
-                    <sl-button size="small" variant="danger" class="pt-5 remove-header">Remove</sl-button>
-                </div>
+    <div id="headers-section">
+      <h4 class="mt-2">Headers</h4>
+      <div class="is-flex mb-10 header-row" style="gap: 10px;">
+        <sl-input size="small" label="Header Name" class="header-name"></sl-input>
+        <sl-input size="small" label="Header Value" class="header-value"></sl-input>
+        <sl-button size="small" variant="danger" class="pt-5 remove-header">Remove</sl-button>
+      </div>
 
-                <div class="mt-2 mb-2">
-                    <sl-button size="small" id="add-header" variant="primary">Add Header</sl-button>
-                </div>
-            </div>
+      <div class="mt-2 mb-2">
+        <sl-button size="small" id="add-header" variant="primary">Add Header</sl-button>
+      </div>
+    </div>
 
-            <sl-textarea size="small" label="Body (for POST/PUT)" id="request-body" rows="4" clearable></sl-textarea>
+    <sl-textarea size="small" label="Body (for POST/PUT)" id="request-body" rows="4" clearable></sl-textarea>
 
-            <sl-checkbox id="verbose">Verbose</sl-checkbox>
-            <sl-checkbox id="insecure">Insecure (skip SSL)</sl-checkbox>
+    <sl-checkbox id="verbose">Verbose</sl-checkbox>
+    <sl-checkbox id="insecure">Insecure (skip SSL)</sl-checkbox>
 
-            <sl-input size="small" label="Timeout (seconds)" id="timeout" type="number" min="0"></sl-input>
+    <sl-input size="small" label="Timeout (seconds)" id="timeout" type="number" min="0"></sl-input>
 
-            <div class="mt-2 mb-2">
-              <sl-button size="small" variant="primary" id="generate-curl">Generate cURL</sl-button>
-              <sl-button size="small" id="clear-fields">Clear</sl-button>
-            </div>
+    <div class="mt-2 mb-2">
+      <sl-button size="small" variant="primary" id="generate-curl">Generate cURL</sl-button>
+      <sl-button size="small" id="clear-fields">Clear</sl-button>
+    </div>
 
-
-        <div class="is-flex is-align-items-center">
-        <div>
-        <code id="curl-output">
-            //output
-        </code>
-        </div>
-        <div>
-        <sl-copy-button from="curl-output.value" class="copy-code-button"></sl-copy-button>
-        </div>
-        </div>
-        </div>
+    <div class="is-flex is-align-items-center">
+      <code id="curl-output">//output</code>
+      <sl-copy-button from="curl-output" class="copy-code-button"></sl-copy-button>
+    </div>
+  </div>
 </sl-dialog>
 
-<sl-tab-group>
+<!-- Tabs -->
+<sl-tab-group id="webhookTabGroup">
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
   <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.webhook.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
@@ -93,42 +86,42 @@
     <div id="alertBox"></div>
     <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between">
       <div class="is-flex is-flex-direction-row is-align-items-end">
-      <sl-input placeholder="{{defaultString .webhook.Name ""}}" label="Name" disabled>
-      </sl-input>
-      <sl-button
-        class="ml-2"
-        variant="primary"
-        hx-patch="/webhooks/{{.webhook.ID}}"
-        hx-target="#alertBox"
-        hx-include="[name]"
-        hx-vals="js:{editor: getEditorVal()}"
-      >
-        Save
-      </sl-button>
+        <sl-input placeholder="{{ defaultString .webhook.Name "" }}" disabled></sl-input>
+        <sl-button
+          class="ml-2"
+          variant="primary"
+          hx-patch="/webhooks/{{.webhook.ID}}"
+          hx-target="#alertBox"
+          hx-include="#webhookTabGroup [name]"
+          hx-vals="js:{editor: getEditorVal()}"
+        >
+          Save
+        </sl-button>
       </div>
       <div>
-      <sl-icon-button name="question-circle"  onclick="codeHelper.show()"></sl-icon-button>
-      {{template "cheatsheet.html" }}
+        <sl-icon-button name="question-circle" onclick="codeHelper.show()" aria-label="Show help"></sl-icon-button>
+        {{ template "cheatsheet.html" }}
       </div>
     </div>
+
     <div class="is-flex m-2">
-      <sl-select id="programType" name="programType" size="small" value={{.programType}}>
-       <sl-option value="bash">Bash</sl-option>
-       <sl-option value="lua">Lua</sl-option>
-     </sl-select>
+      <sl-select id="programType" name="programType" size="small" value="{{.programType}}">
+        <sl-option value="bash">Bash</sl-option>
+        <sl-option value="lua">Lua</sl-option>
+      </sl-select>
       {{ if .showCurlGenerator }}
         <div id="curlGeneratorContainer" class="is-flex ml-2">
-         <sl-button size="small" onclick="curlGeneratorDialog.show()">cURL Generator</sl-button>
+          <sl-button size="small" onclick="document.getElementById('curlGenerator').show()">cURL Generator</sl-button>
         </div>
-      {{end}}
+      {{ end }}
     </div>
-    <div class="m-2">
-      <textarea id="editor" name="editor">{{ .fileContent }}</textarea>
-    </div>
+
+    <div id="codeEditor"></div>
   </sl-tab-panel>
+
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="webhookConfig" hx-patch="/webhooks/{{.webhook.ID}}" hx-include="#webhookConfig [name]"  hx-vals="js:{editor: getEditorVal(), programType: getProgramType()}" hx-target="#alertBoxSettings">
+    <form id="webhookConfig" hx-patch="/webhooks/{{.webhook.ID}}" hx-include="#webhookConfig [name]"  hx-vals="js:{editor: getEditorVal(), programType: document.getElementById('programType').value}" hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -239,87 +232,73 @@
       </div>
     </form>
   </sl-tab-panel>
+
   <sl-tab-panel name="eventLogs">
     <div id="eventList"></div>
   </sl-tab-panel>
 </sl-tab-group>
 
 <script src="/static/javascript/curlgenerator.js"></script>
-<script src="/static/javascript/editorcommon.js"></script>
-<script>
-   let evenDialog = null;
-   const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dracula' : 'default';
+<script type="module">
+  import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
+  import { createEditor } from '/static/javascript/editorsetup.js';
 
-   const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
-    lineNumbers: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    mode: "shell",
-    indentUnit: 2,
-    theme: theme,
+  const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
+  const programType = document.getElementById("programType")?.value || "{{.programType}}";
+
+  // Create the editor
+  const editor = createEditor({
+    fileContent: `{{ .fileContent }}`,
+    customWords: customWords,
+    parentElementId: 'codeEditor',
+    initialMode: programType
   });
 
+  // Expose getEditorVal globally for HTMX
+  window.getEditorVal = editor.getContent;
+
+  // Handle program type changes
+  document.getElementById("programType").addEventListener("sl-change", function (e) {
+    const programType = e.target.value;
+    hideOrShowCurlGenerator(programType);
+    editor.switchMode(programType);
+  });
+
+  editor.view.focus();
+
+  // Handle initial load
   document.addEventListener("DOMContentLoaded", function() {
     const programType = document.getElementById("programType").value || {{.programType}};
-    hideOrShowCurlGenerator(programType);
-    setEditorMode(programType);
+    editor.switchMode(programType);
   });
+</script>
 
-  document.getElementById("programType").addEventListener("sl-change", changeEditor);
-
-function customAutocomplete(editor) {
-       var cursor = editor.getCursor();
-       var token = editor.getTokenAt(cursor);
-
-       var customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
-
-       var filteredWords = customWords.filter(function(word) {
-           return word.startsWith(token.string);
-       });
-
-       return {
-           list: filteredWords.length ? filteredWords : customWords,
-           from: CodeMirror.Pos(cursor.line, token.start),
-           to: CodeMirror.Pos(cursor.line, token.end)
-       };
-}
-
-  editor.on("inputRead", function (cm, event) {
-    if (!cm.state.completionActive && event.text[0].match(/\w/)) {
-        cm.showHint({ hint: customAutocomplete, completeSingle: false });
-    }
-  });
-
-  function getEditorVal() {
-    return editor.getValue();
-  }
-
+<script>
   function addRow() {
     const mappingsDiv = document.getElementById("mappings");
     const newRow = document.createElement("div");
     newRow.classList.add("mapping-row");
     newRow.innerHTML = `
-        <div class="columns">
+      <div class="columns">
         <div class="column">
-        <sl-input name="exitCode[]" type="number" label="Exit Code" placeholder="Enter exit code" required></sl-input>
+          <sl-input name="exitCode[]" type="number" label="Exit Code" placeholder="Enter exit code" required></sl-input>
         </div>
         <div class="column">
-        <sl-input name="httpResponseCode[]" type="number" label="HTTP Response Code" placeholder="Enter HTTP code" required></sl-input>
+          <sl-input name="httpResponseCode[]" type="number" label="HTTP Response Code" placeholder="Enter HTTP code" required></sl-input>
         </div>
-         <div class="column" style="padding-top: 33px;">
-           <sl-button type="button" variant="danger" size="small" onclick="deleteRow(this)">-</sl-button>
-         </div>
+        <div class="column" style="padding-top: 33px;">
+          <sl-button type="button" variant="danger" size="small" onclick="deleteRow(this)">-</sl-button>
         </div>
-      `;
+      </div>
+    `;
     mappingsDiv.appendChild(newRow);
   }
 
   function deleteRow(button) {
-    // Navigate up the DOM tree to find the parent row
     const row = button.closest(".mapping-row");
-    if (row) {
-      row.remove();
-    }
+    if (row) row.remove();
   }
 </script>
-{{end}}
+
+{{ end }}
+

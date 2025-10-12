@@ -13,9 +13,10 @@ function setTheme(theme) {
             .documentElement
             .setAttribute('data-theme', 'dark');
 
-        if (typeof editor !== 'undefined' && editor !== null) {
-            editor.setOption('theme', 'dracula');
-        }
+        // todo fix this
+        // if (typeof editor !== 'undefined' && editor !== null) {
+        //     editor.setOption('theme', 'dracula');
+        // }
 
         document
             .documentElement
@@ -32,9 +33,9 @@ function setTheme(theme) {
             .documentElement
             .setAttribute('data-theme', 'light');
 
-        if (typeof editor !== 'undefined' && editor !== null) {
-            editor.setOption('theme', 'default');
-        }
+        // if (typeof editor !== 'undefined' && editor !== null) {
+        //     editor.setOption('theme', 'default');
+        // }
 
         document
             .documentElement
