@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^6.3.2"
+    "vite": "^6.3.6"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.6",
