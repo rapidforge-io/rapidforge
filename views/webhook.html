@@ -147,41 +147,48 @@
         </div>
       </div>
 
-      <div id="mappings" class="is-flex is-flex-direction-column m-2">
-        <div class="mapping-row">
-          {{range $exitCode, $httpResponseCode:= .httpExitPair}}
-          <div id="columns-{{$exitCode}}" class="columns is-align-items-center">
-            <div class="column">
-              <sl-input
-                name="exitCode[]"
-                type="number"
-                label="Exit Code"
-                value={{$exitCode}}
-                placeholder="Enter exit code"
-                required
-              ></sl-input>
+      <div class="m-2">
+        <sl-details summary="Exit Code & HTTP Response Mapping" open>
+          <div id="mappings" class="is-flex is-flex-direction-column" style="gap: 12px;">
+            {{range $exitCode, $httpResponseCode:= .httpExitPair}}
+            <div id="columns-{{$exitCode}}" class="columns is-mobile is-align-items-end" style="margin-bottom: 0;">
+              <div class="column is-5">
+                <sl-input
+                  name="exitCode[]"
+                  type="number"
+                  label="Exit Code"
+                  value={{$exitCode}}
+                  placeholder="Enter exit code"
+                  required
+                ></sl-input>
+              </div>
+              <div class="column is-5">
+                <sl-input
+                  name="httpResponseCode[]"
+                  type="number"
+                  value={{$httpResponseCode}}
+                  label="HTTP Response Code"
+                  placeholder="Enter HTTP code"
+                  required
+                ></sl-input>
+              </div>
+              <div class="column is-2 pb-4" >
+                <sl-button type="button" variant="danger" size="small" onclick="document.getElementById('columns-{{$exitCode}}').remove()">
+                  <sl-icon slot="prefix" name="dash-circle"></sl-icon>
+                  Remove
+                </sl-button>
+              </div>
             </div>
-            <div class="column">
-              <sl-input
-                name="httpResponseCode[]"
-                type="number"
-                value={{$httpResponseCode}}
-                label="HTTP Response Code"
-                placeholder="Enter HTTP code"
-                required
-              ></sl-input>
-            </div>
-            <div class="column" style="padding-top: 33px;">
-            <sl-button type="button" variant="danger" size="small" onclick="document.getElementById('columns-{{$exitCode}}').remove()">-</sl-button>
-            </div>
+            {{end}}
           </div>
-          {{end}}
-        </div>
 
-      </div>
-
-      <div class="m-2 is-flex is-justify-content-space-around">
-        <sl-button type="button" variant="primary" size="small" onclick="addRow()">+</sl-button>
+          <div class="mt-3">
+            <sl-button type="button" variant="primary" size="small" onclick="addRow()">
+              <sl-icon slot="prefix" name="plus-circle"></sl-icon>
+              Add Mapping
+            </sl-button>
+          </div>
+        </sl-details>
       </div>
 
       <div class="m-2">
@@ -274,28 +281,32 @@
 </script>
 
 <script>
-  function addRow() {
+    function addRow() {
     const mappingsDiv = document.getElementById("mappings");
     const newRow = document.createElement("div");
-    newRow.classList.add("mapping-row");
+    const uniqueId = Date.now();
+    newRow.id = `columns-${uniqueId}`;
+    newRow.className = "columns is-mobile is-align-items-end";
+    newRow.style.marginBottom = "0";
     newRow.innerHTML = `
-      <div class="columns">
-        <div class="column">
-          <sl-input name="exitCode[]" type="number" label="Exit Code" placeholder="Enter exit code" required></sl-input>
-        </div>
-        <div class="column">
-          <sl-input name="httpResponseCode[]" type="number" label="HTTP Response Code" placeholder="Enter HTTP code" required></sl-input>
-        </div>
-        <div class="column" style="padding-top: 33px;">
-          <sl-button type="button" variant="danger" size="small" onclick="deleteRow(this)">-</sl-button>
-        </div>
+      <div class="column is-5">
+        <sl-input name="exitCode[]" type="number" label="Exit Code" placeholder="Enter exit code" required></sl-input>
+      </div>
+      <div class="column is-5">
+        <sl-input name="httpResponseCode[]" type="number" label="HTTP Response Code" placeholder="Enter HTTP code" required></sl-input>
+      </div>
+      <div class="column is-2 pb-4">
+        <sl-button type="button" variant="danger" size="small" onclick="deleteRow(this)">
+          <sl-icon slot="prefix" name="dash-circle"></sl-icon>
+          Remove
+        </sl-button>
       </div>
     `;
     mappingsDiv.appendChild(newRow);
   }
 
   function deleteRow(button) {
-    const row = button.closest(".mapping-row");
+    const row = button.closest(".columns");
     if (row) row.remove();
   }
 </script>
