@@ -1,38 +1,42 @@
-<div class="is-flex is-flex-direction-column ">
-  <div>
-    <div class="columns is-mobile has-text-weight-bold">
-      <div class="column">Status</div>
-      <div class="column">Type</div>
-      <div class="column">Created At</div>
-      <div class="column">Details</div>
+<div class="is-flex is-flex-direction-column">
+  <div class="is-flex is-flex-direction-column">
+    <div class="columns  has-text-weight-bold" style="margin-bottom: 0.5rem;">
+      <div class="column is-2">Status</div>
+      <div class="column is-3">Type</div>
+      <div class="column is-4">Created At</div>
+      <div class="column is-3">Details</div>
     </div>
-    <div style="max-height: 72vh;">
+    <div style="flex: 1; overflow-y: auto;">
     {{range .events}}
-    <div class="columns is-mobile">
-      <div class="column">
+    <div class="columns" style="margin-bottom: 0.5rem;">
+      <div class="column is-2">
         {{if .Status}} <sl-badge variant="success">Success</sl-badge> {{else}}
         <sl-badge variant="danger">Fail</sl-badge> {{end}}
       </div>
-      <div class="column">{{.EventType}}</div>
-      <div class="column">{{.CreatedAt | formatDateTime}}</div>
-      <div class="column">
-        <sl-button onclick="eventDialog.show()" hx-get="/events/details/{{.ID}}" hx-target="#payload" hx-trigger="click">Show Details</sl-button>
+      <div class="column is-3">{{.EventType}}</div>
+      <div class="column is-4">{{.CreatedAt | formatDateTime}}</div>
+      <div class="column is-3">
+        <sl-button size="small" onclick="eventDialog.show()" hx-get="/events/details/{{.ID}}" hx-target="#payload" hx-trigger="click">Show Details</sl-button>
       </div>
-      <sl-dialog label="Details" id="eventDetails" class="dialog-overview" style="--width: 50vw;">
-        <div id="payload"></div>
-        <sl-button slot="footer" variant="primary"  onclick="eventDialog.hide()">Close</sl-button>
-      </sl-dialog>
     </div>
     {{end}}
+    </div>
+    <sl-divider></sl-divider>
+    <div class="mt-3" style="display: flex; gap: 0.5rem;">
     {{if gt .Page 0}}
-        <sl-button hx-get="/events/{{.Type}}/{{.ID}}?page={{dec .Page }}"  hx-target="#eventList" hx-trigger="click">Prev</sl-button>
+        <sl-button size="small" hx-get="/events/{{.Type}}/{{.ID}}?page={{dec .Page }}"  hx-target="#eventList" hx-trigger="click">Prev</sl-button>
     {{end}}
     {{if gt (len .events) 0}}
-        <sl-button hx-get="/events/{{.Type}}/{{.ID}}?page={{inc .Page }}" hx-target="#eventList" hx-trigger="click">Next</sl-button>
+        <sl-button size="small" hx-get="/events/{{.Type}}/{{.ID}}?page={{inc .Page }}" hx-target="#eventList" hx-trigger="click">Next</sl-button>
     {{end}}
     </div>
   </div>
 </div>
+
+<sl-dialog label="Details" id="eventDetails" class="dialog-overview" style="--width: 50vw;">
+  <div id="payload"></div>
+  <sl-button slot="footer" variant="primary"  onclick="eventDialog.hide()">Close</sl-button>
+</sl-dialog>
 
 <script>
     eventDialog = document.getElementById('eventDetails');
