@@ -240,7 +240,7 @@
     </form>
   </sl-tab-panel>
 
-  <sl-tab-panel name="eventLogs" class="is-flex is-flex-direction-column">
+  <sl-tab-panel name="eventLogs">
     <div class="is-flex is-flex-direction-column" id="eventList"></div>
   </sl-tab-panel>
 </sl-tab-group>
@@ -303,12 +303,33 @@
       </div>
     `;
     mappingsDiv.appendChild(newRow);
+    updateRemoveButtons();
   }
 
   function deleteRow(button) {
     const row = button.closest(".columns");
     if (row) row.remove();
+    updateRemoveButtons();
   }
+
+  function updateRemoveButtons() {
+    const mappingsDiv = document.getElementById("mappings");
+    const rows = mappingsDiv.querySelectorAll(".columns");
+    const removeButtons = mappingsDiv.querySelectorAll("sl-button[variant='danger']");
+
+    removeButtons.forEach(button => {
+      if (rows.length === 1) {
+        button.style.display = "none";
+      } else {
+        button.style.display = "";
+      }
+    });
+  }
+
+  // Call on page load to set initial state
+  document.addEventListener("DOMContentLoaded", function() {
+    updateRemoveButtons();
+  });
 </script>
 
 {{ end }}

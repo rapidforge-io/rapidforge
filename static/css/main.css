@@ -16,6 +16,7 @@
   height: 100%;
   padding: 10px;
   min-height: 0;
+  overflow: scroll;
 }
 
 #eventList {

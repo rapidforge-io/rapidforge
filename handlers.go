@@ -980,7 +980,9 @@ func terminalViewHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		c.HTML(http.StatusOK, "terminal-view", gin.H{})
+		c.HTML(http.StatusOK, "terminal-view", gin.H{
+			"currentUser": getCurrentUser(c),
+		})
 	}
 }
 
