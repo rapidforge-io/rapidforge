@@ -16,7 +16,27 @@
   height: 100%;
   padding: 10px;
   min-height: 0;
+  overflow: scroll;
 }
+
+#eventList {
+   display: flex;
+   flex-direction: column;
+   height: 80%;
+ }
+
+sl-tab-panel::part(base):active {
+  display: flex !important;
+  flex-direction: column;
+}
+
+/* Also target non-active state if needed */
+sl-tab-panel::part(base) {
+  display: flex !important;
+  flex-direction: column;
+}
+
+
 
 .cm-editor {
   height: calc(65vh);
