@@ -30,6 +30,9 @@
      {{ if eq (index . "Type") "webhooks"}}
      Path: {{ (index . "FullPath") }} <sl-copy-button value={{ (index . "FullPath") }}></sl-copy-button>
      {{end}}
+     {{ if eq (index . "Type") "periodic_tasks"}}
+     Cron: {{ (index . "Cron") }} <sl-copy-button value={{ (index . "Cron") }}></sl-copy-button>
+     {{end}}
     </div>
     <div>
      Description: {{ defaultString (index . "Description") "N/A" }}
