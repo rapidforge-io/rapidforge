@@ -1,17 +1,20 @@
 {{define "editableTitle"}}
-<div>
+<div class="pt-1">
     <div>
          <sl-alert  id="toastBox" variant="primary"> </sl-alert>
          <div id="renameErr"></div>
         <div
             id="title-container"
-            class="is-flex is-hidden is-flex-direction-row is-align-items-baseline"
+            class="is-flex is-hidden is-flex-direction-row is-align-items-flex-end"
         >
-            <div>
+            <div class="is-flex">
                 <h1 class="title is-3"><div id="blockTitle">{{defaultString (index . "Url") (index . "Field")}}</div></h1>
-            </div>
-            <div onclick="hideShow()" class="ml-2" style="font-size: 20px;">
-                <sl-icon name="pencil-square"></sl-icon>
+                {{ if eq (index . "Type") "webhooks"}}
+                  <sl-copy-button from="blockTitle"></sl-copy-button>
+                {{ end }}
+                <div onclick="hideShow()" class="ml-2" style="font-size: 20px;">
+                    <sl-icon name="pencil-square"></sl-icon>
+                </div>
             </div>
         </div>
         <div
@@ -21,11 +24,13 @@
             <sl-input
                 id="titleInput"
                 name="name"
+                size="small"
                 class="mr-2"
                 value="{{index . "Field"}}"
             ></sl-input>
             <sl-button
                 class="mr-2"
+                size="small"
                 id="saveNameButton"
                 hx-patch="/rename/{{index . "Type"}}/{{index . "ID"}}"
                 hx-target="#blockTitle"
@@ -33,7 +38,7 @@
                 hx-vals='js:{val: document.getElementById("titleInput").value, type: "{{index . "Type"}}"}'
             >
                 <sl-icon name="floppy2"></sl-icon></sl-button>
-            <sl-button onclick="hideShow()">
+            <sl-button size="small" onclick="hideShow()">
                 <sl-icon name="x"></sl-icon
             ></sl-button>
         </div>

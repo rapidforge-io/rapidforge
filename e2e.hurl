@@ -61,3 +61,14 @@ GET https://main.rapidforge.io/webhook/event-count-lua
 HTTP 200
 [Asserts]
 jsonpath "$.RESULT" == "true"
+
+# Test access
+GET https://main.rapidforge.io/webhook/access
+Authorization: Bearer test
+HTTP 200
+
+# Test protected
+GET https://main.rapidforge.io/webhook/no-access
+HTTP 401
+[Asserts]
+jsonpath "$.error" == "Authorization required"

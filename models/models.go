@@ -65,8 +65,14 @@ type Webhook struct {
 	HttpMethod      string         `json:"httpMethod" db:"http_method"`
 	ResponseHeaders sql.NullString `json:"responseHeaders" db:"response_headers"`
 	ExitHttpPair    sql.NullString `json:"exitHttpPair" db:"exit_http_pair"`
+	AuthConfig      sql.NullString `json:"authConfig" db:"auth_config"`
 	CreatedAt       time.Time      `json:"createdAt" db:"created_at"`
 	ProgramID       int            `json:"programId" db:"program_id"`
+}
+
+type WebhookAuthConfig struct {
+	Enabled bool     `json:"enabled"`
+	Tokens  []string `json:"tokens"`
 }
 
 func getEnvVars(envVars sql.NullString) map[string]string {
@@ -100,6 +106,26 @@ func (w *Block) GetEnvVars() map[string]string {
 
 func (w *PeriodicTask) GetEnvVars() map[string]string {
 	return getEnvVars(w.EnvVariables)
+}
+
+func (w *Webhook) GetAuthConfig() *WebhookAuthConfig {
+	if !w.AuthConfig.Valid || w.AuthConfig.String == "" {
+		return &WebhookAuthConfig{
+			Enabled: false,
+			Tokens:  []string{},
+		}
+	}
+
+	var config WebhookAuthConfig
+	if err := json.Unmarshal([]byte(w.AuthConfig.String), &config); err != nil {
+		rflog.Error("failed to unmarshal auth config", err)
+		return &WebhookAuthConfig{
+			Enabled: false,
+			Tokens:  []string{},
+		}
+	}
+
+	return &config
 }
 
 func (w *Webhook) GetExitHttpPair() map[int]int {
@@ -241,6 +267,7 @@ type WebhookFormData struct {
 	HttpVerb          string   `form:"httpVerb" `
 	Cors              string   `form:"cors" `
 	Code              string   `form:"editor"`
+	AuthConfig        string   `form:"authConfig"`
 }
 
 type PeriodicTaskFormData struct {
@@ -622,7 +649,7 @@ func (s *Store) SelectBlockById(id int64) (*Block, error) {
 }
 
 type WebHookDetail struct {
-	Webhook Webhook `json:"periodicTask" db:"webhook"`
+	Webhook Webhook `json:"webhook" db:"webhook"`
 	File    File    `json:"file" db:"file"`
 	Block   Block   `json:"block" db:"block"`
 	Program Program `json:"program" db:"program"`
@@ -636,6 +663,7 @@ func (s *Store) SelectWebhookByPath(path string, verb string) (*WebHookDetail, e
 	       w.env_variables AS "webhook.env_variables",
 		   w.response_headers AS "webhook.response_headers",
 		   w.exit_http_pair AS "webhook.exit_http_pair",
+		   w.auth_config AS "webhook.auth_config",
 		   b.env_variables AS "block.env_variables",
 		   b.id AS "block.id", p.type AS "program.type"
 	FROM
@@ -722,7 +750,8 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 								  active = ?,
 								  http_method = ?,
 								  exit_http_pair = ?,
-								  response_headers = ?
+								  response_headers = ?,
+								  auth_config = ?
 	                          WHERE id = ?`
 
 	exitHttpPair := constructKeyValueFormat(formData.ExitCodes, formData.HTTPResponseCodes)
@@ -735,6 +764,7 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 		formData.HttpVerb,
 		exitHttpPair,
 		formData.ResponseHeaders,
+		formData.AuthConfig,
 		webhookID)
 
 	if err != nil {
@@ -894,6 +924,7 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 			w.id AS "webhook.id", w.name AS "webhook.name", w.description AS "webhook.description", w.active AS "webhook.active",
 			w.env_variables AS "webhook.env_variables", w.block_id AS "webhook.block_id", w.path AS "webhook.path",
 			w.cors AS "webhook.cors", w.http_method AS "webhook.http_method", w.exit_http_pair AS "webhook.exit_http_pair", w.response_headers AS "webhook.response_headers",
+			w.auth_config AS "webhook.auth_config",
 			w.program_id AS "webhook.program_id", w.created_at AS "webhook.created_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",

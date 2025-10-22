@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -30,6 +31,19 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		},
 		"dec": func(i int) int {
 			return i - 1
+		},
+		"toJSON": func(v interface{}) template.JS {
+			bytes, err := json.Marshal(v)
+			if err != nil {
+				return template.JS("[]")
+			}
+			return template.JS(bytes)
+		},
+		"maskToken": func(token string) string {
+			if len(token) <= 4 {
+				return "****"
+			}
+			return "****" + token[len(token)-4:]
 		},
 	}
 	basePages := []string{"views/base.html", "views/navbar.html"}

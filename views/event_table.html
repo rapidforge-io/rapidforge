@@ -10,7 +10,7 @@
     {{range .events}}
     <div class="columns" style="margin-bottom: 0.5rem;">
       <div class="column is-2">
-        {{if .Status}} <sl-badge variant="success">Success</sl-badge> {{else}}
+        {{if eq .Status "0"}} <sl-badge variant="success">Success</sl-badge> {{else}}
         <sl-badge variant="danger">Fail</sl-badge> {{end}}
       </div>
       <div class="column is-3">{{.EventType}}</div>
