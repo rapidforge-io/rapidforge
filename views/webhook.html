@@ -148,7 +148,53 @@
       </div>
 
       <div class="m-2">
-        <sl-details summary="Exit Code & HTTP Response Mapping" open>
+        <sl-details summary="Authorization" id="authSection" open>
+          <p>A list of bearer tokens to grant access to this endpoint.</p>
+
+          <sl-switch id="authEnabled" style="margin-top: 1rem;" {{ if .authConfig.Enabled }}checked{{ end }}>
+            Require Bearer Token Authentication
+          </sl-switch>
+
+          <sl-alert id="authWarning" variant="warning" style="margin-top: 1rem; display: none;">
+            <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+            <strong>Warning:</strong> Authentication is enabled but no tokens are configured. Please add at least one token or disable authentication.
+          </sl-alert>
+
+          <div style="margin-top: 1.5rem;" id="tokenManagement">
+            <label style="display: block; font-weight: var(--sl-font-weight-semibold); margin-bottom: 0.5rem;">
+              New Bearer Token
+            </label>
+            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+              <sl-input id="newTokenInput" placeholder="Paste or generate a token" style="flex-grow: 1;"></sl-input>
+              <sl-button id="generateTokenBtn">Generate</sl-button>
+              <sl-button variant="primary" id="addTokenBtn">Add Token</sl-button>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem;" id="activeTokensSection">
+            <p style="font-weight: var(--sl-font-weight-semibold);">Active Tokens</p>
+            <div id="tokensList">
+              {{ range $index, $token := .authConfig.Tokens }}
+              <div class="token-row" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;" data-token="{{$token}}">
+                <sl-input value="{{ $token | maskToken }}" password readonly style="flex-grow: 1;"></sl-input>
+                <sl-tooltip content="Copy Token">
+                  <sl-copy-button value="{{ $token }}"></sl-copy-button>
+                  <sl-icon-button name="copy-fill" class="copy-token-btn"></sl-icon-button>
+                </sl-tooltip>
+                <sl-tooltip content="Delete Token">
+                  <sl-icon-button name="trash" class="delete-token-btn"></sl-icon-button>
+                </sl-tooltip>
+              </div>
+              {{ end }}
+            </div>
+          </div>
+
+          <input type="hidden" name="authConfig" id="authConfigInput" value="">
+        </sl-details>
+      </div>
+
+      <div class="m-2">
+        <sl-details summary="Exit Code & HTTP Response Mapping">
           <div id="mappings" class="is-flex is-flex-direction-column" style="gap: 12px;">
             {{range $exitCode, $httpResponseCode:= .httpExitPair}}
             <div id="columns-{{$exitCode}}" class="columns is-mobile is-align-items-end" style="margin-bottom: 0;">
@@ -253,7 +299,6 @@
   const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
   const programType = document.getElementById("programType")?.value || "{{.programType}}";
 
-  // Create the editor
   const editor = createEditor({
     fileContent: `{{ .fileContent }}`,
     customWords: customWords,
@@ -261,10 +306,8 @@
     initialMode: programType
   });
 
-  // Expose getEditorVal globally for HTMX
   window.getEditorVal = editor.getContent;
 
-  // Handle program type changes
   document.getElementById("programType").addEventListener("sl-change", function (e) {
     const programType = e.target.value;
     hideOrShowCurlGenerator(programType);
@@ -273,7 +316,6 @@
 
   editor.view.focus();
 
-  // Handle initial load
   document.addEventListener("DOMContentLoaded", function() {
     const programType = document.getElementById("programType").value || {{.programType}};
     editor.switchMode(programType);
@@ -326,10 +368,152 @@
     });
   }
 
-  // Call on page load to set initial state
   document.addEventListener("DOMContentLoaded", function() {
     updateRemoveButtons();
+    updateAuthConfigInput();
+    validateAuthConfig(); // Validate on page load
   });
+
+  // ===== Bearer Token Management =====
+  let bearerTokens = {{ .authConfig.Tokens | toJSON }};
+
+  function generateToken() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let token = 'rf_live_';
+    for (let i = 0; i < 32; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return token;
+  }
+
+  function updateAuthConfigInput() {
+    const authEnabled = document.getElementById('authEnabled').checked;
+    const authConfig = {
+      enabled: authEnabled,
+      tokens: bearerTokens
+    };
+    document.getElementById('authConfigInput').value = JSON.stringify(authConfig);
+
+    // Validate auth configuration
+    validateAuthConfig();
+  }
+
+  function validateAuthConfig() {
+    const authEnabled = document.getElementById('authEnabled').checked;
+    const authWarning = document.getElementById('authWarning');
+    const saveButton = document.querySelector('#webhookConfig sl-button[type="submit"]');
+
+    // Show warning if auth is enabled but no tokens exist
+    if (authEnabled && bearerTokens.length === 0) {
+      authWarning.style.display = 'block';
+      authWarning.open = true;
+      if (saveButton) {
+        saveButton.disabled = true;
+      }
+    } else {
+      authWarning.style.display = 'none';
+      authWarning.open = false;
+      if (saveButton) {
+        saveButton.disabled = false;
+      }
+    }
+  }
+
+  function addTokenToUI(token, isUnsaved = false) {
+    const tokensList = document.getElementById('tokensList');
+    const tokenRow = document.createElement('div');
+    tokenRow.className = 'token-row';
+    tokenRow.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;';
+    tokenRow.dataset.token = token;
+    if (isUnsaved) {
+      tokenRow.dataset.unsaved = 'true';
+    }
+
+    let maskedToken = '****' + token.slice(-4);
+    if (token.lenght > 4) {
+      maskedToken = '****' + token.slice(-4);
+    } else {
+      maskedToken = '****';
+    }
+
+    const unsavedBadge = isUnsaved ? '<sl-badge variant="warning" style="margin-left: 0.5rem;">Unsaved</sl-badge>' : '';
+
+    tokenRow.innerHTML = `
+      <sl-input value="${maskedToken}" password readonly style="flex-grow: 1;"></sl-input>
+      ${unsavedBadge}
+      <sl-tooltip content="Copy Token">
+        <sl-icon-button name="copy-fill" class="copy-token-btn"></sl-icon-button>
+      </sl-tooltip>
+      <sl-tooltip content="Delete Token">
+        <sl-icon-button name="trash" class="delete-token-btn"></sl-icon-button>
+      </sl-tooltip>
+    `;
+
+    tokensList.appendChild(tokenRow);
+
+    tokenRow.querySelector('.delete-token-btn').addEventListener('click', function() {
+      const tokenToDelete = tokenRow.dataset.token;
+      bearerTokens = bearerTokens.filter(t => t !== tokenToDelete);
+      tokenRow.remove();
+      updateAuthConfigInput();
+      validateAuthConfig(); // Validate after removing token
+    });
+  }
+
+  document.getElementById('generateTokenBtn').addEventListener('click', function() {
+    const token = generateToken();
+    document.getElementById('newTokenInput').value = token;
+  });
+
+  document.getElementById('addTokenBtn').addEventListener('click', function() {
+    const tokenInput = document.getElementById('newTokenInput');
+    const token = tokenInput.value.trim();
+
+    if (!token) {
+      alert('Please enter or generate a token');
+      return;
+    }
+
+    if (bearerTokens.includes(token)) {
+      alert('This token already exists');
+      return;
+    }
+
+    bearerTokens.push(token);
+    addTokenToUI(token, true); // Mark as unsaved
+    tokenInput.value = '';
+    updateAuthConfigInput();
+  });
+
+  document.getElementById('authEnabled').addEventListener('sl-change', function() {
+    updateAuthConfigInput();
+    validateAuthConfig(); // Validate when auth is toggled
+  });
+
+  document.querySelectorAll('.delete-token-btn').forEach((btn, index) => {
+    btn.addEventListener('click', function() {
+      const tokenRow = btn.closest('.token-row');
+      const token = tokenRow.dataset.token;
+      bearerTokens = bearerTokens.filter(t => t !== token);
+      tokenRow.remove();
+      updateAuthConfigInput();
+      validateAuthConfig(); // Validate after removing token
+    });
+  });
+
+  document.getElementById('webhookConfig').addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.successful) {
+      // Remove all unsaved badges
+      document.querySelectorAll('.token-row[data-unsaved="true"]').forEach(row => {
+        const badge = row.querySelector('sl-badge');
+        if (badge) {
+          badge.remove();
+        }
+        row.removeAttribute('data-unsaved');
+      });
+    }
+  });
+
 </script>
 
 {{ end }}

@@ -75,6 +75,43 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
+		// Check bearer token authentication if enabled
+		authConfig := webhook.Webhook.GetAuthConfig()
+		if authConfig.Enabled && len(authConfig.Tokens) > 0 {
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				rflog.Error("Missing authorization header", "path", path)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
+				return
+			}
+
+			// Extract bearer token
+			const bearerPrefix = "Bearer "
+			if !strings.HasPrefix(authHeader, bearerPrefix) {
+				rflog.Error("Invalid authorization header format", "path", path)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization format"})
+				return
+			}
+
+			token := strings.TrimPrefix(authHeader, bearerPrefix)
+			fmt.Println("token:", token)
+			fmt.Println("tokens:", authConfig.Tokens)
+			// Check if token is valid
+			validToken := false
+			for _, validTokenValue := range authConfig.Tokens {
+				if token == validTokenValue {
+					validToken = true
+					break
+				}
+			}
+
+			if !validToken {
+				rflog.Error("Invalid bearer token", "path", path)
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+				return
+			}
+		}
+
 		origin := c.GetHeader("Origin")
 
 		if origin != "" && !isOriginAllowed(origin, webhook.Webhook.GetCors()) {
@@ -1123,6 +1160,10 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 		editableComponentArgs["Type"] = utils.WebhookEntity
 		editableComponentArgs["Field"] = webhookWithDetails.Webhook.Path
 		editableComponentArgs["Url"] = fmt.Sprintf("%s/webhook/%s", config.BaseUrl(), webhookWithDetails.Webhook.Path)
+
+		authConfig := webhookWithDetails.Webhook.GetAuthConfig()
+		fmt.Println("-----------------------", authConfig)
+
 		c.HTML(http.StatusOK, "webhook", gin.H{
 			"variables":               variables,
 			"webhook":                 webhookWithDetails.Webhook,
@@ -1133,6 +1174,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 			"editableComponentParams": editableComponentArgs,
 			"currentUser":             getCurrentUser(c),
 			"showCurlGenerator":       cache["showCurlGenerator"],
+			"authConfig":              authConfig,
 		})
 	}
 }
