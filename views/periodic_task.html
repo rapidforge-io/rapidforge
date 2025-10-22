@@ -139,6 +139,7 @@
         <sl-details summary="Cron">
           <sl-input
             name="cron"
+            size="small"
             id="cron"
             label="Cron expression"
             value={{defaultString .periodicTask.Cron "*/5 * * * *"}}
@@ -149,6 +150,7 @@
       <div class="m-2">
         <sl-details summary="Name">
           <sl-input
+            size="small"
             name="name"
             value={{defaultString .periodicTask.Name "No name"}}
           ></sl-input>
