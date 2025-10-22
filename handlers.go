@@ -94,9 +94,7 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 			}
 
 			token := strings.TrimPrefix(authHeader, bearerPrefix)
-			fmt.Println("token:", token)
-			fmt.Println("tokens:", authConfig.Tokens)
-			// Check if token is valid
+
 			validToken := false
 			for _, validTokenValue := range authConfig.Tokens {
 				if token == validTokenValue {
@@ -1162,7 +1160,6 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 		editableComponentArgs["Url"] = fmt.Sprintf("%s/webhook/%s", config.BaseUrl(), webhookWithDetails.Webhook.Path)
 
 		authConfig := webhookWithDetails.Webhook.GetAuthConfig()
-		fmt.Println("-----------------------", authConfig)
 
 		c.HTML(http.StatusOK, "webhook", gin.H{
 			"variables":               variables,
