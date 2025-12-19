@@ -1,6 +1,6 @@
 module github.com/rapidforge-io/rapidforge
 
-go 1.24.1
+go 1.25.0
 
 require (
 	github.com/fatih/color v1.17.0

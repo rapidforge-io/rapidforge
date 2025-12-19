@@ -1,5 +1,4 @@
-# Step 1: Use the official Golang 1.24 image to build the binary
-FROM golang:1.24.1 AS builder
+FROM golang:1.25.0 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -16,10 +15,8 @@ COPY . .
 # Build the binary using the Makefile
 RUN make build
 
-# Step 2: Use Debian as the base image for the final container
 FROM debian:latest
 
-# Install necessary packages: CA certificates, curl, and jq
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \

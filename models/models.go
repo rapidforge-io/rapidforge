@@ -53,21 +53,24 @@ type File struct {
 }
 
 type Webhook struct {
-	ID              int64          `json:"id" db:"id"`
-	Name            sql.NullString `json:"name" db:"name"`
-	Description     sql.NullString `json:"description" db:"description"`
-	Active          bool           `json:"active" db:"active"`
-	EnvVariables    sql.NullString `json:"envVariables" db:"env_variables"`
-	BlockID         int            `json:"blockId" db:"block_id"`
-	Path            string         `json:"path" db:"path"`
-	FullPath        string         `json:"fullPath" db:"-"`
-	Cors            sql.NullString `json:"cors" db:"cors"`
-	HttpMethod      string         `json:"httpMethod" db:"http_method"`
-	ResponseHeaders sql.NullString `json:"responseHeaders" db:"response_headers"`
-	ExitHttpPair    sql.NullString `json:"exitHttpPair" db:"exit_http_pair"`
-	AuthConfig      sql.NullString `json:"authConfig" db:"auth_config"`
-	CreatedAt       time.Time      `json:"createdAt" db:"created_at"`
-	ProgramID       int            `json:"programId" db:"program_id"`
+	ID               int64          `json:"id" db:"id"`
+	Name             sql.NullString `json:"name" db:"name"`
+	Description      sql.NullString `json:"description" db:"description"`
+	Active           bool           `json:"active" db:"active"`
+	EnvVariables     sql.NullString `json:"envVariables" db:"env_variables"`
+	BlockID          int            `json:"blockId" db:"block_id"`
+	Path             string         `json:"path" db:"path"`
+	FullPath         string         `json:"fullPath" db:"-"`
+	Cors             sql.NullString `json:"cors" db:"cors"`
+	HttpMethod       string         `json:"httpMethod" db:"http_method"`
+	ResponseHeaders  sql.NullString `json:"responseHeaders" db:"response_headers"`
+	ExitHttpPair     sql.NullString `json:"exitHttpPair" db:"exit_http_pair"`
+	AuthConfig       sql.NullString `json:"authConfig" db:"auth_config"`
+	OnFailScript     sql.NullString `json:"onFailScript" db:"on_fail_script"`
+	OnFailScriptType sql.NullString `json:"onFailScriptType" db:"on_fail_script_type"`
+	OnFailEnabled    bool           `json:"onFailEnabled" db:"on_fail_enabled"`
+	CreatedAt        time.Time      `json:"createdAt" db:"created_at"`
+	ProgramID        int            `json:"programId" db:"program_id"`
 }
 
 type WebhookAuthConfig struct {
@@ -238,18 +241,21 @@ type Page struct {
 }
 
 type PeriodicTask struct {
-	ID           int64          `json:"id" db:"id"`
-	Name         sql.NullString `json:"name" db:"name"`
-	Description  sql.NullString `json:"description" db:"description"`
-	Active       bool           `json:"active" db:"active"`
-	EnvVariables sql.NullString `json:"envVariables" db:"env_variables"`
-	BlockID      int64          `json:"blockId" db:"block_id"`
-	ProgramID    int64          `json:"programId" db:"program_id"`
-	Timezone     string         `json:"timezone" db:"timezone"`
-	Cron         string         `json:"cron" db:"cron"`
-	NextRunAt    time.Time      `json:"nextRunAt" db:"next_run_at"`
-	CreatedAt    time.Time      `json:"createdAt" db:"created_at"`
-	UpdatedAt    time.Time      `json:"updatedAt" db:"updated_at"`
+	ID               int64          `json:"id" db:"id"`
+	Name             sql.NullString `json:"name" db:"name"`
+	Description      sql.NullString `json:"description" db:"description"`
+	Active           bool           `json:"active" db:"active"`
+	EnvVariables     sql.NullString `json:"envVariables" db:"env_variables"`
+	BlockID          int64          `json:"blockId" db:"block_id"`
+	ProgramID        int64          `json:"programId" db:"program_id"`
+	Timezone         string         `json:"timezone" db:"timezone"`
+	Cron             string         `json:"cron" db:"cron"`
+	NextRunAt        time.Time      `json:"nextRunAt" db:"next_run_at"`
+	OnFailScript     sql.NullString `json:"onFailScript" db:"on_fail_script"`
+	OnFailScriptType sql.NullString `json:"onFailScriptType" db:"on_fail_script_type"`
+	OnFailEnabled    bool           `json:"onFailEnabled" db:"on_fail_enabled"`
+	CreatedAt        time.Time      `json:"createdAt" db:"created_at"`
+	UpdatedAt        time.Time      `json:"updatedAt" db:"updated_at"`
 }
 
 // -----------------------------------------------------------------------------
@@ -268,17 +274,23 @@ type WebhookFormData struct {
 	Cors              string   `form:"cors" `
 	Code              string   `form:"editor"`
 	AuthConfig        string   `form:"authConfig"`
+	OnFailScript      string   `form:"onFailScript"`
+	OnFailScriptType  string   `form:"onFailScriptType"`
+	OnFailEnabled     bool     `form:"onFailEnabled"`
 }
 
 type PeriodicTaskFormData struct {
-	Name        string `form:"name"`
-	Description string `form:"description"`
-	Env         string `form:"env"`
-	Active      bool   `form:"active" `
-	FileContent string `form:"editor" `
-	Cron        string `form:"cron" validate:"cron"`
-	Code        string `form:"editor"`
-	ProgramType string `form:"programType"`
+	Name             string `form:"name"`
+	Description      string `form:"description"`
+	Env              string `form:"env"`
+	Active           bool   `form:"active" `
+	FileContent      string `form:"editor" `
+	Cron             string `form:"cron" validate:"cron"`
+	Code             string `form:"editor"`
+	ProgramType      string `form:"programType"`
+	OnFailScript     string `form:"onFailScript"`
+	OnFailScriptType string `form:"onFailScriptType"`
+	OnFailEnabled    bool   `form:"onFailEnabled"`
 }
 
 type Store struct {
@@ -664,6 +676,9 @@ func (s *Store) SelectWebhookByPath(path string, verb string) (*WebHookDetail, e
 		   w.response_headers AS "webhook.response_headers",
 		   w.exit_http_pair AS "webhook.exit_http_pair",
 		   w.auth_config AS "webhook.auth_config",
+		   w.on_fail_script AS "webhook.on_fail_script",
+		   w.on_fail_enabled AS "webhook.on_fail_enabled",
+		   w.on_fail_script_type AS "webhook.on_fail_script_type",
 		   b.env_variables AS "block.env_variables",
 		   b.id AS "block.id", p.type AS "program.type"
 	FROM
@@ -751,7 +766,10 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 								  http_method = ?,
 								  exit_http_pair = ?,
 								  response_headers = ?,
-								  auth_config = ?
+								  auth_config = ?,
+								  on_fail_script = ?,
+								  on_fail_script_type = ?,
+								  on_fail_enabled = ?
 	                          WHERE id = ?`
 
 	exitHttpPair := constructKeyValueFormat(formData.ExitCodes, formData.HTTPResponseCodes)
@@ -765,6 +783,9 @@ func (s *Store) UpdateFileContentByWebhookID(webhookID int64, formData WebhookFo
 		exitHttpPair,
 		formData.ResponseHeaders,
 		formData.AuthConfig,
+		formData.OnFailScript,
+		formData.OnFailScriptType,
+		formData.OnFailEnabled,
 		webhookID)
 
 	if err != nil {
@@ -827,10 +848,13 @@ func (s *Store) UpdatePeriodicTaskByFrom(periodicTaskID int64, formData Periodic
 	              		               name = ?,
 						               description = ?,
 	                                   cron = ?,
-								       active = ?
+								       active = ?,
+								       on_fail_script = ?,
+								       on_fail_script_type = ?,
+								       on_fail_enabled = ?
 	                                WHERE id = ?`
 
-	_, err = tx.Exec(query, formData.Env, formData.Name, formData.Description, formData.Cron, formData.Active, periodicTaskID)
+	_, err = tx.Exec(query, formData.Env, formData.Name, formData.Description, formData.Cron, formData.Active, formData.OnFailScript, formData.OnFailScriptType, formData.OnFailEnabled, periodicTaskID)
 
 	if err != nil {
 		tx.Rollback()
@@ -885,6 +909,9 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, er
 			pt.id AS "periodic_task.id", pt.name AS "periodic_task.name", pt.description AS "periodic_task.description", pt.active AS "periodic_task.active",
 			pt.env_variables AS "periodic_task.env_variables", pt.block_id AS "periodic_task.block_id", pt.program_id AS "periodic_task.program_id",
 			pt.timezone AS "periodic_task.timezone", pt.cron AS "periodic_task.cron", pt.next_run_at AS "periodic_task.next_run_at",
+			pt.on_fail_script AS "periodic_task.on_fail_script",
+			pt.on_fail_enabled AS "periodic_task.on_fail_enabled",
+    		pt.on_fail_script_type AS "periodic_task.on_fail_script_type",
 			pt.created_at AS "periodic_task.created_at", pt.updated_at AS "periodic_task.updated_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
@@ -925,6 +952,9 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 			w.env_variables AS "webhook.env_variables", w.block_id AS "webhook.block_id", w.path AS "webhook.path",
 			w.cors AS "webhook.cors", w.http_method AS "webhook.http_method", w.exit_http_pair AS "webhook.exit_http_pair", w.response_headers AS "webhook.response_headers",
 			w.auth_config AS "webhook.auth_config",
+			w.on_fail_script AS "webhook.on_fail_script",
+			w.on_fail_script_type AS "webhook.on_fail_script_type",
+			w.on_fail_enabled AS "webhook.on_fail_enabled",
 			w.program_id AS "webhook.program_id", w.created_at AS "webhook.created_at",
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",

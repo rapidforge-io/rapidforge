@@ -71,7 +71,8 @@ var staticFS embed.FS
 // [ ] PKCE flow
 // [ ] Adding throttling for webhook endpoints
 // [ ] Add pagination for event lists
-// [ ] Add authentication feature to webhooks
+// [x] Add authentication feature to webhooks
+// [x] Add on-fail script configuration for webhooks and periodic tasks
 // [ ] Should we add status to periodic tasks?
 // [ ] pagination
 

@@ -194,6 +194,27 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 		runner := services.GetRunner(services.RunnerType(webhook.Program.ProgramType))
 		res, err := runner.Run(webhook.File.Content, envVars)
 
+		if res.ExitCode != 0 && webhook.Webhook.OnFailEnabled && webhook.Webhook.OnFailScript.Valid && webhook.Webhook.OnFailScript.String != "" {
+
+			failScriptType := "bash"
+			if webhook.Webhook.OnFailScriptType.Valid && webhook.Webhook.OnFailScriptType.String != "" {
+				failScriptType = webhook.Webhook.OnFailScriptType.String
+			}
+			// Add failure context to environment
+			envVars["FAILURE_EXIT_CODE"] = fmt.Sprintf("%d", res.ExitCode)
+			envVars["FAILURE_OUTPUT"] = res.Output
+			envVars["FAILURE_ERROR"] = res.Error
+			envVars["WEBHOOK_ID"] = fmt.Sprintf("%d", webhook.Webhook.ID)
+			envVars["WEBHOOK_PATH"] = webhook.Webhook.Path
+			failRunner := services.GetRunner(services.RunnerType(failScriptType))
+			failRes, failErr := failRunner.Run(webhook.Webhook.OnFailScript.String, envVars)
+			if failErr != nil {
+				rflog.Error("Failed to execute on-fail script", "webhook_id=", webhook.Webhook.ID, "err=", failErr)
+			} else if failRes.ExitCode != 0 {
+				rflog.Error("On-fail script exited with non-zero status", "webhook_id=", webhook.Webhook.ID, "exit_code=", failRes.ExitCode)
+			}
+		}
+
 		args, _ := json.Marshal(eventArgs)
 
 		insertEvent := func() {
@@ -1085,12 +1106,15 @@ func updateWebhookHandler(store *models.Store) gin.HandlerFunc {
 		var form models.WebhookFormData
 
 		if err := c.ShouldBind(&form); err != nil {
-			// Return error messages if validation fails
 			var errs []string
-			for _, err := range err.(validator.ValidationErrors) {
-				errs = append(errs, err.Field()+": "+err.ActualTag())
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				for _, e := range validationErrors {
+					errs = append(errs, e.Field()+": "+e.ActualTag())
+				}
+				c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, strings.Join(errs, ", ")))
+			} else {
+				c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
 			}
-			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
 			return
 		}
 
@@ -1116,12 +1140,15 @@ func updatePeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 		var form models.PeriodicTaskFormData
 
 		if err := c.ShouldBind(&form); err != nil {
-			// Return error messages if validation fails
 			var errs []string
-			for _, err := range err.(validator.ValidationErrors) {
-				errs = append(errs, err.Field()+": "+err.ActualTag())
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				for _, e := range validationErrors {
+					errs = append(errs, e.Field()+": "+e.ActualTag())
+				}
+				c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, strings.Join(errs, ", ")))
+			} else {
+				c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, err.Error()))
 			}
-			c.String(http.StatusBadRequest, utils.AlertBox(utils.Error, strings.Join(errs, ", ")))
 			return
 		}
 

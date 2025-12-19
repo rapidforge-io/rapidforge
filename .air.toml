@@ -1,3 +1,5 @@
+#:schema https://json.schemastore.org/any.json
+
 root = "."
 testdata_dir = "testdata"
 tmp_dir = "tmp"
@@ -7,13 +9,15 @@ tmp_dir = "tmp"
   bin = "./bin/rapidforge"
   cmd = "make build"
   delay = 1000
+  # entrypoint = ["./tmp/main"]
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "sitebuilder"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
   full_bin = ""
-  include_dir = ["views", "static"]
+  # include_dir = ["views", "static"] -> old config
+  include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html", "css", "js"]
   include_file = []
   kill_delay = "0s"
@@ -36,6 +40,7 @@ tmp_dir = "tmp"
 
 [log]
   main_only = false
+  silent = false
   time = false
 
 [misc]
