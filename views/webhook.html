@@ -97,7 +97,7 @@
           hx-patch="/webhooks/{{.webhook.ID}}"
           hx-target="#alertBox"
           hx-include="#webhookTabGroup [name]"
-          hx-vals="js:{editor: getEditorVal()}"
+          hx-vals="js:{editor: getEditorVal(), onFailScript: getOnFailEditorVal(), onFailEnabled: getOnFailEnabled()}"
         >
           Save
         </sl-button>
@@ -125,7 +125,11 @@
 
   <sl-tab-panel name="settings">
     <div id="alertBoxSettings"></div>
-    <form id="webhookConfig" hx-patch="/webhooks/{{.webhook.ID}}" hx-include="#webhookConfig [name]"  hx-vals="js:{editor: getEditorVal(), programType: document.getElementById('programType').value}" hx-target="#alertBoxSettings">
+    <form id="webhookConfig"
+          hx-patch="/webhooks/{{.webhook.ID}}"
+          hx-include="#webhookConfig [name]"
+          hx-vals="js:{editor: getEditorVal(), onFailScript: getOnFailEditorVal(), onFailEnabled: getOnFailEnabled(), programType: document.getElementById('programType').value}"
+          hx-target="#alertBoxSettings">
       <div class="is-flex is-justify-content-space-between">
         <div
           class="is-flex is-flex-direction-row is-align-items-flex-center m-2"
@@ -306,6 +310,23 @@
           ></sl-textarea>
         </sl-details>
       </div>
+
+      <div class="m-2">
+        <sl-details summary="On Fail Script">
+          <p style="margin-bottom: 1rem; color: var(--sl-color-neutral-600); font-size: var(--sl-font-size-small);">
+            This script will be executed when the main script fails (exits with non-zero code).
+            Available environment variables: FAILURE_EXIT_CODE, FAILURE_OUTPUT, FAILURE_ERROR, WEBHOOK_ID, WEBHOOK_PATH
+          </p>
+
+       <sl-switch name="onFailEnabled" id="onFailEnabled" style="margin-bottom: 1rem;" {{ if .webhook.OnFailEnabled }}checked{{ end }}>Enable On-Fail Script</sl-switch>
+          <sl-select id="onFailScriptType" name="onFailScriptType" size="small" label="Script Type" value={{defaultString .webhook.OnFailScriptType "bash"}} style="margin-bottom: 1rem;">
+            <sl-option value="bash">Bash</sl-option>
+            <sl-option value="lua">Lua</sl-option>
+          </sl-select>
+
+          <div id="onFailEditor" name="onFailScript" style="height: 300px; border: 1px solid var(--sl-color-neutral-300); border-radius: var(--sl-border-radius-medium);"></div>
+        </sl-details>
+      </div>
     </form>
   </sl-tab-panel>
 
@@ -322,6 +343,10 @@
   const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
   const programType = document.getElementById("programType")?.value || "{{.programType}}";
 
+  function getOnFailEnabled() {
+    return document.getElementById('onFailEnabled').checked
+  }
+
   const editor = createEditor({
     fileContent: `{{ .fileContent }}`,
     customWords: customWords,
@@ -330,6 +355,22 @@
   });
 
   window.getEditorVal = editor.getContent;
+  // Create on-fail editor
+  const onFailScriptType = document.getElementById("onFailScriptType")?.value || "bash";
+  const onFailEditor = createEditor({
+    fileContent: `{{ defaultString .webhook.OnFailScript "" }}`,
+    customWords: ['FAILURE_EXIT_CODE', 'FAILURE_OUTPUT', 'FAILURE_ERROR', 'WEBHOOK_ID', 'WEBHOOK_PATH'],
+    parentElementId: 'onFailEditor',
+    initialMode: onFailScriptType
+  });
+
+
+  document.getElementById("onFailScriptType").addEventListener("sl-change", function (e) {
+    onFailEditor.switchMode(e.target.value);
+  });
+
+  window.getOnFailEditorVal = onFailEditor.getContent;
+  window.getOnFailEnabled = getOnFailEnabled;
 
   document.getElementById("programType").addEventListener("sl-change", function (e) {
     const programType = e.target.value;
@@ -588,6 +629,4 @@
   });
 
 </script>
-
 {{ end }}
-

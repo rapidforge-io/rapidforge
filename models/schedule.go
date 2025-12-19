@@ -72,6 +72,9 @@ func (s *Store) GetAndLockDuePeriodicTasks() ([]DueTasksTaskDetail, error) {
 		pt.next_run_at AS "periodic_task.next_run_at",
 		pt.timezone AS "periodic_task.timezone",
 		pt.env_variables AS "periodic_task.env_variables",
+		pt.on_fail_script AS "periodic_task.on_fail_script",
+		pt.on_fail_script_type AS "periodic_task.on_fail_script_type",
+		pt.on_fail_enabled AS "periodic_task.on_fail_enabled",
 		pt.block_id AS "periodic_task.block_id",
 		b.env_variables as "block.env_variables",
 		b.id as "block.id", p.type as "program.type"
