@@ -339,6 +339,8 @@
 <script type="module">
   import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
   import { createEditor } from '/static/javascript/editorsetup.js';
+  import { AuthManager } from '/static/javascript/authmanager.js';
+  import { MappingManager } from '/static/javascript/mappingmanager.js';
 
   const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
   const programType = document.getElementById("programType")?.value || "{{.programType}}";
@@ -355,7 +357,7 @@
   });
 
   window.getEditorVal = editor.getContent;
-  // Create on-fail editor
+
   const onFailScriptType = document.getElementById("onFailScriptType")?.value || "bash";
   const onFailEditor = createEditor({
     fileContent: `{{ defaultString .webhook.OnFailScript "" }}`,
@@ -363,7 +365,6 @@
     parentElementId: 'onFailEditor',
     initialMode: onFailScriptType
   });
-
 
   document.getElementById("onFailScriptType").addEventListener("sl-change", function (e) {
     onFailEditor.switchMode(e.target.value);
@@ -384,236 +385,43 @@
     const programType = document.getElementById("programType").value || {{.programType}};
     editor.switchMode(programType);
   });
-</script>
 
-<script>
-    function addRow() {
-    const mappingsDiv = document.getElementById("mappings");
-    const newRow = document.createElement("div");
-    const uniqueId = Date.now();
-    newRow.id = `columns-${uniqueId}`;
-    newRow.className = "columns is-mobile is-align-items-end";
-    newRow.style.marginBottom = "0";
-    newRow.innerHTML = `
-      <div class="column is-5">
-        <sl-input size="small" name="exitCode[]" type="number" label="Exit Code" placeholder="Enter exit code" required></sl-input>
-      </div>
-      <div class="column is-5">
-        <sl-input size="small" name="httpResponseCode[]" type="number" label="HTTP Response Code" placeholder="Enter HTTP code" required></sl-input>
-      </div>
-      <div class="column is-2 pb-4">
-        <sl-button type="button" variant="danger" size="small" onclick="deleteRow(this)">
-          <sl-icon slot="prefix" name="dash-circle"></sl-icon>
-          Remove
-        </sl-button>
-      </div>
-    `;
-    mappingsDiv.appendChild(newRow);
-    updateRemoveButtons();
-  }
-
-  function deleteRow(button) {
-    const row = button.closest(".columns");
-    if (row) row.remove();
-    updateRemoveButtons();
-  }
-
-  function updateRemoveButtons() {
-    const mappingsDiv = document.getElementById("mappings");
-    const rows = mappingsDiv.querySelectorAll(".columns");
-    const removeButtons = mappingsDiv.querySelectorAll("sl-button[variant='danger']");
-
-    removeButtons.forEach(button => {
-      if (rows.length === 1) {
-        button.style.display = "none";
-      } else {
-        button.style.display = "";
-      }
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", function() {
-    updateRemoveButtons();
-    updateAuthConfigInput();
-    validateAuthConfig(); // Validate on page load
+  // Initialize Auth Manager
+  const authManager = new AuthManager({
+    initialTokens: {{ .authConfig.Tokens | toJSON }},
+    saveButtonSelector: '#webhookConfig sl-button[type="submit"]'
   });
 
-  // ===== Bearer Token Management =====
-  let bearerTokens = {{ .authConfig.Tokens | toJSON }};
+  // Initialize Mapping Manager
+  window.mappingManager = new MappingManager('mappings');
 
-  function generateToken() {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let token = 'rf_live_';
-    for (let i = 0; i < 32; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return token;
-  }
-
-  function updateAuthConfigInput() {
-    const authEnabled = document.getElementById('authEnabled').checked;
-    const authConfig = {
-      enabled: authEnabled,
-      tokens: bearerTokens
-    };
-    document.getElementById('authConfigInput').value = JSON.stringify(authConfig);
-
-    // Validate auth configuration
-    validateAuthConfig();
-  }
-
-  function validateAuthConfig() {
-    const authEnabled = document.getElementById('authEnabled').checked;
-    const authWarning = document.getElementById('authWarning');
-    const saveButton = document.querySelector('#webhookConfig sl-button[type="submit"]');
-
-    // Show warning if auth is enabled but no tokens exist
-    if (authEnabled && bearerTokens.length === 0) {
-      authWarning.style.display = 'block';
-      authWarning.open = true;
-      if (saveButton) {
-        saveButton.disabled = true;
-      }
-    } else {
-      authWarning.style.display = 'none';
-      authWarning.open = false;
-      if (saveButton) {
-        saveButton.disabled = false;
-      }
-    }
-  }
-
-  function addTokenToUI(token, isUnsaved = false) {
-    const tokensList = document.getElementById('tokensList');
-    const tokenRow = document.createElement('div');
-    tokenRow.className = 'token-row';
-    tokenRow.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--sl-color-neutral-50); border-radius: var(--sl-border-radius-medium);';
-    tokenRow.dataset.token = token;
-    if (isUnsaved) {
-      tokenRow.dataset.unsaved = 'true';
-    }
-
-    let maskedToken = '****' + token.slice(-4);
-    if (token.lenght > 4) {
-      maskedToken = '****' + token.slice(-4);
-    } else {
-      maskedToken = '****';
-    }
-
-    const unsavedBadge = isUnsaved ? '<sl-badge variant="warning" pill style="margin-left: 0.5rem;">Unsaved</sl-badge>' : '';
-
-    tokenRow.innerHTML = `
-      <sl-input value="${maskedToken}" password readonly style="flex: 1;" size="small"></sl-input>
-      ${unsavedBadge}
-      <sl-tooltip content="Copy Token">
-        <sl-icon-button name="copy-fill" class="copy-token-btn" size="small"></sl-icon-button>
-      </sl-tooltip>
-      <sl-tooltip content="Delete Token">
-        <sl-icon-button name="trash" class="delete-token-btn" size="small"></sl-icon-button>
-      </sl-tooltip>
-    `;
-
-    tokensList.appendChild(tokenRow);
-
-    tokenRow.querySelector('.delete-token-btn').addEventListener('click', function() {
-      const tokenToDelete = tokenRow.dataset.token;
-      bearerTokens = bearerTokens.filter(t => t !== tokenToDelete);
-      tokenRow.remove();
-      updateAuthConfigInput();
-      validateAuthConfig(); // Validate after removing token
-      updateTokenCount();
-    });
-  }
-
-  document.getElementById('generateTokenBtn').addEventListener('click', function() {
-    const token = generateToken();
-    document.getElementById('newTokenInput').value = token;
-  });
-
-  document.getElementById('addTokenBtn').addEventListener('click', function() {
-    const tokenInput = document.getElementById('newTokenInput');
-    const token = tokenInput.value.trim();
-
-    if (!token) {
-      alert('Please enter or generate a token');
-      return;
-    }
-
-    if (bearerTokens.includes(token)) {
-      alert('This token already exists');
-      return;
-    }
-
-    bearerTokens.push(token);
-    addTokenToUI(token, true); // Mark as unsaved
-    tokenInput.value = '';
-    updateAuthConfigInput();
-    updateTokenCount();
-  });
-
-  document.getElementById('authEnabled').addEventListener('sl-change', function() {
-    updateAuthConfigInput();
-    validateAuthConfig(); // Validate when auth is toggled
-  });
-
-  document.querySelectorAll('.delete-token-btn').forEach((btn, index) => {
-    btn.addEventListener('click', function() {
-      const tokenRow = btn.closest('.token-row');
-      const token = tokenRow.dataset.token;
-      bearerTokens = bearerTokens.filter(t => t !== token);
-      tokenRow.remove();
-      updateAuthConfigInput();
-      validateAuthConfig(); // Validate after removing token
-      updateTokenCount();
-    });
-  });
-
-    document.getElementById('webhookConfig').addEventListener('htmx:afterRequest', function(event) {
+  // Handle form submission
+  document.getElementById('webhookConfig').addEventListener('htmx:afterRequest', function(event) {
     if (event.detail.successful) {
-      // Remove all unsaved badges and update token count
-      document.querySelectorAll('.token-row[data-unsaved="true"]').forEach(row => {
-        const badge = row.querySelector('sl-badge');
-        if (badge) {
-          badge.remove();
-        }
-        row.removeAttribute('data-unsaved');
-      });
-      updateTokenCount();
+      authManager.clearUnsavedBadges();
     }
   });
 
-  function updateTokenCount() {
-    const countBadge = document.querySelector('#activeTokensSection sl-badge');
-    if (countBadge) {
-      countBadge.textContent = bearerTokens.length;
-    }
-  }
-
-  // ===== Copy as cURL functionality =====
+  // Copy as cURL
   document.getElementById('copyCurlBtn').addEventListener('click', function() {
     const webhookUrl = '{{ .editableComponentParams.Url }}';
     const httpMethod = '{{ .webhook.HttpMethod }}';
+    const tokens = authManager.getTokens();
     const authEnabled = {{ .authConfig.Enabled }};
 
     let curlCommand = `curl -X ${httpMethod} '${webhookUrl}'`;
 
-    // Add authentication header if enabled and tokens exist
-    if (authEnabled && bearerTokens.length > 0) {
-      const firstToken = bearerTokens[0];
-      curlCommand += ` \\\n  -H 'Authorization: Bearer ${firstToken}'`;
+    if (authEnabled && tokens.length > 0) {
+      curlCommand += ` \\\n  -H 'Authorization: Bearer ${tokens[0]}'`;
     }
 
-    // Add common headers
     curlCommand += ` \\\n  -H 'Content-Type: application/json'`;
 
-    // Add example body for POST/PUT/PATCH methods
     if (['POST', 'PUT', 'PATCH'].includes(httpMethod)) {
       curlCommand += ` \\\n  -d '{}'`;
     }
 
-    // Copy to clipboard
     navigator.clipboard.writeText(curlCommand).then(() => {
-      // Show success feedback
       const btn = document.getElementById('copyCurlBtn');
       const originalText = btn.innerHTML;
       btn.innerHTML = '<sl-icon slot="prefix" name="check-circle"></sl-icon> Copied!';
@@ -627,6 +435,6 @@
       alert('Failed to copy cURL command: ' + err);
     });
   });
-
 </script>
+
 {{ end }}
