@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rapidforge-io/rapidforge/config"
@@ -198,9 +199,6 @@ func credentialsListHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
-// 2024/08/01 00:13:08 INFO ----- token="&{AccessToken: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
-// TokenType:bearer RefreshToken: Expiry:0001-01-01 00:00:00 +0000 UTC raw:map[access_token:[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] scope:[gist]
-// token_type:[bearer]] expiryDelta:0}"
 func oAuth2CallbackHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -259,8 +257,6 @@ func oAuth2CallbackHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
-const webhookURL = "https://discord.com/api/webhooks/1269323216955117579/dyetvast66wSf7VVWSSot24F8KCU5emuRjWrI82U4oOEBiwK9TxIdcM_4tZnpmbUSowo"
-
 func feedbackHandler() gin.HandlerFunc {
 	type Feedback struct {
 		Content  string `json:"content" form:"feedback" binding:"required"`
@@ -285,9 +281,12 @@ func feedbackHandler() gin.HandlerFunc {
 			rflog.Error("Error marshalling message", "err", err)
 		}
 
-		resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(messageBytes))
-		if err != nil || resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-			rflog.Error("Error sending POST request", "err", err, "status", resp.Status)
+		webhookURL := os.Getenv("RF_FEEDBACK_WEBHOOK_URL")
+		if webhookURL != "" {
+			resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(messageBytes))
+			if err != nil || resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+				rflog.Error("Error sending POST request", "err", err, "status", resp.Status)
+			}
 		}
 
 		c.String(http.StatusOK, utils.AlertBox(utils.Success, "Feedback submitted successfully"))
