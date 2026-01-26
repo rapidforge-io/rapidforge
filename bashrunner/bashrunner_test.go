@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/rapidforge-io/rapidforge/runner"
 )
 
 func TestBashRunner(t *testing.T) {
@@ -64,7 +66,7 @@ func TestBashRunner(t *testing.T) {
 func TestMockRunner(t *testing.T) {
 	// Create a mock runner with predetermined results
 	mock := &MockRunner{
-		Result: ScriptResult{
+		Result: runner.ScriptResult{
 			ExitCode: 0,
 			Output:   "mocked output",
 		},
