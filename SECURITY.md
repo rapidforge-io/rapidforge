@@ -12,8 +12,6 @@ currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
-
 Please do not report security vulnerabilities through public GitHub issues.
 
 To report a vulnerability, please email contact via rapidforge.io contact form.

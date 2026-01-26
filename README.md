@@ -1,12 +1,13 @@
 # RapidForge
 
 <p align="center">
-  <strong>A lightweight, self-hosted platform for building and deploying webhooks, APIs, and scheduled tasks using simple scripts.</strong>
+  <strong>A lightweight, self hosted platform for building and deploying webhooks, APIs and scheduled tasks using simple scripts.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/rapidforge-io/rapidforge/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go" alt="Go Version"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22.0+-339933?logo=node.js" alt="Node Version"></a>
 </p>
 
 ---
@@ -15,26 +16,29 @@
 
 RapidForge is a modern, self-hosted platform that lets you quickly create webhooks, APIs, periodic tasks, and dynamic pages using Bash or Lua scripts. Built with simplicity and performance in mind, RapidForge provides a clean web interface for managing your automation workflows without the complexity of traditional API frameworks.
 
+<p align="center">
+  <a href="https://youtu.be/AsvyVtGhKXk?si=_RAmgg0wZDCOV6D0">
+    <img src="https://img.youtube.com/vi/AsvyVtGhKXk/maxresdefault.jpg" alt="RapidForge Demo" width="600">
+  </a>
+</p>
+
 ## ✨ Key Features
 
 - **🚀 Simple Webhook Creation** - Create HTTP endpoints instantly with custom paths and methods
-- **⏰ Scheduled Tasks** - Run scripts periodically with cron-like scheduling
-- **📄 Dynamic Pages** - Build interactive web pages with embedded scripts
+- **⏰ Scheduled Tasks** - Run scripts periodically with cron like scheduling
+- **📄 Dynamic Pages** - Build interactive web pages with drag and drop editor and embedded scripts
 - **🔐 Built-in Authentication** - OAuth2 integration and bearer token support
 - **💾 SQLite Powered** - Lightweight, serverless database with zero configuration
-- **🎨 Modern UI** - Clean admin interface built with HTMX and Shoelace components
-- **🐳 Docker Ready** - Deploy anywhere with Docker support
-- **🔧 Script Languages** - Write in Bash or Lua with built-in HTTP and JSON libraries
+- **Single Binary** - Self-contained executable with no dependencies for easy deployment
+- **🔧 Script Languages** - Write in Bash or Lua with built in HTTP and JSON libraries
 - **📊 Event Logging** - Track all webhook executions and responses
-- **🔄 Self-Updater** - Built-in update mechanism for easy maintenance
+- **🔄 Self Updater** - Built-in update mechanism for easy maintenance
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Go 1.21 or higher (for building from source)
-- SQLite 3
-- Bash or sh (for script execution)
+- (Recommended) [mise](https://mise.jdx.dev/) for managing Go and Node.js versions
 
 ### Installation
 
@@ -47,8 +51,27 @@ Visit the [releases page](https://github.com/rapidforge-io/rapidforge/releases) 
 ```bash
 git clone https://github.com/rapidforge-io/rapidforge.git
 cd rapidforge
-go build -o rapidforge
+
+mise install
+
+make build
 ```
+
+> **Note:** For development and building, check the [makefile](makefile) for available commands including `make build`, `make build-fe`, `make dev`, and more.
+
+## 🔧 Development
+
+### Managing Tool Versions
+
+This project uses [mise](https://mise.jdx.dev/) to manage Go and Node.js versions. All version specifications are centralized in [.mise.toml](.mise.toml).
+
+**To update versions:**
+
+1. Edit [.mise.toml](.mise.toml) with the desired Go and Node versions
+2. Run `make sync-versions` to propagate changes to all files (Dockerfile, CI workflows, README, etc.)
+3. Run `mise install` to install the new versions locally
+
+This ensures version consistency across your development environment, CI/CD pipelines, and Docker builds.
 
 ### Running RapidForge
 
@@ -56,22 +79,8 @@ go build -o rapidforge
 ./rapidforge
 ```
 
-By default, RapidForge starts on `http://localhost:8080`. Access the admin interface in your browser to get started.
+When RapidForge starts for the first time, it will create admin user and password which will be printed to stdout for the first time only. Please login with those credentials and change your password later on.
 
-### Creating Your First Webhook
-
-1. Navigate to **Blocks** in the admin interface
-2. Create a new **Webhook**
-3. Write your script (Bash or Lua)
-4. Configure the HTTP method and path
-5. Save and test your endpoint
-
-Example Bash webhook:
-
-```bash
-#!/bin/bash
-echo '{"message": "Hello from RapidForge!", "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
-```
 
 ## 📖 Documentation
 
@@ -83,7 +92,7 @@ For detailed configuration, deployment guides, and API documentation, visit:
 
 - **Backend:** Go with Gin framework
 - **Database:** SQLite with migrations support
-- **Frontend:** HTMX for interactivity, Shoelace web components
+- **Frontend:** HTMX for interactivity, Shoelace web components.
 - **Editor:** CodeMirror for code editing
 - **Visual Editor:** React-based drag-and-drop page builder
 
@@ -91,22 +100,7 @@ For detailed configuration, deployment guides, and API documentation, visit:
 
 RapidForge can be configured through environment variables:
 
-- `RF_PORT` - Server port (default: 8080)
-- `RF_ENV` - Environment mode: `development` or `production`
-- `RF_DOMAIN` - Domain name for the application
-- `HONEYBADGER_API_KEY` - (Optional) Error tracking API key
-- `FEEDBACK_WEBHOOK_URL` - (Optional) Discord/Slack webhook for feedback
-
-See [rapidforge.io/docs](https://rapidforge.io/docs) for complete configuration options.
-
-## 🐳 Docker Deployment
-
-```bash
-docker build -t rapidforge .
-docker run -p 8080:8080 -v $(pwd)/data:/data rapidforge
-```
-
-Or use with Fly.io (see `fly.toml` for configuration).
+See [rapidforge.io/docs](https://rapidforge.io/docs) for configuration options.
 
 ## 🤝 Contributing
 
@@ -117,7 +111,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 Our release process ensures stability by testing RapidForge **with** RapidForge.
 
 1.  **Code Merger**: Pull Requests are reviewed and merged into the `main` branch.
-2.  **Staging Deployment**: The main branch is deployed to our internal test server.
+2.  **Staging Deployment**: The main branch is deployed to our internal test server by maintainer.
 3.  **Dogfooding & Testing**: We use this internal rapidforge instance to run integration tests and perform manual testing. We verify changes by using RapidForge to test RapidForge.
 4.  **Release**: Once changes are verified and stable, we create a new release.
 
@@ -137,7 +131,7 @@ You may obtain a copy of the License at
 
 ## 🔒 Security
 
-Please report security vulnerabilities to the security team. See [SECURITY.md](SECURITY.md) for details.
+Please report security vulnerabilities to the maintainer directly. See [SECURITY.md](SECURITY.md) for details.
 
 ## 💬 Community & Support
 
@@ -147,4 +141,4 @@ Please report security vulnerabilities to the security team. See [SECURITY.md](S
 
 ---
 
-<p align="center">Made with ❤️ by the RapidForge team</p>
+<p align="center">Made with ❤️ </p>
