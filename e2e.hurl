@@ -72,3 +72,14 @@ GET https://main.rapidforge.io/webhook/no-access
 HTTP 401
 [Asserts]
 jsonpath "$.error" == "Authorization required"
+
+# This triggers on fail and returns 201
+GET https://main.rapidforge.io/webhook/webhook-fail
+HTTP 201
+
+GET https://main.rapidforge.io/webhook/check_fail_results
+[Options]
+delay: 3000
+HTTP 200
+[Asserts]
+jsonpath "$.RESULT" == "true"

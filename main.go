@@ -30,61 +30,6 @@ var viewsFS embed.FS
 //go:embed static/*
 var staticFS embed.FS
 
-// TODO
-
-// v1  todo
-// [x] Search (webhooks, pages, periodic tasks)
-// [x] route refactoring
-// [x] sqlite3 tuning (wall mode, journal mode)
-// [x] Fix create button label click issue (it does not work when you click outside of the label)
-// [x] Set timeout to 30 seconds for non webhooks
-// [x] Add config params to banner
-// [x] Add cache for non changed pages content
-// [x] Move FE libs to static serving
-// [x] Inject oauth
-// [x] Change returning type of webhooks
-// [x] Show details button opens feedback modal
-// [x] Write default value for webhook editor
-// [x] Remove events older than 1 week
-// [x] Dev mode and production mode
-// [x] Check Pages functionality
-// [x] authentication, and displaying user name in menu
-// [x] dockerfile
-// [x] Fix UI for webhooks
-// [x] Fix Event payload for periodic tasks (with curl)
-// [x] JSON viewer night view is not working
-// [x] Event listing has error
-// [x] remove horizontal scroll
-// [x] add favicon
-// [x] check warning in user screen
-// [x] remove console log in periodic tasks
-// [x] remove console log pages
-// [x] check form dark scheme
-// [x] inject environment variables for creds
-// [x] dark mode in page editor
-// [x] redirect to login page if user is logged out
-// [x] fix dark theme for event details
-// [x] don't allow empty name to be saved
-// [x] change editors background color to null by default
-
-// ------------------
-// [ ] PKCE flow
-// [ ] Adding throttling for webhook endpoints
-// [ ] Add pagination for event lists
-// [x] Add authentication feature to webhooks
-// [x] Add on-fail script configuration for webhooks and periodic tasks
-// [ ] Should we add status to periodic tasks?
-// [ ] pagination
-
-// Thinking
-// - allow user to add timeout for end points
-// - what will happend for authentication when there is more then one instance
-// - check backup from pocketbase
-// - only allow user creation from admin board
-// - import script feature, importing and creating end points for each file
-// - consider running docker container with endpoints and periodics tasks
-// - add action to send email using smtp
-
 var (
 	Version = "0.11.0"
 	Package = "community"
@@ -248,8 +193,11 @@ Use "rapidforge <command> -h" for more information about a command.
 
 func runServer() {
 	if config.Get().Cloud {
-		honeybadger.Configure(honeybadger.Configuration{APIKey: "hbp_WvXKQD1pSbOyPOmBlENVIvRsWM7P5i2gHFcm"})
-		defer honeybadger.Monitor()
+		apiKey := os.Getenv("RF_HONEYBADGER_API_KEY")
+		if apiKey != "" {
+			honeybadger.Configure(honeybadger.Configuration{APIKey: apiKey})
+			defer honeybadger.Monitor()
+		}
 	}
 
 	dbCon := database.GetDbConn("")

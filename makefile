@@ -35,16 +35,6 @@ docker-build:
 	docker build --build-arg PORT=$$PORT -t $$DOCKER_IMAGE:$$DOCKER_TAG -f $$DOCKERFILE .
 
 
-# BINARY_NAME = rapidforge
-# DOCKER_IMAGE = rapid_forge
-# DOCKER_TAG = latest
-# DOCKERFILE = Dockerfile
-# PORT = 8080
-
-# .PHONY: docker-build
-# docker-build:
-# 	@echo "Building Docker image..."
-# 	docker build --build-arg PORT=$(PORT) -t $(DOCKER_IMAGE):$(DOCKER_TAG) -f $(DOCKERFILE) .
 
 .PHONY: build-fe postbuild
 npm-build:
@@ -53,6 +43,10 @@ npm-build:
 build-fe: npm-build
 	cp -f sitebuilder/dist/pages.html ./views/page.html
 	cp -r sitebuilder/dist/static/* ./static
+
+.PHONY: build-all
+build-all: build build-fe
+
 
 .PHONY: kill-port
 kill-port:
@@ -77,3 +71,8 @@ e2e:
 .PHONY: release
 release:
 	goreleaser release --clean --verbose
+
+.PHONY: sync-versions
+sync-versions:
+	@echo "Syncing versions from .mise.toml to all project files..."
+	@./sync-versions.sh
