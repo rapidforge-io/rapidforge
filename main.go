@@ -193,7 +193,7 @@ Use "rapidforge <command> -h" for more information about a command.
 
 func runServer() {
 	if config.Get().Cloud {
-		apiKey := os.Getenv("HONEYBADGER_API_KEY")
+		apiKey := os.Getenv("RF_HONEYBADGER_API_KEY")
 		if apiKey != "" {
 			honeybadger.Configure(honeybadger.Configuration{APIKey: apiKey})
 			defer honeybadger.Monitor()
