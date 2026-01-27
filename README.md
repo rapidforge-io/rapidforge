@@ -44,7 +44,7 @@ RapidForge is a modern, self-hosted platform that lets you quickly create webhoo
 
 **Download Pre-built Binary:**
 
-Visit the [releases page](https://github.com/rapidforge-io/rapidforge/releases) to download the latest binary for your platform.
+Visit the [releases page](https://github.com/rapidforge-io/rapidforge/release) to download the latest binary for your platform.
 
 **Or Build from Source:**
 
