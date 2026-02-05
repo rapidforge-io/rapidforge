@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"embed"
 	"flag"
@@ -20,6 +21,7 @@ import (
 	"github.com/rapidforge-io/rapidforge/kv"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
+	"github.com/rapidforge-io/rapidforge/observability"
 	"github.com/rapidforge-io/rapidforge/services"
 	"github.com/rapidforge-io/rapidforge/utils"
 )
@@ -31,7 +33,7 @@ var viewsFS embed.FS
 var staticFS embed.FS
 
 var (
-	Version = "0.12.0"
+	Version = "0.12.1"
 	Package = "community"
 )
 
@@ -237,6 +239,22 @@ func runServer() {
 	}
 
 	utils.PrintBanner(viewsFS, bannerData)
+
+	otelCfg, err := observability.LoadConfigFromEnv(context.Background(), Version)
+	if err != nil {
+		rflog.Error("failed to load OTEL config", err)
+		os.Exit(1)
+	}
+	shutdownOTEL, err := observability.InitOTEL(context.Background(), otelCfg)
+	if err != nil {
+		rflog.Error("failed to initialize OpenTelemetry", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := shutdownOTEL(context.Background()); err != nil {
+			rflog.Error("failed to shutdown OpenTelemetry", err)
+		}
+	}()
 
 	if config.Get().Env == "development" {
 		gin.SetMode(gin.DebugMode)
