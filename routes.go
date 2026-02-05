@@ -169,7 +169,6 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	loginService := services.GetLoginService()
 	staticServer := http.FileServer(http.FS(staticFS))
 
-	// Add OpenTelemetry middleware for HTTP tracing
 	r.Use(otelgin.Middleware("rapidforge"))
 
 	var corsConfig cors.Config

@@ -240,7 +240,11 @@ func runServer() {
 
 	utils.PrintBanner(viewsFS, bannerData)
 
-	otelCfg := observability.LoadConfigFromEnv(Version)
+	otelCfg, err := observability.LoadConfigFromEnv(context.Background(), Version)
+	if err != nil {
+		rflog.Error("failed to load OTEL config", err)
+		os.Exit(1)
+	}
 	shutdownOTEL, err := observability.InitOTEL(context.Background(), otelCfg)
 	if err != nil {
 		rflog.Error("failed to initialize OpenTelemetry", err)

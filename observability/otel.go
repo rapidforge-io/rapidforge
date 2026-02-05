@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/sethvargo/go-envconfig"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
@@ -25,18 +25,20 @@ import (
 )
 
 type OTELConfig struct {
-	Enabled            bool
-	Endpoint           string
-	Headers            map[string]string
-	ServiceName        string
-	ServiceVersion     string
-	Environment        string
-	TracesSampler      string
-	TracesSamplerArg   float64
-	MetricsEnabled     bool
-	ExporterType       string
-	ExporterProtocol   string // "grpc" or "http"
-	InsecureConnection bool
+	Enabled            bool    `env:"RF_OTEL_ENABLED,default=false"`
+	Endpoint           string  `env:"RF_OTEL_ENDPOINT,default=localhost:4317"`
+	Headers            string  `env:"RF_OTEL_HEADERS"`
+	ServiceName        string  `env:"RF_OTEL_SERVICE_NAME,default=rapidforge"`
+	ServiceVersion     string  `env:"RF_OTEL_SERVICE_VERSION"`
+	Environment        string  `env:"RF_OTEL_ENVIRONMENT"`
+	TracesSampler      string  `env:"RF_OTEL_TRACES_SAMPLER,default=parentbased_always_on"`
+	TracesSamplerArg   float64 `env:"RF_OTEL_TRACES_SAMPLER_ARG,default=1.0"`
+	MetricsEnabled     bool    `env:"RF_OTEL_METRICS_ENABLED,default=true"`
+	ExporterType       string  `env:"RF_OTEL_EXPORTER_TYPE,default=otlp"`
+	ExporterProtocol   string  `env:"RF_OTEL_EXPORTER_PROTOCOL,default=http"` // "grpc" or "http"
+	InsecureConnection bool    `env:"RF_OTEL_INSECURE,default=false"`
+
+	parsedHeaders map[string]string
 }
 
 var (
@@ -200,8 +202,8 @@ func createOTLPTraceExporterGRPC(ctx context.Context, cfg OTELConfig) (sdktrace.
 		opts = append(opts, otlptracegrpc.WithTLSCredentials(insecure.NewCredentials()))
 	}
 
-	if len(cfg.Headers) > 0 {
-		opts = append(opts, otlptracegrpc.WithHeaders(cfg.Headers))
+	if len(cfg.parsedHeaders) > 0 {
+		opts = append(opts, otlptracegrpc.WithHeaders(cfg.parsedHeaders))
 	}
 
 	return otlptracegrpc.New(ctx, opts...)
@@ -216,8 +218,8 @@ func createOTLPTraceExporterHTTP(ctx context.Context, cfg OTELConfig) (sdktrace.
 		opts = append(opts, otlptracehttp.WithInsecure())
 	}
 
-	if len(cfg.Headers) > 0 {
-		opts = append(opts, otlptracehttp.WithHeaders(cfg.Headers))
+	if len(cfg.parsedHeaders) > 0 {
+		opts = append(opts, otlptracehttp.WithHeaders(cfg.parsedHeaders))
 	}
 
 	return otlptracehttp.New(ctx, opts...)
@@ -232,8 +234,8 @@ func createOTLPMetricExporterGRPC(ctx context.Context, cfg OTELConfig) (sdkmetri
 		opts = append(opts, otlpmetricgrpc.WithTLSCredentials(insecure.NewCredentials()))
 	}
 
-	if len(cfg.Headers) > 0 {
-		opts = append(opts, otlpmetricgrpc.WithHeaders(cfg.Headers))
+	if len(cfg.parsedHeaders) > 0 {
+		opts = append(opts, otlpmetricgrpc.WithHeaders(cfg.parsedHeaders))
 	}
 
 	return otlpmetricgrpc.New(ctx, opts...)
@@ -248,8 +250,8 @@ func createOTLPMetricExporterHTTP(ctx context.Context, cfg OTELConfig) (sdkmetri
 		opts = append(opts, otlpmetrichttp.WithInsecure())
 	}
 
-	if len(cfg.Headers) > 0 {
-		opts = append(opts, otlpmetrichttp.WithHeaders(cfg.Headers))
+	if len(cfg.parsedHeaders) > 0 {
+		opts = append(opts, otlpmetrichttp.WithHeaders(cfg.parsedHeaders))
 	}
 
 	return otlpmetrichttp.New(ctx, opts...)
@@ -274,64 +276,38 @@ func getSampler(samplerType string, arg float64) sdktrace.Sampler {
 	}
 }
 
-// LoadConfigFromEnv loads OTEL configuration from environment variables with RF_ prefix
-func LoadConfigFromEnv(version string) OTELConfig {
-	cfg := OTELConfig{
-		Enabled:            getEnvAsBool("RF_OTEL_ENABLED", false),
-		Endpoint:           getEnv("RF_OTEL_ENDPOINT", "localhost:4317"),
-		ServiceName:        getEnv("RF_OTEL_SERVICE_NAME", "rapidforge"),
-		ServiceVersion:     getEnv("RF_OTEL_SERVICE_VERSION", version),
-		Environment:        getEnv("RF_OTEL_ENVIRONMENT", getEnv("RF_ENV", "production")),
-		TracesSampler:      getEnv("RF_OTEL_TRACES_SAMPLER", "parentbased_always_on"),
-		MetricsEnabled:     getEnvAsBool("RF_OTEL_METRICS_ENABLED", true),
-		ExporterType:       getEnv("RF_OTEL_EXPORTER_TYPE", "otlp"),
-		ExporterProtocol:   getEnv("RF_OTEL_EXPORTER_PROTOCOL", "grpc"),
-		InsecureConnection: getEnvAsBool("RF_OTEL_INSECURE", false),
+func LoadConfigFromEnv(ctx context.Context, version string) (OTELConfig, error) {
+	var cfg OTELConfig
+	if err := envconfig.Process(ctx, &cfg); err != nil {
+		return cfg, fmt.Errorf("failed to process OTEL config: %w", err)
 	}
 
-	samplerArgStr := getEnv("RF_OTEL_TRACES_SAMPLER_ARG", "1.0")
-	samplerArg, err := strconv.ParseFloat(samplerArgStr, 64)
-	if err != nil {
-		slog.Warn("Invalid RF_OTEL_TRACES_SAMPLER_ARG, using default 1.0", "value", samplerArgStr)
-		samplerArg = 1.0
-	}
-	cfg.TracesSamplerArg = samplerArg
-
-	headersStr := getEnv("RF_OTEL_HEADERS", "")
-	if headersStr != "" {
-		cfg.Headers = parseHeaders(headersStr)
+	if cfg.ServiceVersion == "" {
+		cfg.ServiceVersion = version
 	}
 
-	cfg.Endpoint = strings.TrimPrefix(cfg.Endpoint, "https://")
-	cfg.Endpoint = strings.TrimPrefix(cfg.Endpoint, "http://")
-
-	if os.Getenv("RF_OTEL_EXPORTER_TYPE") == "" {
-		env := getEnv("RF_ENV", "production")
-		if env == "development" {
-			cfg.ExporterType = "stdout"
+	if cfg.Environment == "" {
+		if rfEnv := os.Getenv("RF_ENV"); rfEnv != "" {
+			cfg.Environment = rfEnv
+		} else {
+			cfg.Environment = "production"
 		}
 	}
 
-	return cfg
-}
+	if cfg.Headers != "" {
+		cfg.parsedHeaders = parseHeaders(cfg.Headers)
+	}
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
+	// Clean up endpoint
+	cfg.Endpoint = strings.TrimPrefix(cfg.Endpoint, "https://")
+	cfg.Endpoint = strings.TrimPrefix(cfg.Endpoint, "http://")
 
-func getEnvAsBool(key string, defaultValue bool) bool {
-	valStr := os.Getenv(key)
-	if valStr == "" {
-		return defaultValue
+	// Auto-detect exporter type based on environment if not explicitly set
+	if os.Getenv("RF_OTEL_EXPORTER_TYPE") == "" && cfg.Environment == "development" {
+		cfg.ExporterType = "stdout"
 	}
-	val, err := strconv.ParseBool(valStr)
-	if err != nil {
-		return defaultValue
-	}
-	return val
+
+	return cfg, nil
 }
 
 func parseHeaders(headersStr string) map[string]string {
