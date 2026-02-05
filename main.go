@@ -33,7 +33,7 @@ var viewsFS embed.FS
 var staticFS embed.FS
 
 var (
-	Version = "0.12.0"
+	Version = "0.12.1"
 	Package = "community"
 )
 
