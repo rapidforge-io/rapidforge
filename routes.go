@@ -14,6 +14,7 @@ import (
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"github.com/rapidforge-io/rapidforge/config"
 	"github.com/rapidforge-io/rapidforge/models"
@@ -167,6 +168,9 @@ func SkipLoggingForStatic() gin.HandlerFunc {
 func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	loginService := services.GetLoginService()
 	staticServer := http.FileServer(http.FS(staticFS))
+
+	// Add OpenTelemetry middleware for HTTP tracing
+	r.Use(otelgin.Middleware("rapidforge"))
 
 	var corsConfig cors.Config
 

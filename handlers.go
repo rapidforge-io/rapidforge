@@ -18,12 +18,18 @@ import (
 	"os/exec"
 
 	"github.com/creack/pty"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator"
 	"github.com/gorilla/websocket"
 	"github.com/rapidforge-io/rapidforge/config"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
+	"github.com/rapidforge-io/rapidforge/observability"
 	"github.com/rapidforge-io/rapidforge/services"
 	"github.com/rapidforge-io/rapidforge/utils"
 )
@@ -62,12 +68,31 @@ func isOriginAllowed(origin string, allowedOrigins []string) bool {
 }
 
 func webhookHandlers(store *models.Store) gin.HandlerFunc {
+	tracer := otel.Tracer("rapidforge/webhook")
 	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		startTime := time.Now()
 		httpVerb := c.Request.Method
 		path := c.Param("path")
-		envVars := map[string]string{}
-
 		path = strings.TrimPrefix(path, "/")
+
+		ctx, span := tracer.Start(ctx, "webhook.execute",
+			trace.WithAttributes(
+				attribute.String("webhook.path", path),
+				attribute.String("http.method", httpVerb),
+			),
+		)
+		defer span.End()
+
+		success := false
+		defer func() {
+			duration := time.Since(startTime)
+			if metricsInitialized := observability.GetMeterProvider() != nil; metricsInitialized {
+				observability.RecordWebhookExecution(ctx, duration, path, success)
+			}
+		}()
+
+		envVars := map[string]string{}
 		webhook, err := store.SelectWebhookByPath(path, httpVerb)
 		if errors.Is(err, sql.ErrNoRows) {
 			rflog.Error("failed to get webhook", err, "path", path)
@@ -242,7 +267,19 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		if err != nil {
 			rflog.Error("failed to run webhook", err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		// Mark as successful if exit code is 0
+		if res.ExitCode == 0 {
+			success = true
+			span.SetStatus(codes.Ok, "")
+		} else {
+			span.SetAttributes(attribute.Int("exit_code", res.ExitCode))
+			span.SetStatus(codes.Error, fmt.Sprintf("Script exited with code %d", res.ExitCode))
 		}
 
 		responseHeaders := webhook.Webhook.GetResponseHeaders()
