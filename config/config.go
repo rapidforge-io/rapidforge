@@ -132,3 +132,7 @@ func BaseUrl() string {
 		return httpProtocol() + c.Domain + c.Port
 	}
 }
+
+func (c Config) IsDemoMode() bool {
+	return c.Env == "demo"
+}
