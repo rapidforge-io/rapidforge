@@ -160,20 +160,44 @@ func (s *Store) UserExists() (bool, error) {
 }
 
 func (s *Store) CreateAdminUserIfNoUserExists() (*User, error) {
+	// In demo mode, always create/update the demo user
+	if config.Get().IsDemoMode() {
+		demoUser := &User{
+			Username:     "test",
+			PasswordHash: "test",
+			Role:         AdminRole,
+		}
+
+		// Check if demo user already exists
+		existingUser, _ := s.GetUserByUsername("test")
+		if existingUser == nil {
+			if err := s.InsertUser(demoUser); err != nil {
+				return nil, err
+			}
+		} else {
+			// Update existing user to ensure password is "test"
+			demoUser.ID = existingUser.ID
+			if err := s.UpdateUser(demoUser); err != nil {
+				return nil, err
+			}
+		}
+		return demoUser, nil
+	}
+
+	// Normal mode: create admin user if no users exist
 	exists, err := s.UserExists()
 	if err != nil {
 		return nil, err
 	}
 
-	randomPassword, _ := utils.GenerateRandomString(8)
-
-	if err != nil {
-		rflog.Error("failed to generate random password", "err", err)
-		os.Exit(1)
-		return nil, err
-	}
-
 	if !exists {
+		randomPassword, err := utils.GenerateRandomString(8)
+		if err != nil {
+			rflog.Error("failed to generate random password", "err", err)
+			os.Exit(1)
+			return nil, err
+		}
+
 		adminUser := &User{
 			Username:     "admin",
 			PasswordHash: randomPassword,

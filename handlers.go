@@ -299,7 +299,9 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 func loginHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.HTML(http.StatusOK, "login", gin.H{})
+		c.HTML(http.StatusOK, "login", gin.H{
+			"isDemoMode": config.Get().IsDemoMode(),
+		})
 	}
 }
 
@@ -439,6 +441,11 @@ type UserInput struct {
 func updateUserHandler(store *models.Store) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
+		if config.Get().IsDemoMode() {
+			c.String(http.StatusForbidden, utils.AlertBox(utils.Error, "User management is disabled in demo mode"))
+			return
+		}
+
 		id := c.Param("id")
 
 		var userInput UserInput
@@ -486,6 +493,11 @@ func resetUserLoginHandler(loginService *services.LoginService) gin.HandlerFunc 
 
 func createUserHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if config.Get().IsDemoMode() {
+			c.String(http.StatusForbidden, utils.AlertBox(utils.Error, "User management is disabled in demo mode"))
+			return
+		}
+
 		var userInput UserInput
 		var user models.User
 
@@ -516,6 +528,11 @@ func createUserHandler(store *models.Store) gin.HandlerFunc {
 
 func deleteUserHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if config.Get().IsDemoMode() {
+			c.String(http.StatusForbidden, utils.AlertBox(utils.Error, "User management is disabled in demo mode"))
+			return
+		}
+
 		id := c.Param("id")
 		err := store.DeleteUser(utils.ParseInt64(id))
 		if err != nil {
@@ -1066,6 +1083,11 @@ var upgrader = websocket.Upgrader{}
 func terminalViewHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		if config.Get().IsDemoMode() {
+			c.String(http.StatusForbidden, "Terminal access is disabled in demo mode")
+			return
+		}
+
 		allowed := os.Getenv("RF_TERM")
 
 		if config.Get().Env == "production" && allowed != "true" {
@@ -1081,6 +1103,11 @@ func terminalViewHandler(store *models.Store) gin.HandlerFunc {
 
 func terminalHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if config.Get().IsDemoMode() {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
 
 		allowed := os.Getenv("RF_TERM")
 

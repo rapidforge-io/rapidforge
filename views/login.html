@@ -31,8 +31,19 @@
         align-items: center;
         justify-content: center;
         height: 100vh;
+        flex-direction: column;
+        gap: 1rem;
       "
     >
+      {{if .isDemoMode}}
+      <sl-alert variant="warning" open style="max-width: 500px;">
+        <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+        <strong>🔄 Demo Environment</strong><br />
+        This environment auto-resets every 30 minutes.<br />
+        <strong>Login:</strong> test / test<br />
+        All changes are temporary and will not persist.
+      </sl-alert>
+      {{end}}
       <sl-card style="width: 300px">
         <h1 slot="header">Login</h1>
         <form id="login-form"
