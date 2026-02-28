@@ -92,7 +92,7 @@ For detailed configuration, deployment guides, and API documentation, visit:
 
 RapidForge ships with a bundled Lua binary sourced from the [superconfigure](https://github.com/ahgamut/superconfigure) project, which builds portable executables using the [Cosmopolitan](https://github.com/jart/cosmopolitan/) libc. This means the binary runs on Linux, macOS, and Windows without any native dependencies — no installation required.
 
-If you prefer not to use the bundled binary (e.g. for security, licensing, or platform-specific reasons), simply install Lua on your host machine via your preferred version manager such as [LuaVM](https://github.com/fperrad/lua-vm) or your system package manager. RapidForge will automatically detect and prioritise a system-installed `lua` executable over the bundled one.
+If you prefer not to use the bundled binary (e.g. for security, licensing, or platform-specific reasons), simply install Lua on your host machine. RapidForge will automatically detect and prioritise a system-installed `lua` executable over the bundled one.
 
 ## 🛠️ Technology Stack
 
