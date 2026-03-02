@@ -10,6 +10,16 @@
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22.0+-339933?logo=node.js" alt="Node Version"></a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/rapidforge-io/rapidforge/stargazers">
+    <img src="https://img.shields.io/github/stars/rapidforge-io/rapidforge?style=for-the-badge&logo=github&color=f4c542&labelColor=333" alt="GitHub Stars">
+  </a>
+</p>
+
+<blockquote align="center">
+  ⭐ If you find RapidForge useful, consider giving it a star — it helps others discover the project and keeps us motivated!
+</blockquote>
+
 ---
 
 ## Overview
