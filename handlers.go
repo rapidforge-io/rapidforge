@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -122,7 +124,7 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 			validToken := false
 			for _, validTokenValue := range authConfig.Tokens {
-				if token == validTokenValue {
+				if subtle.ConstantTimeCompare([]byte(token), []byte(validTokenValue)) == 1 {
 					validToken = true
 					break
 				}
@@ -667,10 +669,10 @@ func renameHandler(store *models.Store) gin.HandlerFunc {
 		var htmlContent string
 		if tableType != utils.WebhookEntity {
 			updatedField, err = store.UpdateName(tableType, intId, newName)
-			htmlContent = fmt.Sprintf(`<div id="blockTitle">%v</div>`, updatedField)
+			htmlContent = fmt.Sprintf(`<div id="blockTitle">%v</div>`, html.EscapeString(updatedField))
 		} else {
 			updatedField, err = store.UpdateWebhookPath(intId, newName)
-			htmlContent = fmt.Sprintf(`<div id="blockTitle">%v/webhook/%v</div>`, config.BaseUrl(), updatedField)
+			htmlContent = fmt.Sprintf(`<div id="blockTitle">%v/webhook/%v</div>`, config.BaseUrl(), html.EscapeString(updatedField))
 		}
 
 		if err != nil {
