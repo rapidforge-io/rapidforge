@@ -12,9 +12,16 @@ import (
 	"github.com/rapidforge-io/rapidforge/models"
 )
 
+type loginAttempt struct {
+	count     int
+	firstFail time.Time
+}
+
+const loginAttemptWindow = 15 * time.Minute
+
 type LoginService struct {
 	*Service
-	attempts map[string]int
+	attempts map[string]*loginAttempt
 	mu       sync.Mutex
 }
 
@@ -29,16 +36,25 @@ func (s *LoginService) ResetLoginAttempts(username string) error {
 	return nil
 }
 
+func (s *LoginService) getAttempts(username string) *loginAttempt {
+	a, exists := s.attempts[username]
+	if !exists || time.Since(a.firstFail) > loginAttemptWindow {
+		a = &loginAttempt{count: 0, firstFail: time.Now()}
+		s.attempts[username] = a
+	}
+	return a
+}
+
 func (s *LoginService) Login(username, password string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	username = strings.ReplaceAll(username, "\n", "")
-	username = strings.ReplaceAll(username, " ", "")
+	username = strings.TrimSpace(username)
 	password = strings.ReplaceAll(password, "\n", "")
-	password = strings.ReplaceAll(password, " ", "")
 
-	if s.attempts[username] >= config.Get().LoginAttemptCount {
+	attempt := s.getAttempts(username)
+	if attempt.count >= config.Get().LoginAttemptCount {
 		return "", ErrTooManyAttempts
 	}
 
@@ -51,12 +67,12 @@ func (s *LoginService) Login(username, password string) (string, error) {
 	success := s.store.VerifyPassword(user.PasswordHash, password)
 
 	if !success {
-		s.attempts[username]++
+		attempt.count++
 		return "", ErrInvalidUsernameOrPassword
 	}
 
 	// reset the login attempts on successful login
-	s.attempts[username] = 0
+	delete(s.attempts, username)
 
 	token, err := generateJWT(user)
 	if err != nil {

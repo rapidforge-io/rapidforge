@@ -20,7 +20,7 @@ var (
 func SetupService(s *models.Store) {
 	once.Do(func() {
 		instance = &Service{s}
-		LService = &LoginService{Service: instance, attempts: map[string]int{}}
+		LService = &LoginService{Service: instance, attempts: map[string]*loginAttempt{}}
 	})
 
 	go func() {

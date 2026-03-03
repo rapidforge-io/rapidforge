@@ -3,8 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,19 +23,57 @@ import (
 
 type StateData struct {
 	Name string `json:"name"`
+	Sig  string `json:"sig"`
+}
+
+func signState(data []byte) string {
+	mac := hmac.New(sha256.New, config.Get().JWTSecretKey())
+	mac.Write(data)
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func generateState(name string) (string, error) {
-	stateData := StateData{
+	payload := StateData{
 		Name: name,
 	}
 
-	stateJSON, err := json.Marshal(stateData)
+	nameJSON, err := json.Marshal(map[string]string{"name": name})
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal state payload: %w", err)
+	}
+
+	payload.Sig = signState(nameJSON)
+
+	stateJSON, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal state: %w", err)
 	}
 
 	return base64.URLEncoding.EncodeToString(stateJSON), nil
+}
+
+func verifyState(state string) (*StateData, error) {
+	stateBytes, err := base64.URLEncoding.DecodeString(state)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode state: %w", err)
+	}
+
+	var stateData StateData
+	if err := json.Unmarshal(stateBytes, &stateData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal state: %w", err)
+	}
+
+	nameJSON, err := json.Marshal(map[string]string{"name": stateData.Name})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal name for verification: %w", err)
+	}
+
+	expectedSig := signState(nameJSON)
+	if !hmac.Equal([]byte(stateData.Sig), []byte(expectedSig)) {
+		return nil, fmt.Errorf("invalid state signature")
+	}
+
+	return &stateData, nil
 }
 
 func credentialsCreateHandlerGenerated(store *models.Store) gin.HandlerFunc {
@@ -209,17 +250,11 @@ func oAuth2CallbackHandler(store *models.Store) gin.HandlerFunc {
 			return
 		}
 
-		// Decode state
-		var stateData StateData
-		stateBytes, err := base64.URLEncoding.DecodeString(state)
+		// Verify HMAC-signed state
+		stateData, err := verifyState(state)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode state"})
-			return
-		}
-
-		err = json.Unmarshal(stateBytes, &stateData)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unmarshal state"})
+			rflog.Error("OAuth state verification failed", "err", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or tampered state parameter"})
 			return
 		}
 
