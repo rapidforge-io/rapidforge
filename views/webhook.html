@@ -264,7 +264,21 @@
       </div>
 
       <div class="m-2">
-        <sl-details summary="Response Headers">
+        <sl-details>
+          <span slot="summary" class="is-flex is-align-items-center">
+            <span>Response Headers</span>
+            <sl-tooltip
+              content="Example: HEADER=VALUE (e.g., Content-Type=application/json)"
+              trigger="click"
+              hoist
+              style="margin-left: 0.5rem;"
+            >
+              <sl-icon-button
+                name="question-circle"
+                aria-label="Response headers format"
+              ></sl-icon-button>
+            </sl-tooltip>
+          </span>
           <sl-textarea
             name="responseHeaders"
             value={{defaultString .webhook.ResponseHeaders "&nbsp;"}}
@@ -435,6 +449,7 @@
       alert('Failed to copy cURL command: ' + err);
     });
   });
+
 </script>
 
 {{ end }}
