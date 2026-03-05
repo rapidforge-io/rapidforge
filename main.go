@@ -33,11 +33,9 @@ var viewsFS embed.FS
 var staticFS embed.FS
 
 var (
-	Version = "0.12.1"
+	Version = "0.13.0"
 	Package = "community"
 )
-
-// Runner defines the interface for script execution
 
 func main() {
 	fmt.Println("Debug: Command arguments:", os.Args)
@@ -49,7 +47,6 @@ func main() {
 }
 
 func handleCLI() {
-	// Define subcommands
 	setCmd := flag.NewFlagSet("set", flag.ExitOnError)
 	getCmd := flag.NewFlagSet("get", flag.ExitOnError)
 	delCmd := flag.NewFlagSet("del", flag.ExitOnError)
