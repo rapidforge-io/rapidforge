@@ -83,3 +83,15 @@ delay: 3000
 HTTP 200
 [Asserts]
 jsonpath "$.RESULT" == "true"
+
+# Test protected page redirects to login
+GET https://main.rapidforge.io/page/page-43
+[Options]
+location: false
+HTTP 302
+[Asserts]
+header "Location" == "/login?next=%2Fpage%2Fpage-43"
+
+# Public page
+GET https://main.rapidforge.io/page/page-5
+HTTP 200
