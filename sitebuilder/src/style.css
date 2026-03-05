@@ -132,6 +132,10 @@ body {
   overflow-y: auto;
 }
 
+.page-settings {
+  padding: 0.75rem 0.5rem 0.25rem 0.5rem;
+}
+
 .mainBuilder {
   border: 1px solid var(--primary-border-color);
   padding: 10px 25px;

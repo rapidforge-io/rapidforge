@@ -299,8 +299,14 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 func loginHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		next := c.Query("next")
+		if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
+			next = "/blocks"
+		}
+
 		c.HTML(http.StatusOK, "login", gin.H{
 			"isDemoMode": config.Get().IsDemoMode(),
+			"next":       next,
 		})
 	}
 }
@@ -363,7 +369,12 @@ func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
 		week := 3600 * 24 * 7
 		expirationTime := time.Now().UTC().Add(config.Get().TokenExpiry).Unix()
 		c.SetCookie("exp", fmt.Sprint(expirationTime), week, "/", "", false, false)
-		c.Header("HX-Redirect", "/blocks")
+		redirectTo := c.Query("next")
+		if redirectTo == "" || !strings.HasPrefix(redirectTo, "/") || strings.HasPrefix(redirectTo, "//") {
+			redirectTo = "/blocks"
+		}
+
+		c.Header("HX-Redirect", redirectTo)
 		c.Status(http.StatusFound)
 	}
 }
@@ -605,7 +616,7 @@ func eventsDetailHandler(store *models.Store) gin.HandlerFunc {
 	}
 }
 
-func pageHandler(store *models.Store) gin.HandlerFunc {
+func pageHandler(store *models.Store, loginService *services.LoginService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Param("path")
 		decodedURL, _ := url.QueryUnescape(path)
@@ -615,6 +626,25 @@ func pageHandler(store *models.Store) gin.HandlerFunc {
 			rflog.Error("failed to get page", err)
 			c.Status(http.StatusNotFound)
 			return
+		}
+		if page == nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		if page.Protected {
+			tokenString, err := c.Cookie("token")
+			if err != nil {
+				c.Redirect(http.StatusFound, "/login?next="+url.QueryEscape(c.Request.RequestURI))
+				return
+			}
+
+			user, err := loginService.LoginWithToken(tokenString)
+			if err != nil {
+				c.Redirect(http.StatusFound, "/login?next="+url.QueryEscape(c.Request.RequestURI))
+				return
+			}
+			c.Set("user", user)
 		}
 
 		html := utils.DefaultString(page.HTMLOutput, "<p>Page is empty</p>")

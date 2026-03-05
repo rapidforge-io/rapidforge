@@ -12,6 +12,7 @@ export default function injectHtml() {
              path: {{ .page.Path }},
              canvasState: {{ .page.CanvasState.root }},
              active: {{ .page.Active }},
+             protected: {{ .page.Protected }},
              title: {{defaultString .page.Name "Title"}},
              description: {{defaultString .page.Description "Description"}},
              pageId: {{ .page.ID }},
