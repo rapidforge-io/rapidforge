@@ -233,6 +233,7 @@ type Page struct {
 	Name        sql.NullString `json:"name" db:"name"`
 	Description sql.NullString `json:"description" db:"description"`
 	Active      bool           `json:"active" db:"active"`
+	Protected   bool           `json:"protected" db:"protected"`
 	BlockID     int            `json:"blockId" db:"block_id"`
 	CanvasState JSONRawString  `json:"canvas_state" db:"canvas_state"`
 	HTMLOutput  sql.NullString `json:"htmlOutput" db:"html_output"`
@@ -622,7 +623,7 @@ func (s *Store) ListPeriodicTasksByBlockID(blockID int64) ([]PeriodicTask, error
 // ListPagesByBlockID retrieves pages associated with a given block ID.
 func (s *Store) ListPagesByBlockID(blockID int64) ([]Page, error) {
 	var pages []Page
-	query := `SELECT id, name, description, active, block_id, canvas_state, html_output, created_at
+	query := `SELECT id, name, description, active, protected, block_id, canvas_state, html_output, created_at
 			  FROM pages
 			  WHERE block_id = ?`
 	err := s.db.Select(&pages, query, blockID)
@@ -1013,7 +1014,7 @@ func (s *Store) SelectPageById(id int64) (*PageWithMeta, error) {
 
 func (s *Store) SelectPageByPath(path string) (*Page, error) {
 	var page Page
-	query := `SELECT path, description, active, html_output, updated_at FROM pages WHERE path = ? AND active = 1`
+	query := `SELECT id, path, description, active, protected, html_output, updated_at FROM pages WHERE path = ? AND active = 1`
 	err := s.db.Get(&page, query, path)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -1032,6 +1033,7 @@ type PageData struct {
 	Title       string         `json:"title"`
 	Description string         `json:"description"`
 	Active      bool           `json:"active"`
+	Protected   bool           `json:"protected"`
 	Metadata    map[string]any `json:"metadata"`
 	CanvasItems any            `json:"canvasItems"`
 	HtmlOutput  any            `json:"htmlOutput"`
@@ -1058,6 +1060,7 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 		    canvas_state = ?,
 			html_output = ?,
 			active = ?,
+			protected = ?,
 			updated_at = ?
         WHERE id = ?`
 
@@ -1069,6 +1072,7 @@ func (s *Store) UpdatePageByID(id int64, pageData PageData) error {
 		string(canvasItemsJSON),
 		pageData.HtmlOutput,
 		pageData.Active,
+		pageData.Protected,
 		time.Now().UTC(),
 		id,
 	)

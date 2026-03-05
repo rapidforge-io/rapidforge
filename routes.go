@@ -223,7 +223,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// Public Routes
 	r.Any("/webhook/*path", webhookHandlers(store))
-	r.GET("/page/:path", pageHandler(store))
+	r.GET("/page/:path", pageHandler(store, loginService))
 
 	r.GET("/terminal", AuthMiddleware(loginService), AdminOnlyMiddleware(), terminalHandler(store))
 	r.GET("/terminal-view", AuthMiddleware(loginService), AdminOnlyMiddleware(), terminalViewHandler(store))

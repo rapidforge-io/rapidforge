@@ -6,8 +6,8 @@ export const PageSettings = () => {
   const { pageMetaData, setPageMetadata } = useCanvasItems();
 
   return (
-    <div className="is-flex is-justify-content-space-between is-flex-direction-column">
-      <div className="is-flex mb-2 mt-2">
+    <div className="page-settings is-flex is-justify-content-space-between is-flex-direction-column">
+      <div className="is-flex mb-3 mt-2">
         <SlSwitch
           checked={pageMetaData.active}
           onClick={(e) => setPageMetadata({ ...pageMetaData, active: e.target.checked })}
@@ -15,7 +15,15 @@ export const PageSettings = () => {
           Enabled/Disabled
         </SlSwitch>
       </div>
-      <div className="mb-2 ml-1 mr-1">
+      <div className="is-flex mb-3">
+        <SlSwitch
+          checked={pageMetaData.protected}
+          onClick={(e) => setPageMetadata({ ...pageMetaData, protected: e.target.checked })}
+        >
+          Protected Page (requires login)
+        </SlSwitch>
+      </div>
+      <div className="mb-3">
         <SlInput
           label="Page Url"
           id="pageUrl"
@@ -23,14 +31,14 @@ export const PageSettings = () => {
           onSlInput={(e) => setPageMetadata({ ...pageMetaData, pageUrl: e.target.value })}
         />
       </div>
-      <div className="mb-2 ml-1 mr-1">
+      <div className="mb-3">
         <SlInput
           label="Page Title"
           value={pageMetaData.title}
           onSlInput={(e) => setPageMetadata({ ...pageMetaData, title: e.target.value })}
         />
       </div>
-      <div className="mb-2 ml-1 mr-1">
+      <div className="mb-3">
         <SlTextarea
           label="Page description"
           value={pageMetaData.description}

@@ -35,6 +35,9 @@ interface PageMetaData {
   js: string;
   css: string;
   title: string;
+  description: string;
+  active: boolean;
+  protected: boolean;
   pageUrl: string;
   baseUrl: string;
   webhookPaths: string[];
@@ -99,7 +102,8 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [pageMetaData, setPageMetadata] = useState<PageMetaData>({
     title: window.pageData.title || "title",
     description: window.pageData.description || "description",
-    active: window.pageData.active || true,
+    active: window.pageData.active ?? true,
+    protected: window.pageData.protected ?? false,
     pageUrl: window.pageData.path,
     baseUrl: window.pageData.baseUrl,
     js: window.pageData.js || "",
@@ -444,13 +448,14 @@ const Header = () => {
             }
             const htmlContent = containerRef.current.innerHTML;
             const htmlOutput = wrapWithHTML(htmlContent, pageMetaData);
-            const { title, description, active, path, ...otherMetaData } =
+            const { title, description, active, protected: isProtected, ...otherMetaData } =
               pageMetaData;
             const pageData = {
               title: title,
               path: url,
               description: description,
               active: active,
+              protected: isProtected,
               metadata: otherMetaData,
               canvasItems: canvasItems,
               htmlOutput: htmlOutput,

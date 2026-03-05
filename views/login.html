@@ -47,7 +47,7 @@
       <sl-card style="width: 300px">
         <h1 slot="header">Login</h1>
         <form id="login-form"
-              hx-post="/login"
+              hx-post="/login?next={{ .next }}"
               hx-include="[name]"
               hx-target="#response"
               hx-target-error="#response">
