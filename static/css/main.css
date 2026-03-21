@@ -38,9 +38,51 @@ sl-tab-panel::part(base) {
 
 
 
+.rf-editor-tabs {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 150px);
+  min-height: 0;
+}
+
+.rf-editor-panel::part(base) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.rf-editor-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rf-editor-toolbar,
+.rf-editor-meta {
+  flex: 0 0 auto;
+}
+
+.rf-code-editor {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
 .cm-editor {
-  height: calc(65vh);
-  max-height: 80vh;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cm-editor .cm-scroller {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
 }
 

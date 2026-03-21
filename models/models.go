@@ -917,7 +917,7 @@ func (s *Store) SelectPeriodicTaskDetailsById(id int64) (*PeriodicTaskDetail, er
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
 			f.filename AS "file.filename", f.content AS "file.content",
-			b.env_variables AS "block.env_variables", p.type AS "program.type"
+			b.id AS "block.id", b.env_variables AS "block.env_variables", p.type AS "program.type"
 		FROM
 			periodic_tasks pt
 		JOIN
@@ -960,7 +960,7 @@ func (s *Store) SelectWebhookDetailsById(id int64) (*WebhookDetail, error) {
 			p.id AS "program.id", p.name AS "program.name", p.created_at AS "program.created_at",
 			f.id AS "file.id", f.program_id AS "file.program_id", f.created_at AS "file.created_at",
 			f.filename AS "file.filename", f.content AS "file.content",
-			b.env_variables AS "block.env_variables", p.type AS "program.type"
+			b.id AS "block.id", b.env_variables AS "block.env_variables", p.type AS "program.type"
 		FROM
 			webhooks w
 		JOIN

@@ -72,14 +72,15 @@
         </div>
 </sl-dialog>
 
-<sl-tab-group id="periodicTaskTabGroup">
+<sl-tab-group id="periodicTaskTabGroup" class="rf-editor-tabs">
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
   <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.periodicTask.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
 
-  <sl-tab-panel name="editor">
+  <sl-tab-panel name="editor" class="rf-editor-panel">
+    <div class="rf-editor-shell">
     <div id="alertBox"></div>
-    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between">
+    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between rf-editor-toolbar">
       <div class="is-flex is-flex-direction-row is-align-items-end">
         <sl-input placeholder="{{defaultString .periodicTask.Name ""}}" label="Name" disabled>
         </sl-input>
@@ -105,7 +106,7 @@
       </div>
     </div>
 
-      <div class="is-flex m-2">
+      <div class="is-flex m-2 rf-editor-meta">
       <sl-select id="programType" name="programType" size="small" value={{.programType}}>
        <sl-option value="bash">Bash</sl-option>
        <sl-option value="lua">Lua</sl-option>
@@ -116,7 +117,7 @@
         </div>
       {{end}}
     </div>
-    <div id="codeEditor">
+    <div id="codeEditor" class="rf-code-editor"></div>
     </div>
   </sl-tab-panel>
   <sl-tab-panel name="settings">
@@ -229,7 +230,9 @@
     </div>
 
     <sl-alert id="runPeriodicResultAlert" variant="primary" style="display:none;"></sl-alert>
-    <sl-textarea id="runPeriodicResultOutput" label="Execution Output" rows="10" readonly></sl-textarea>
+    <sl-textarea id="runPeriodicResultStdout" label="Stdout" rows="8" readonly></sl-textarea>
+    <sl-textarea id="runPeriodicResultStderr" label="Stderr" rows="6" readonly style="display:none;"></sl-textarea>
+    <sl-textarea id="runPeriodicResultRunError" label="Runner Error" rows="4" readonly style="display:none;"></sl-textarea>
   </div>
 </sl-dialog>
 
@@ -317,11 +320,17 @@
   const runPeriodicNowBtn = document.getElementById('runPeriodicNowBtn');
   const executePeriodicNowBtn = document.getElementById('executePeriodicNowBtn');
   const runPeriodicResultAlert = document.getElementById('runPeriodicResultAlert');
-  const runPeriodicResultOutput = document.getElementById('runPeriodicResultOutput');
+  const runPeriodicResultStdout = document.getElementById('runPeriodicResultStdout');
+  const runPeriodicResultStderr = document.getElementById('runPeriodicResultStderr');
+  const runPeriodicResultRunError = document.getElementById('runPeriodicResultRunError');
 
   runPeriodicNowBtn?.addEventListener('click', () => {
     runPeriodicResultAlert.style.display = 'none';
-    runPeriodicResultOutput.value = '';
+    runPeriodicResultStdout.value = '';
+    runPeriodicResultStderr.value = '';
+    runPeriodicResultStderr.style.display = 'none';
+    runPeriodicResultRunError.value = '';
+    runPeriodicResultRunError.style.display = 'none';
     runPeriodicNowDialog.show();
   });
 
@@ -352,16 +361,20 @@
       runPeriodicResultAlert.innerHTML = statusLine + (data.eventId ? ` | Event ID: ${data.eventId}` : '');
       runPeriodicResultAlert.style.display = 'block';
 
-      const outputSections = [];
-      if (data.output) outputSections.push(data.output);
-      if (data.stderr) outputSections.push(`STDERR:\\n${data.stderr}`);
-      if (data.runError) outputSections.push(`RUN ERROR:\\n${data.runError}`);
-      runPeriodicResultOutput.value = outputSections.join('\\n\\n') || 'No output.';
+      runPeriodicResultStdout.value = data.output || 'No stdout.';
+      runPeriodicResultStderr.value = data.stderr || '';
+      runPeriodicResultStderr.style.display = data.stderr ? 'block' : 'none';
+      runPeriodicResultRunError.value = data.runError || '';
+      runPeriodicResultRunError.style.display = data.runError ? 'block' : 'none';
     } catch (error) {
       runPeriodicResultAlert.variant = 'danger';
       runPeriodicResultAlert.innerHTML = `Execution failed: ${error.message}`;
       runPeriodicResultAlert.style.display = 'block';
-      runPeriodicResultOutput.value = '';
+      runPeriodicResultStdout.value = '';
+      runPeriodicResultStderr.value = '';
+      runPeriodicResultStderr.style.display = 'none';
+      runPeriodicResultRunError.value = '';
+      runPeriodicResultRunError.style.display = 'none';
     } finally {
       executePeriodicNowBtn.loading = false;
     }

@@ -38,6 +38,21 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
   tempView.focus();
   tempView.destroy();
 
+  const parentElement = document.getElementById(parentElementId);
+
+  function resizeEditorContainer() {
+    if (!parentElement) {
+      return;
+    }
+
+    const rect = parentElement.getBoundingClientRect();
+    const bottomPadding = 24;
+    const minHeight = 320;
+    const availableHeight = Math.max(minHeight, window.innerHeight - rect.top - bottomPadding);
+
+    parentElement.style.height = `${availableHeight}px`;
+  }
+
   const view = new EditorView({
     state: EditorState.create({
       doc: fileContent,
@@ -56,8 +71,11 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
         lintGutter(),
       ]
     }),
-    parent: document.getElementById(parentElementId),
+    parent: parentElement,
   });
+
+  resizeEditorContainer();
+  window.addEventListener('resize', resizeEditorContainer);
 
 
   function switchLua() {
@@ -97,6 +115,10 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
     switchShell,
     switchMode,
     EditorSelection,
-    getContent: () => view.state.doc.toString()
+    getContent: () => view.state.doc.toString(),
+    destroy: () => {
+      window.removeEventListener('resize', resizeEditorContainer);
+      view.destroy();
+    }
   };
 }
