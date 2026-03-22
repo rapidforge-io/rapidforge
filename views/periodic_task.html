@@ -211,15 +211,26 @@
 <script src="/static/javascript/curlgenerator.js"></script>
 <script>
     function isValidCronExpression(expression) {
-           var cronRegex = new RegExp(/^(\*\/\d{1,2}|\d{1,2}|\*)\s(\*|\d{1,2}|\*\/\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d{1,2}|\d{1,2})\s(\*|\*\/\d|\d)\s?$/g)
-            if (!cronRegex.test(expression)) {
+            const normalizedExpression = expression.trim();
+
+            if (normalizedExpression === '* * * * *') {
                 return false;
             }
 
-            if (expression.trim() === '* * * * *') {
+            if (!normalizedExpression || typeof cronstrue === 'undefined') {
                 return false;
             }
-            return true;
+
+            try {
+                cronstrue.toString(normalizedExpression, {
+                    throwExceptionOnParseError: true,
+                    verbose: true,
+                    use24HourTimeFormat: true
+                });
+                return true;
+            } catch (error) {
+                return false;
+            }
   }
   const cronInput = document.getElementById("cron");
   const saveButton = document.getElementById("saveButton");
