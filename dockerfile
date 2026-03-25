@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     jq \
     sqlite3 \
     gh \
+    && curl -fsSL https://gh.io/copilot-install | bash || true \
     && rm -rf /var/lib/apt/lists/*
 
 # RUN (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
