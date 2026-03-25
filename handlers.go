@@ -39,12 +39,82 @@ import (
 // simple cache
 var cache = map[string]any{}
 
+type manualWebhookRunRequest struct {
+	Payload      string `json:"payload"`
+	Headers      string `json:"headers"`
+	EnvOverrides string `json:"envOverrides"`
+}
+
+type manualPeriodicRunRequest struct {
+	EnvOverrides string `json:"envOverrides"`
+}
+
 func getCurrentUser(c *gin.Context) *models.User {
 	user, exists := c.Get("user")
 	if !exists {
 		return nil
 	}
 	return user.(*models.User)
+}
+
+func parseKeyValueLines(input string) (map[string]string, error) {
+	result := map[string]string{}
+	lines := strings.Split(strings.TrimSpace(input), "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		key, value, found := strings.Cut(line, "=")
+		if !found {
+			return nil, fmt.Errorf("invalid format %q, expected KEY=VALUE", line)
+		}
+
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key == "" {
+			return nil, fmt.Errorf("invalid format %q, key cannot be empty", line)
+		}
+		result[key] = value
+	}
+
+	return result, nil
+}
+
+func parseHeaderLines(input string) (map[string]string, error) {
+	result := map[string]string{}
+	lines := strings.Split(strings.TrimSpace(input), "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		var key, value string
+		var found bool
+
+		if strings.Contains(line, ":") {
+			key, value, found = strings.Cut(line, ":")
+		} else {
+			key, value, found = strings.Cut(line, "=")
+		}
+
+		if !found {
+			return nil, fmt.Errorf("invalid header format %q, expected Header=Value or Header: Value", line)
+		}
+
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key == "" {
+			return nil, fmt.Errorf("invalid header format %q, key cannot be empty", line)
+		}
+		result[key] = value
+	}
+
+	return result, nil
 }
 
 func isOriginAllowed(origin string, allowedOrigins []string) bool {
@@ -296,6 +366,229 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 		contentType := responseHeaders["Content-Type"]
 		c.Data(httpCode, contentType, []byte(res.Output))
+	}
+}
+
+func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := parseInt(c.Param("id"))
+		webhookWithDetails, err := store.SelectWebhookDetailsById(id)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "webhook not found"})
+			return
+		}
+
+		var req manualWebhookRunRequest
+		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+			return
+		}
+
+		envVars := map[string]string{}
+		envVars = utils.MergeMaps(envVars, webhookWithDetails.Block.GetEnvVars())
+		envVars = utils.MergeMaps(envVars, webhookWithDetails.Webhook.GetEnvVars())
+
+		creds, err := store.ListCredentialsForEnv()
+		if err == nil {
+			envVars = utils.MergeMaps(envVars, creds)
+		} else {
+			rflog.Error("failed to get credentials", err)
+		}
+
+		overrideEnv, err := parseKeyValueLines(req.EnvOverrides)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		envVars = utils.MergeMaps(envVars, overrideEnv)
+
+		headers, err := parseHeaderLines(req.Headers)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		const headerPrefix = "HEADER_"
+		eventArgs := map[string]any{
+			"manual":  true,
+			"payload": req.Payload,
+			"headers": map[string]any{},
+		}
+
+		for key, value := range headers {
+			envKey := headerPrefix + strings.ReplaceAll(strings.ToUpper(strings.TrimSpace(key)), "-", "_")
+			envVars[envKey] = value
+			eventArgs["headers"].(map[string]any)[envKey] = value
+		}
+
+		envVars["PAYLOAD_DATA"] = req.Payload
+
+		runner := services.GetRunner(services.RunnerType(webhookWithDetails.Program.ProgramType))
+		res, runErr := runner.Run(webhookWithDetails.File.Content, envVars)
+
+		if res.ExitCode != 0 && webhookWithDetails.Webhook.OnFailEnabled && webhookWithDetails.Webhook.OnFailScript.Valid && webhookWithDetails.Webhook.OnFailScript.String != "" {
+			failScriptType := "bash"
+			if webhookWithDetails.Webhook.OnFailScriptType.Valid && webhookWithDetails.Webhook.OnFailScriptType.String != "" {
+				failScriptType = webhookWithDetails.Webhook.OnFailScriptType.String
+			}
+			envVars["FAILURE_EXIT_CODE"] = fmt.Sprintf("%d", res.ExitCode)
+			envVars["FAILURE_OUTPUT"] = res.Output
+			envVars["FAILURE_ERROR"] = res.Error
+			envVars["WEBHOOK_ID"] = fmt.Sprintf("%d", webhookWithDetails.Webhook.ID)
+			envVars["WEBHOOK_PATH"] = webhookWithDetails.Webhook.Path
+
+			failRunner := services.GetRunner(services.RunnerType(failScriptType))
+			failRes, failErr := failRunner.Run(webhookWithDetails.Webhook.OnFailScript.String, envVars)
+			if failErr != nil {
+				rflog.Error("Failed to execute on-fail script", "webhook_id=", webhookWithDetails.Webhook.ID, "err=", failErr)
+			} else if failRes.ExitCode != 0 {
+				rflog.Error("On-fail script exited with non-zero status", "webhook_id=", webhookWithDetails.Webhook.ID, "exit_code=", failRes.ExitCode)
+			}
+		}
+
+		args, _ := json.Marshal(eventArgs)
+		logLines := []string{}
+		if res.Output != "" {
+			logLines = append(logLines, res.Output)
+		}
+		if res.Error != "" {
+			logLines = append(logLines, res.Error)
+		}
+		combinedLogs := strings.TrimSpace(strings.Join(logLines, "\n"))
+
+		var insertedEventID int64
+		eventRes, insertErr := store.InsertEvent(models.Event{
+			Status:    fmt.Sprint(res.ExitCode),
+			EventType: utils.WebhookEntity,
+			Args:      sql.NullString{String: string(args), Valid: true},
+			Logs:      sql.NullString{String: combinedLogs, Valid: combinedLogs != ""},
+			WebhookID: sql.NullInt64{Int64: webhookWithDetails.Webhook.ID, Valid: true},
+			BlockID:   webhookWithDetails.Block.ID,
+		})
+		if insertErr != nil {
+			rflog.Error("Error inserting manual webhook run event", "err", insertErr)
+		} else {
+			insertedEventID, _ = eventRes.LastInsertId()
+		}
+
+		status := "success"
+		if res.ExitCode != 0 {
+			status = "failure"
+		}
+		if runErr != nil {
+			status = "error"
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":   status,
+			"exitCode": res.ExitCode,
+			"output":   res.Output,
+			"stderr":   res.Error,
+			"runner":   webhookWithDetails.Program.ProgramType,
+			"eventId":  insertedEventID,
+			"runError": func() string {
+				if runErr != nil {
+					return runErr.Error()
+				}
+				return ""
+			}(),
+			"timestamp": time.Now().UTC(),
+		})
+	}
+}
+
+func runPeriodicTaskNowHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := parseInt(c.Param("id"))
+		taskDetails, err := store.SelectPeriodicTaskDetailsById(id)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "periodic task not found"})
+			return
+		}
+
+		var req manualPeriodicRunRequest
+		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+			return
+		}
+
+		envVars := map[string]string{}
+		envVars = utils.MergeMaps(envVars, taskDetails.Block.GetEnvVars())
+		envVars = utils.MergeMaps(envVars, taskDetails.PeriodicTask.GetEnvVars())
+
+		creds, err := store.ListCredentialsForEnv()
+		if err == nil {
+			envVars = utils.MergeMaps(envVars, creds)
+		} else {
+			rflog.Error("failed to get credentials", err)
+		}
+
+		overrideEnv, err := parseKeyValueLines(req.EnvOverrides)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		envVars = utils.MergeMaps(envVars, overrideEnv)
+
+		runner := services.GetRunner(services.RunnerType(taskDetails.Program.ProgramType))
+		res, runErr := runner.Run(taskDetails.File.Content, envVars)
+
+		if res.ExitCode != 0 && taskDetails.PeriodicTask.OnFailEnabled && taskDetails.PeriodicTask.OnFailScript.Valid && taskDetails.PeriodicTask.OnFailScript.String != "" {
+			failScriptType := "bash"
+			if taskDetails.PeriodicTask.OnFailScriptType.Valid && taskDetails.PeriodicTask.OnFailScriptType.String != "" {
+				failScriptType = taskDetails.PeriodicTask.OnFailScriptType.String
+			}
+			envVars["FAILURE_EXIT_CODE"] = fmt.Sprintf("%d", res.ExitCode)
+			envVars["FAILURE_OUTPUT"] = res.Output
+			envVars["FAILURE_ERROR"] = res.Error
+			envVars["TASK_ID"] = fmt.Sprintf("%d", taskDetails.PeriodicTask.ID)
+
+			failRunner := services.GetRunner(services.RunnerType(failScriptType))
+			failRes, failErr := failRunner.Run(taskDetails.PeriodicTask.OnFailScript.String, envVars)
+			if failErr != nil {
+				rflog.Error("Failed to execute on-fail script", "task_id=", taskDetails.PeriodicTask.ID, "err=", failErr)
+			} else if failRes.ExitCode != 0 {
+				rflog.Error("On-fail script exited with non-zero status", "task_id=", taskDetails.PeriodicTask.ID, "exit_code=", failRes.ExitCode)
+			}
+		}
+
+		var insertedEventID int64
+		eventRes, insertErr := store.InsertEvent(models.Event{
+			Status:         fmt.Sprint(res.ExitCode),
+			EventType:      utils.PeriodicTaskEntity,
+			Logs:           sql.NullString{String: strings.TrimSpace(res.Output), Valid: strings.TrimSpace(res.Output) != ""},
+			PeriodicTaskID: sql.NullInt64{Int64: taskDetails.PeriodicTask.ID, Valid: true},
+			BlockID:        taskDetails.Block.ID,
+		})
+		if insertErr != nil {
+			rflog.Error("Error inserting manual periodic run event", "err", insertErr)
+		} else {
+			insertedEventID, _ = eventRes.LastInsertId()
+		}
+
+		status := "success"
+		if res.ExitCode != 0 {
+			status = "failure"
+		}
+		if runErr != nil {
+			status = "error"
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status":   status,
+			"exitCode": res.ExitCode,
+			"output":   res.Output,
+			"stderr":   res.Error,
+			"runner":   taskDetails.Program.ProgramType,
+			"eventId":  insertedEventID,
+			"runError": func() string {
+				if runErr != nil {
+					return runErr.Error()
+				}
+				return ""
+			}(),
+			"timestamp": time.Now().UTC(),
+		})
 	}
 }
 

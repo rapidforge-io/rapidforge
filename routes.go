@@ -248,6 +248,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	{
 		webhookGroup.POST("/create", createWebhookHandler(store))
 		webhookGroup.PATCH("/:id", updateWebhookHandler(store))
+		webhookGroup.POST("/:id/run", runWebhookNowHandler(store))
 		webhookGroup.GET("/:id", getWebhookHandler(store))
 	}
 
@@ -258,6 +259,7 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		periodicTaskGroup.GET("/:id", getPeriodicTaskHandler(store))
 		periodicTaskGroup.POST("/create", createPeriodicTaskHandler(store))
 		periodicTaskGroup.PATCH("/:id", updatePeriodicTaskHandler(store))
+		periodicTaskGroup.POST("/:id/run", runPeriodicTaskNowHandler(store))
 	}
 
 	// Page Routes

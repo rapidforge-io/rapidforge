@@ -81,14 +81,15 @@
 </sl-dialog>
 
 <!-- Tabs -->
-<sl-tab-group id="webhookTabGroup">
+<sl-tab-group id="webhookTabGroup" class="rf-editor-tabs">
   <sl-tab slot="nav" panel="editor">Editor</sl-tab>
   <sl-tab slot="nav" panel="settings">Settings</sl-tab>
   <sl-tab slot="nav" panel="eventLogs" hx-get="/events/{{.Type}}/{{.webhook.ID}}" hx-target="#eventList" hx-trigger="click">Event Logs</sl-tab>
 
-  <sl-tab-panel name="editor">
+  <sl-tab-panel name="editor" class="rf-editor-panel">
+    <div class="rf-editor-shell">
     <div id="alertBox"></div>
-    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between">
+    <div class="is-flex is-flex-direction-row is-align-items-flex-end m-2 is-justify-content-space-between rf-editor-toolbar">
       <div class="is-flex is-flex-direction-row is-align-items-end">
         <sl-input placeholder="{{ defaultString .webhook.Name "" }}" disabled></sl-input>
         <sl-button
@@ -101,6 +102,10 @@
         >
           Save
         </sl-button>
+        <sl-button class="ml-2" variant="success" id="runWebhookNowBtn">
+          <sl-icon slot="prefix" name="play-fill"></sl-icon>
+          Run Now
+        </sl-button>
       </div>
       <div>
         <sl-icon-button name="question-circle" onclick="codeHelper.show()" aria-label="Show help"></sl-icon-button>
@@ -108,7 +113,7 @@
       </div>
     </div>
 
-    <div class="is-flex m-2">
+    <div class="is-flex m-2 rf-editor-meta">
       <sl-select id="programType" name="programType" size="small" value="{{.programType}}">
         <sl-option value="bash">Bash</sl-option>
         <sl-option value="lua">Lua</sl-option>
@@ -120,7 +125,8 @@
       {{ end }}
     </div>
 
-    <div id="codeEditor"></div>
+    <div id="codeEditor" class="rf-code-editor"></div>
+    </div>
   </sl-tab-panel>
 
   <sl-tab-panel name="settings">
@@ -349,6 +355,42 @@
   </sl-tab-panel>
 </sl-tab-group>
 
+<sl-dialog label="Run Webhook Now" id="runWebhookNowDialog" style="--width: 700px;">
+  <div class="is-flex is-flex-direction-column" style="gap: 0.75rem;">
+    <sl-textarea
+      id="runWebhookPayload"
+      label="Simulated Payload (PAYLOAD_DATA)"
+      rows="5"
+      placeholder='{"example":"value"}'
+    ></sl-textarea>
+    <sl-textarea
+      id="runWebhookHeaders"
+      label="Simulated Headers (one per line, Header=Value or Header: Value)"
+      rows="4"
+      placeholder="Content-Type=application/json&#10;X-Request-Id=demo-123"
+    ></sl-textarea>
+    <sl-textarea
+      id="runWebhookEnvOverrides"
+      label="Environment Overrides (one per line, KEY=VALUE)"
+      rows="4"
+      placeholder="CUSTOMER_ID=42&#10;MODE=test"
+    ></sl-textarea>
+
+    <div class="is-flex is-justify-content-space-between is-align-items-center" style="gap: 0.5rem;">
+      <sl-button variant="primary" id="executeWebhookNowBtn">
+        <sl-icon slot="prefix" name="play-fill"></sl-icon>
+        Execute
+      </sl-button>
+      <sl-button variant="default" onclick="document.getElementById('runWebhookNowDialog').hide()">Close</sl-button>
+    </div>
+
+    <sl-alert id="runWebhookResultAlert" variant="primary" style="display:none;"></sl-alert>
+    <sl-textarea id="runWebhookResultStdout" label="Stdout" rows="8" readonly></sl-textarea>
+    <sl-textarea id="runWebhookResultStderr" label="Stderr" rows="6" readonly style="display:none;"></sl-textarea>
+    <sl-textarea id="runWebhookResultRunError" label="Runner Error" rows="4" readonly style="display:none;"></sl-textarea>
+  </div>
+</sl-dialog>
+
 <script src="/static/javascript/curlgenerator.js"></script>
 <script type="module">
   import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
@@ -448,6 +490,74 @@
     }).catch(err => {
       alert('Failed to copy cURL command: ' + err);
     });
+  });
+
+  const runWebhookNowDialog = document.getElementById('runWebhookNowDialog');
+  const runWebhookNowBtn = document.getElementById('runWebhookNowBtn');
+  const executeWebhookNowBtn = document.getElementById('executeWebhookNowBtn');
+  const runWebhookResultAlert = document.getElementById('runWebhookResultAlert');
+  const runWebhookResultStdout = document.getElementById('runWebhookResultStdout');
+  const runWebhookResultStderr = document.getElementById('runWebhookResultStderr');
+  const runWebhookResultRunError = document.getElementById('runWebhookResultRunError');
+
+  runWebhookNowBtn?.addEventListener('click', () => {
+    runWebhookResultAlert.style.display = 'none';
+    runWebhookResultStdout.value = '';
+    runWebhookResultStderr.value = '';
+    runWebhookResultStderr.style.display = 'none';
+    runWebhookResultRunError.value = '';
+    runWebhookResultRunError.style.display = 'none';
+    runWebhookNowDialog.show();
+  });
+
+  executeWebhookNowBtn?.addEventListener('click', async () => {
+    executeWebhookNowBtn.loading = true;
+    runWebhookResultAlert.style.display = 'none';
+
+    try {
+      const payload = document.getElementById('runWebhookPayload').value || '';
+      const headers = document.getElementById('runWebhookHeaders').value || '';
+      const envOverrides = document.getElementById('runWebhookEnvOverrides').value || '';
+
+      const response = await fetch('/webhooks/{{.webhook.ID}}/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          payload,
+          headers,
+          envOverrides
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to execute webhook');
+      }
+
+      const statusLine = `Status: ${data.status} | Exit Code: ${data.exitCode} | Runner: ${data.runner}`;
+      runWebhookResultAlert.variant = data.status === 'success' ? 'success' : 'danger';
+      runWebhookResultAlert.innerHTML = statusLine + (data.eventId ? ` | Event ID: ${data.eventId}` : '');
+      runWebhookResultAlert.style.display = 'block';
+
+      runWebhookResultStdout.value = data.output || 'No stdout.';
+      runWebhookResultStderr.value = data.stderr || '';
+      runWebhookResultStderr.style.display = data.stderr ? 'block' : 'none';
+      runWebhookResultRunError.value = data.runError || '';
+      runWebhookResultRunError.style.display = data.runError ? 'block' : 'none';
+    } catch (error) {
+      runWebhookResultAlert.variant = 'danger';
+      runWebhookResultAlert.innerHTML = `Execution failed: ${error.message}`;
+      runWebhookResultAlert.style.display = 'block';
+      runWebhookResultStdout.value = '';
+      runWebhookResultStderr.value = '';
+      runWebhookResultStderr.style.display = 'none';
+      runWebhookResultRunError.value = '';
+      runWebhookResultRunError.style.display = 'none';
+    } finally {
+      executeWebhookNowBtn.loading = false;
+    }
   });
 
 </script>
