@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/pem"
 	"log"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/rapidforge-io/rapidforge/utils"
@@ -21,9 +19,9 @@ type Config struct {
 	Domain            string `env:"RF_DOMAIN, default=localhost"`
 	Port              string `env:"RF_PORT, default=:4000"`
 	PemData           string `env:"TLS_CERT"`
-	Cloud             bool
+	Cloud             bool   `env:"RF_CLOUD, default=false"`
 	TokenExpiry       time.Duration
-	LoadBalancer      bool
+	LoadBalancer      bool `env:"RF_LB, default=true"`
 	FECacheBuster     string
 	Timeout           time.Duration
 	AuthSecretKey     string
@@ -44,8 +42,6 @@ func load() {
 		log.Fatal("failed to generate secret key", "err", err)
 	}
 	c.AuthSecretKey = secretKey
-	c.LoadBalancer = getEnvAsBool("RF_LB", true)
-	c.Cloud = getEnvAsBool("RF_CLOUD", false)
 	c.TokenExpiry = time.Hour * 24
 	c.FECacheBuster, _ = utils.GenerateRandomString(10)
 
@@ -103,18 +99,6 @@ func (c Config) TLSCert() *tls.Certificate {
 	}
 
 	return &cert
-}
-
-func getEnvAsBool(name string, defaultVal bool) bool {
-	valStr := os.Getenv(name)
-	if valStr == "" {
-		return defaultVal
-	}
-	val, err := strconv.ParseBool(valStr)
-	if err != nil {
-		return defaultVal
-	}
-	return val
 }
 
 func httpProtocol() string {
