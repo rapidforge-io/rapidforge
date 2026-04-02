@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>rapidforge</Name>
+  <Repository>celdem/rapidforge</Repository>
+  <Registry>https://hub.docker.com/r/celdem/rapidforge</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/rapidforge-io/rapidforge/issues</Support>
+  <Project>https://github.com/rapidforge-io/rapidforge</Project>
+  <Overview>
+    RapidForge is a self-hosted automation platform that lets you run scripts, schedule tasks, manage credentials, and build lightweight internal tools — all from a clean web UI.
+  </Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:4000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/rapidforge-io/rapidforge/main/unraid/rapidforge.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/rapidforge-io/rapidforge/main/static/img/logo.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <!-- Ports -->
+  <Config Name="Web UI Port" Target="8080" Default="4000" Mode="tcp" Description="Port for the RapidForge web interface." Type="Port" Display="always" Required="true" Mask="false">4000</Config>
+
+  <!-- Volumes -->
+  <Config Name="Data Directory" Target="/app/data" Default="/mnt/user/appdata/rapidforge" Mode="rw" Description="Persistent storage for SQLite databases and application data." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/rapidforge</Config>
+
+  <!-- Environment Variables -->
+  <Config Name="Environment" Target="RF_ENV" Default="production" Description="Application environment. Keep as 'production' for normal use." Type="Variable" Display="always" Required="true" Mask="false">production</Config>
+
+  <Config Name="Database URL" Target="RF_DATABASE_URL" Default="/app/data/rapidforge.sqlite3" Description="Path to the main SQLite database file." Type="Variable" Display="always" Required="true" Mask="false">/app/data/rapidforge.sqlite3</Config>
+
+  <Config Name="KV Store URL" Target="RF_KV_URL" Default="/app/data/rapidforgekv.sqlite3" Description="Path to the key-value SQLite database file." Type="Variable" Display="always" Required="true" Mask="false">/app/data/rapidforgekv.sqlite3</Config>
+
+  <Config Name="Domain" Target="RF_DOMAIN" Default="localhost" Description="The domain or IP address where RapidForge is accessible (e.g. 192.168.1.100 or myserver.local)." Type="Variable" Display="always" Required="true" Mask="false">localhost</Config>
+
+  <Config Name="Port (env)" Target="RF_PORT" Default=":8080" Description="Internal port used by the Go server. Must match the container port (default :8080)." Type="Variable" Display="advanced" Required="true" Mask="false">:8080</Config>
+
+  <Config Name="Load Balancer" Target="RF_LB" Default="false" Description="Set to true if RapidForge is behind a reverse proxy/load balancer (strips port from base URL)." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+
+  <Config Name="TLS Certificate" Target="TLS_CERT" Default="" Description="Optional PEM-encoded certificate + private key bundle for TLS termination inside the container." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+
+  <Config Name="Error Reporting DSN" Target="RF_ERROR_REPORT" Default="" Description="Optional error reporting DSN (e.g. Sentry/Honeybadger)." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+</Container>
