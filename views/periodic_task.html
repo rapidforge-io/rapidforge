@@ -212,27 +212,56 @@
   </sl-tab-panel>
 </sl-tab-group>
 
-<sl-dialog label="Run Periodic Task Now" id="runPeriodicNowDialog" style="--width: 650px;">
-  <div class="is-flex is-flex-direction-column" style="gap: 0.75rem;">
-    <sl-textarea
-      id="runPeriodicEnvOverrides"
-      label="Environment Overrides (one per line, KEY=VALUE)"
-      rows="6"
-      placeholder="MODE=test&#10;ACCOUNT_ID=123"
-    ></sl-textarea>
+<sl-dialog label="Run Periodic Task Now" id="runPeriodicNowDialog" class="rf-run-now-dialog" style="--width: min(1100px, 92vw);">
+  <div class="rf-run-now-modal">
+    <div id="runPeriodicConfigureView" class="rf-run-now-view">
+      <sl-textarea
+        id="runPeriodicEnvOverrides"
+        label="Environment Overrides (one per line, KEY=VALUE)"
+        rows="6"
+        placeholder="MODE=test&#10;ACCOUNT_ID=123"
+      ></sl-textarea>
 
-    <div class="is-flex is-justify-content-space-between is-align-items-center" style="gap: 0.5rem;">
-      <sl-button variant="primary" id="executePeriodicNowBtn">
-        <sl-icon slot="prefix" name="play-fill"></sl-icon>
-        Execute
-      </sl-button>
-      <sl-button variant="default" onclick="document.getElementById('runPeriodicNowDialog').hide()">Close</sl-button>
+      <div class="rf-run-now-actions">
+        <sl-button variant="primary" id="executePeriodicNowBtn">
+          <sl-icon slot="prefix" name="play-fill"></sl-icon>
+          Execute
+        </sl-button>
+        <div class="rf-run-now-actions-right">
+          <sl-button variant="default" data-run-now-close>Close</sl-button>
+        </div>
+      </div>
     </div>
 
-    <sl-alert id="runPeriodicResultAlert" variant="primary" style="display:none;"></sl-alert>
-    <sl-textarea id="runPeriodicResultStdout" label="Stdout" rows="8" readonly></sl-textarea>
-    <sl-textarea id="runPeriodicResultStderr" label="Stderr" rows="6" readonly style="display:none;"></sl-textarea>
-    <sl-textarea id="runPeriodicResultRunError" label="Runner Error" rows="4" readonly style="display:none;"></sl-textarea>
+    <div id="runPeriodicResultView" class="rf-run-now-view" style="display:none;">
+      <sl-alert id="runPeriodicResultAlert" class="rf-run-now-summary" variant="primary" style="display:none;"></sl-alert>
+
+      <div class="rf-run-now-actions">
+        <sl-button variant="primary" id="rerunPeriodicNowBtn">
+          <sl-icon slot="prefix" name="play-fill"></sl-icon>
+          Run Again
+        </sl-button>
+        <div class="rf-run-now-actions-right">
+          <sl-button variant="default" id="backPeriodicToInputsBtn">Back to Inputs</sl-button>
+          <sl-button variant="default" data-run-now-close>Close</sl-button>
+        </div>
+      </div>
+
+      <div class="rf-run-now-output-stack">
+        <div class="rf-run-now-output-section">
+          <div class="rf-run-now-output-title">Stdout</div>
+          <pre id="runPeriodicResultStdout" class="rf-run-now-output-panel"></pre>
+        </div>
+        <div id="runPeriodicResultStderrSection" class="rf-run-now-output-section" style="display:none;">
+          <div class="rf-run-now-output-title">Stderr</div>
+          <pre id="runPeriodicResultStderr" class="rf-run-now-output-panel"></pre>
+        </div>
+        <div id="runPeriodicResultRunErrorSection" class="rf-run-now-output-section" style="display:none;">
+          <div class="rf-run-now-output-title">Runner Error</div>
+          <pre id="runPeriodicResultRunError" class="rf-run-now-output-panel"></pre>
+        </div>
+      </div>
+    </div>
   </div>
 </sl-dialog>
 
@@ -280,6 +309,7 @@
 <script type="module">
   import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
   import { createEditor } from '/static/javascript/editorsetup.js';
+  import { initRunNowDialog } from '/static/javascript/run-now-dialog.js';
 
   const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
   const programType = document.getElementById("programType")?.value || "{{.programType}}";
@@ -327,68 +357,24 @@
     editor.switchMode(programType);
   });
 
-  const runPeriodicNowDialog = document.getElementById('runPeriodicNowDialog');
-  const runPeriodicNowBtn = document.getElementById('runPeriodicNowBtn');
-  const executePeriodicNowBtn = document.getElementById('executePeriodicNowBtn');
-  const runPeriodicResultAlert = document.getElementById('runPeriodicResultAlert');
-  const runPeriodicResultStdout = document.getElementById('runPeriodicResultStdout');
-  const runPeriodicResultStderr = document.getElementById('runPeriodicResultStderr');
-  const runPeriodicResultRunError = document.getElementById('runPeriodicResultRunError');
-
-  runPeriodicNowBtn?.addEventListener('click', () => {
-    runPeriodicResultAlert.style.display = 'none';
-    runPeriodicResultStdout.value = '';
-    runPeriodicResultStderr.value = '';
-    runPeriodicResultStderr.style.display = 'none';
-    runPeriodicResultRunError.value = '';
-    runPeriodicResultRunError.style.display = 'none';
-    runPeriodicNowDialog.show();
-  });
-
-  executePeriodicNowBtn?.addEventListener('click', async () => {
-    executePeriodicNowBtn.loading = true;
-    runPeriodicResultAlert.style.display = 'none';
-
-    try {
-      const envOverrides = document.getElementById('runPeriodicEnvOverrides').value || '';
-
-      const response = await fetch('/periodic_tasks/{{.periodicTask.ID}}/run', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          envOverrides
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to execute periodic task');
-      }
-
-      const statusLine = `Status: ${data.status} | Exit Code: ${data.exitCode} | Runner: ${data.runner}`;
-      runPeriodicResultAlert.variant = data.status === 'success' ? 'success' : 'danger';
-      runPeriodicResultAlert.innerHTML = statusLine + (data.eventId ? ` | Event ID: ${data.eventId}` : '');
-      runPeriodicResultAlert.style.display = 'block';
-
-      runPeriodicResultStdout.value = data.output || 'No stdout.';
-      runPeriodicResultStderr.value = data.stderr || '';
-      runPeriodicResultStderr.style.display = data.stderr ? 'block' : 'none';
-      runPeriodicResultRunError.value = data.runError || '';
-      runPeriodicResultRunError.style.display = data.runError ? 'block' : 'none';
-    } catch (error) {
-      runPeriodicResultAlert.variant = 'danger';
-      runPeriodicResultAlert.innerHTML = `Execution failed: ${error.message}`;
-      runPeriodicResultAlert.style.display = 'block';
-      runPeriodicResultStdout.value = '';
-      runPeriodicResultStderr.value = '';
-      runPeriodicResultStderr.style.display = 'none';
-      runPeriodicResultRunError.value = '';
-      runPeriodicResultRunError.style.display = 'none';
-    } finally {
-      executePeriodicNowBtn.loading = false;
-    }
+  initRunNowDialog({
+    dialogId: 'runPeriodicNowDialog',
+    openButtonId: 'runPeriodicNowBtn',
+    executeButtonId: 'executePeriodicNowBtn',
+    rerunButtonId: 'rerunPeriodicNowBtn',
+    backButtonId: 'backPeriodicToInputsBtn',
+    configureViewId: 'runPeriodicConfigureView',
+    resultViewId: 'runPeriodicResultView',
+    summaryAlertId: 'runPeriodicResultAlert',
+    stdoutOutputId: 'runPeriodicResultStdout',
+    stderrSectionId: 'runPeriodicResultStderrSection',
+    stderrOutputId: 'runPeriodicResultStderr',
+    runErrorSectionId: 'runPeriodicResultRunErrorSection',
+    runErrorOutputId: 'runPeriodicResultRunError',
+    endpoint: '/periodic_tasks/{{.periodicTask.ID}}/run',
+    buildRequest: () => ({
+      envOverrides: document.getElementById('runPeriodicEnvOverrides').value || ''
+    })
   });
 </script>
 

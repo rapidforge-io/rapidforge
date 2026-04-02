@@ -371,6 +371,7 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		startTime := time.Now()
 		id := parseInt(c.Param("id"))
 		webhookWithDetails, err := store.SelectWebhookDetailsById(id)
 		if err != nil {
@@ -480,12 +481,13 @@ func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status":   status,
-			"exitCode": res.ExitCode,
-			"output":   res.Output,
-			"stderr":   res.Error,
-			"runner":   webhookWithDetails.Program.ProgramType,
-			"eventId":  insertedEventID,
+			"status":     status,
+			"exitCode":   res.ExitCode,
+			"output":     res.Output,
+			"stderr":     res.Error,
+			"runner":     webhookWithDetails.Program.ProgramType,
+			"eventId":    insertedEventID,
+			"durationMs": time.Since(startTime).Milliseconds(),
 			"runError": func() string {
 				if runErr != nil {
 					return runErr.Error()
@@ -499,6 +501,7 @@ func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
 
 func runPeriodicTaskNowHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		startTime := time.Now()
 		id := parseInt(c.Param("id"))
 		taskDetails, err := store.SelectPeriodicTaskDetailsById(id)
 		if err != nil {
@@ -575,12 +578,13 @@ func runPeriodicTaskNowHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status":   status,
-			"exitCode": res.ExitCode,
-			"output":   res.Output,
-			"stderr":   res.Error,
-			"runner":   taskDetails.Program.ProgramType,
-			"eventId":  insertedEventID,
+			"status":     status,
+			"exitCode":   res.ExitCode,
+			"output":     res.Output,
+			"stderr":     res.Error,
+			"runner":     taskDetails.Program.ProgramType,
+			"eventId":    insertedEventID,
+			"durationMs": time.Since(startTime).Milliseconds(),
 			"runError": func() string {
 				if runErr != nil {
 					return runErr.Error()
