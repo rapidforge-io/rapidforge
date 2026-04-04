@@ -30,16 +30,13 @@
             }
         }
 
-        // Listen for browser window resize events
         let resizeTimeout;
         window.addEventListener('resize', () => {
-            // Debounce resize events to avoid flooding the server
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                // Calculate new terminal size based on container
                 const container = document.getElementById('terminal');
-                const charWidth = 9; // approximate character width in pixels
-                const charHeight = 17; // approximate character height in pixels
+                const charWidth = 9;
+                const charHeight = 17;
 
                 const cols = Math.floor(container.clientWidth / charWidth);
                 const rows = Math.floor(container.clientHeight / charHeight);
@@ -51,7 +48,6 @@
             }, 100);
         });
 
-        // Send initial size once connection is open
         socket.addEventListener('open', () => {
             notifyResize();
         });
