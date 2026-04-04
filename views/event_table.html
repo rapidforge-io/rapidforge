@@ -35,7 +35,7 @@
   </div>
 </div>
 
-<sl-dialog label="Details" id="eventDetails" class="dialog-overview" style="--width: 50vw;">
+<sl-dialog label="Details" id="eventDetails" class="dialog-overview" style="--width: min(1100px, 92vw);">
   <div id="payload"></div>
   <sl-button slot="footer" variant="primary"  onclick="eventDialog.hide()">Close</sl-button>
 </sl-dialog>
@@ -43,4 +43,3 @@
 <script>
     eventDialog = document.getElementById('eventDetails');
 </script>
-

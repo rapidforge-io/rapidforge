@@ -355,39 +355,68 @@
   </sl-tab-panel>
 </sl-tab-group>
 
-<sl-dialog label="Run Webhook Now" id="runWebhookNowDialog" style="--width: 700px;">
-  <div class="is-flex is-flex-direction-column" style="gap: 0.75rem;">
-    <sl-textarea
-      id="runWebhookPayload"
-      label="Simulated Payload (PAYLOAD_DATA)"
-      rows="5"
-      placeholder='{"example":"value"}'
-    ></sl-textarea>
-    <sl-textarea
-      id="runWebhookHeaders"
-      label="Simulated Headers (one per line, Header=Value or Header: Value)"
-      rows="4"
-      placeholder="Content-Type=application/json&#10;X-Request-Id=demo-123"
-    ></sl-textarea>
-    <sl-textarea
-      id="runWebhookEnvOverrides"
-      label="Environment Overrides (one per line, KEY=VALUE)"
-      rows="4"
-      placeholder="CUSTOMER_ID=42&#10;MODE=test"
-    ></sl-textarea>
+<sl-dialog label="Run Webhook Now" id="runWebhookNowDialog" class="rf-run-now-dialog" style="--width: min(1100px, 92vw);">
+  <div class="rf-run-now-modal">
+    <div id="runWebhookConfigureView" class="rf-run-now-view">
+      <sl-textarea
+        id="runWebhookPayload"
+        label="Simulated Payload (PAYLOAD_DATA)"
+        rows="5"
+        placeholder='{"example":"value"}'
+      ></sl-textarea>
+      <sl-textarea
+        id="runWebhookHeaders"
+        label="Simulated Headers (one per line, Header=Value or Header: Value)"
+        rows="4"
+        placeholder="Content-Type=application/json&#10;X-Request-Id=demo-123"
+      ></sl-textarea>
+      <sl-textarea
+        id="runWebhookEnvOverrides"
+        label="Environment Overrides (one per line, KEY=VALUE)"
+        rows="4"
+        placeholder="CUSTOMER_ID=42&#10;MODE=test"
+      ></sl-textarea>
 
-    <div class="is-flex is-justify-content-space-between is-align-items-center" style="gap: 0.5rem;">
-      <sl-button variant="primary" id="executeWebhookNowBtn">
-        <sl-icon slot="prefix" name="play-fill"></sl-icon>
-        Execute
-      </sl-button>
-      <sl-button variant="default" onclick="document.getElementById('runWebhookNowDialog').hide()">Close</sl-button>
+      <div class="rf-run-now-actions">
+        <sl-button variant="primary" id="executeWebhookNowBtn">
+          <sl-icon slot="prefix" name="play-fill"></sl-icon>
+          Execute
+        </sl-button>
+        <div class="rf-run-now-actions-right">
+          <sl-button variant="default" data-run-now-close>Close</sl-button>
+        </div>
+      </div>
     </div>
 
-    <sl-alert id="runWebhookResultAlert" variant="primary" style="display:none;"></sl-alert>
-    <sl-textarea id="runWebhookResultStdout" label="Stdout" rows="8" readonly></sl-textarea>
-    <sl-textarea id="runWebhookResultStderr" label="Stderr" rows="6" readonly style="display:none;"></sl-textarea>
-    <sl-textarea id="runWebhookResultRunError" label="Runner Error" rows="4" readonly style="display:none;"></sl-textarea>
+    <div id="runWebhookResultView" class="rf-run-now-view" style="display:none;">
+      <sl-alert id="runWebhookResultAlert" class="rf-run-now-summary" variant="primary" style="display:none;"></sl-alert>
+
+      <div class="rf-run-now-actions">
+        <sl-button variant="primary" id="rerunWebhookNowBtn">
+          <sl-icon slot="prefix" name="play-fill"></sl-icon>
+          Run Again
+        </sl-button>
+        <div class="rf-run-now-actions-right">
+          <sl-button variant="default" id="backWebhookToInputsBtn">Back to Inputs</sl-button>
+          <sl-button variant="default" data-run-now-close>Close</sl-button>
+        </div>
+      </div>
+
+      <div class="rf-run-now-output-stack">
+        <div class="rf-run-now-output-section">
+          <div class="rf-run-now-output-title">Stdout</div>
+          <pre id="runWebhookResultStdout" class="rf-run-now-output-panel"></pre>
+        </div>
+        <div id="runWebhookResultStderrSection" class="rf-run-now-output-section" style="display:none;">
+          <div class="rf-run-now-output-title">Stderr</div>
+          <pre id="runWebhookResultStderr" class="rf-run-now-output-panel"></pre>
+        </div>
+        <div id="runWebhookResultRunErrorSection" class="rf-run-now-output-section" style="display:none;">
+          <div class="rf-run-now-output-title">Runner Error</div>
+          <pre id="runWebhookResultRunError" class="rf-run-now-output-panel"></pre>
+        </div>
+      </div>
+    </div>
   </div>
 </sl-dialog>
 
@@ -397,6 +426,7 @@
   import { createEditor } from '/static/javascript/editorsetup.js';
   import { AuthManager } from '/static/javascript/authmanager.js';
   import { MappingManager } from '/static/javascript/mappingmanager.js';
+  import { initRunNowDialog } from '/static/javascript/run-now-dialog.js';
 
   const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
   const programType = document.getElementById("programType")?.value || "{{.programType}}";
@@ -492,72 +522,26 @@
     });
   });
 
-  const runWebhookNowDialog = document.getElementById('runWebhookNowDialog');
-  const runWebhookNowBtn = document.getElementById('runWebhookNowBtn');
-  const executeWebhookNowBtn = document.getElementById('executeWebhookNowBtn');
-  const runWebhookResultAlert = document.getElementById('runWebhookResultAlert');
-  const runWebhookResultStdout = document.getElementById('runWebhookResultStdout');
-  const runWebhookResultStderr = document.getElementById('runWebhookResultStderr');
-  const runWebhookResultRunError = document.getElementById('runWebhookResultRunError');
-
-  runWebhookNowBtn?.addEventListener('click', () => {
-    runWebhookResultAlert.style.display = 'none';
-    runWebhookResultStdout.value = '';
-    runWebhookResultStderr.value = '';
-    runWebhookResultStderr.style.display = 'none';
-    runWebhookResultRunError.value = '';
-    runWebhookResultRunError.style.display = 'none';
-    runWebhookNowDialog.show();
-  });
-
-  executeWebhookNowBtn?.addEventListener('click', async () => {
-    executeWebhookNowBtn.loading = true;
-    runWebhookResultAlert.style.display = 'none';
-
-    try {
-      const payload = document.getElementById('runWebhookPayload').value || '';
-      const headers = document.getElementById('runWebhookHeaders').value || '';
-      const envOverrides = document.getElementById('runWebhookEnvOverrides').value || '';
-
-      const response = await fetch('/webhooks/{{.webhook.ID}}/run', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          payload,
-          headers,
-          envOverrides
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to execute webhook');
-      }
-
-      const statusLine = `Status: ${data.status} | Exit Code: ${data.exitCode} | Runner: ${data.runner}`;
-      runWebhookResultAlert.variant = data.status === 'success' ? 'success' : 'danger';
-      runWebhookResultAlert.innerHTML = statusLine + (data.eventId ? ` | Event ID: ${data.eventId}` : '');
-      runWebhookResultAlert.style.display = 'block';
-
-      runWebhookResultStdout.value = data.output || 'No stdout.';
-      runWebhookResultStderr.value = data.stderr || '';
-      runWebhookResultStderr.style.display = data.stderr ? 'block' : 'none';
-      runWebhookResultRunError.value = data.runError || '';
-      runWebhookResultRunError.style.display = data.runError ? 'block' : 'none';
-    } catch (error) {
-      runWebhookResultAlert.variant = 'danger';
-      runWebhookResultAlert.innerHTML = `Execution failed: ${error.message}`;
-      runWebhookResultAlert.style.display = 'block';
-      runWebhookResultStdout.value = '';
-      runWebhookResultStderr.value = '';
-      runWebhookResultStderr.style.display = 'none';
-      runWebhookResultRunError.value = '';
-      runWebhookResultRunError.style.display = 'none';
-    } finally {
-      executeWebhookNowBtn.loading = false;
-    }
+  initRunNowDialog({
+    dialogId: 'runWebhookNowDialog',
+    openButtonId: 'runWebhookNowBtn',
+    executeButtonId: 'executeWebhookNowBtn',
+    rerunButtonId: 'rerunWebhookNowBtn',
+    backButtonId: 'backWebhookToInputsBtn',
+    configureViewId: 'runWebhookConfigureView',
+    resultViewId: 'runWebhookResultView',
+    summaryAlertId: 'runWebhookResultAlert',
+    stdoutOutputId: 'runWebhookResultStdout',
+    stderrSectionId: 'runWebhookResultStderrSection',
+    stderrOutputId: 'runWebhookResultStderr',
+    runErrorSectionId: 'runWebhookResultRunErrorSection',
+    runErrorOutputId: 'runWebhookResultRunError',
+    endpoint: '/webhooks/{{.webhook.ID}}/run',
+    buildRequest: () => ({
+      payload: document.getElementById('runWebhookPayload').value || '',
+      headers: document.getElementById('runWebhookHeaders').value || '',
+      envOverrides: document.getElementById('runWebhookEnvOverrides').value || ''
+    })
   });
 
 </script>

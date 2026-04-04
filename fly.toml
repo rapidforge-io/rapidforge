@@ -38,7 +38,6 @@ wait_timeout = "10m"
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-
-[mounts]
+[[mounts]]
   source = "rapidforge_data"
   destination = "/data"

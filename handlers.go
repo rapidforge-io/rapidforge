@@ -371,6 +371,7 @@ func webhookHandlers(store *models.Store) gin.HandlerFunc {
 
 func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		startTime := time.Now()
 		id := parseInt(c.Param("id"))
 		webhookWithDetails, err := store.SelectWebhookDetailsById(id)
 		if err != nil {
@@ -480,12 +481,13 @@ func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status":   status,
-			"exitCode": res.ExitCode,
-			"output":   res.Output,
-			"stderr":   res.Error,
-			"runner":   webhookWithDetails.Program.ProgramType,
-			"eventId":  insertedEventID,
+			"status":     status,
+			"exitCode":   res.ExitCode,
+			"output":     res.Output,
+			"stderr":     res.Error,
+			"runner":     webhookWithDetails.Program.ProgramType,
+			"eventId":    insertedEventID,
+			"durationMs": time.Since(startTime).Milliseconds(),
 			"runError": func() string {
 				if runErr != nil {
 					return runErr.Error()
@@ -499,6 +501,7 @@ func runWebhookNowHandler(store *models.Store) gin.HandlerFunc {
 
 func runPeriodicTaskNowHandler(store *models.Store) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		startTime := time.Now()
 		id := parseInt(c.Param("id"))
 		taskDetails, err := store.SelectPeriodicTaskDetailsById(id)
 		if err != nil {
@@ -575,12 +578,13 @@ func runPeriodicTaskNowHandler(store *models.Store) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"status":   status,
-			"exitCode": res.ExitCode,
-			"output":   res.Output,
-			"stderr":   res.Error,
-			"runner":   taskDetails.Program.ProgramType,
-			"eventId":  insertedEventID,
+			"status":     status,
+			"exitCode":   res.ExitCode,
+			"output":     res.Output,
+			"stderr":     res.Error,
+			"runner":     taskDetails.Program.ProgramType,
+			"eventId":    insertedEventID,
+			"durationMs": time.Since(startTime).Milliseconds(),
 			"runError": func() string {
 				if runErr != nil {
 					return runErr.Error()
@@ -1451,14 +1455,26 @@ func terminalHandler(store *models.Store) gin.HandlerFunc {
 			cmd = exec.Command("sh")
 		}
 
+		// Set proper terminal environment variables
+		cmd.Env = append(os.Environ(),
+			"TERM=xterm-256color",
+			"COLORTERM=truecolor",
+		)
+
 		ptmx, err := pty.Start(cmd)
 		if err != nil {
 			return
 		}
 
+		// Set initial window size (matches terminal.html: term.resize(100, 50))
+		_ = pty.Setsize(ptmx, &pty.Winsize{
+			Rows: 50,
+			Cols: 100,
+		})
+
 		defer func() {
 			ptmx.Close()
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		}()
 
 		go func() {
@@ -1468,16 +1484,33 @@ func terminalHandler(store *models.Store) gin.HandlerFunc {
 				if err != nil {
 					break
 				}
-				conn.WriteMessage(websocket.TextMessage, buf[:n])
+				_ = conn.WriteMessage(websocket.TextMessage, buf[:n])
 			}
 		}()
 
 		for {
-			_, msg, err := conn.ReadMessage()
+			messageType, msg, err := conn.ReadMessage()
 			if err != nil {
 				break
 			}
-			ptmx.Write(msg)
+
+			// Handle resize messages (JSON: {"type":"resize","cols":100,"rows":50})
+			if messageType == websocket.TextMessage && len(msg) > 0 && msg[0] == '{' {
+				var resizeMsg struct {
+					Type string `json:"type"`
+					Cols uint16 `json:"cols"`
+					Rows uint16 `json:"rows"`
+				}
+				if json.Unmarshal(msg, &resizeMsg) == nil && resizeMsg.Type == "resize" {
+					_ = pty.Setsize(ptmx, &pty.Winsize{
+						Rows: resizeMsg.Rows,
+						Cols: resizeMsg.Cols,
+					})
+					continue
+				}
+			}
+
+			_, _ = ptmx.Write(msg)
 		}
 	}
 }

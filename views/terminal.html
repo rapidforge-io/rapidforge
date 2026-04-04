@@ -19,6 +19,38 @@
         };
 
         term.resize(100, 50);
+
+        function notifyResize() {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: "resize",
+                    cols: term.cols,
+                    rows: term.rows
+                }));
+            }
+        }
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const container = document.getElementById('terminal');
+                const charWidth = 9;
+                const charHeight = 17;
+
+                const cols = Math.floor(container.clientWidth / charWidth);
+                const rows = Math.floor(container.clientHeight / charHeight);
+
+                if (cols > 0 && rows > 0 && (cols !== term.cols || rows !== term.rows)) {
+                    term.resize(cols, rows);
+                    notifyResize();
+                }
+            }, 100);
+        });
+
+        socket.addEventListener('open', () => {
+            notifyResize();
+        });
     </script>
 
 {{end}}
