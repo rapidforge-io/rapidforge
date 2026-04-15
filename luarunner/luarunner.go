@@ -121,6 +121,15 @@ func (lr *LuaRunner) Cleanup() error {
 func (lr *LuaRunner) Run(script string, envVars map[string]string) (runner.ScriptResult, error) {
 	var result runner.ScriptResult
 
+	executablePath := envVars["RAPIDFORGE_BIN"]
+	if executablePath == "" {
+		var err error
+		executablePath, err = os.Executable()
+		if err != nil {
+			return result, fmt.Errorf("failed to locate rapidforge binary: %w", err)
+		}
+	}
+
 	// Write the script to a temporary file
 	scriptFile := filepath.Join(lr.tempDir, "script.lua")
 	if err := os.WriteFile(scriptFile, []byte(script), 0644); err != nil {
@@ -128,7 +137,7 @@ func (lr *LuaRunner) Run(script string, envVars map[string]string) (runner.Scrip
 	}
 
 	// Build the environment variables string
-	envString := fmt.Sprintf("LUA_PATH='%s/?.lua;'", lr.libPath)
+	envString := fmt.Sprintf("LUA_PATH='%s/?.lua;' RAPIDFORGE_BIN='%s'", lr.libPath, strings.ReplaceAll(executablePath, "'", "'\"'\"'"))
 	for key, value := range envVars {
 		envString += fmt.Sprintf(" %s='%s'", key, strings.ReplaceAll(value, "'", "'\"'\"'"))
 	}

@@ -38,7 +38,6 @@ var (
 )
 
 func main() {
-	fmt.Println("Debug: Command arguments:", os.Args)
 	if len(os.Args) > 1 {
 		handleCLI()
 	} else {
@@ -130,7 +129,10 @@ func handleCLI() {
 			setCmd.PrintDefaults()
 			os.Exit(1)
 		}
-		kv.Set(*key, *value)
+		if err := kv.Set(*key, *value); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	case "get":
 		key := getCmd.String("key", "", "Key to get")
 		getCmd.Parse(os.Args[2:])
@@ -138,7 +140,15 @@ func handleCLI() {
 			getCmd.PrintDefaults()
 			os.Exit(1)
 		}
-		kv.Get(*key)
+		value, found, err := kv.Get(*key)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if !found {
+			os.Exit(1)
+		}
+		fmt.Println(value)
 	case "del":
 		key := delCmd.String("key", "", "Key to delete")
 		delCmd.Parse(os.Args[2:])
@@ -146,9 +156,23 @@ func handleCLI() {
 			delCmd.PrintDefaults()
 			os.Exit(1)
 		}
-		kv.Del(*key)
+		deleted, err := kv.Del(*key)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		if !deleted {
+			os.Exit(1)
+		}
 	case "list":
-		kv.List()
+		keys, err := kv.List()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		for _, key := range keys {
+			fmt.Println(key)
+		}
 	case "sql":
 		sqlStmt := sqlCmd.String("query", "", "SQL query to execute")
 		sqlCmd.Parse(os.Args[2:])
@@ -156,7 +180,9 @@ func handleCLI() {
 			sqlCmd.PrintDefaults()
 			os.Exit(1)
 		}
-		kv.ExecuteSQL(*sqlStmt)
+		if err := kv.ExecuteSQL(*sqlStmt, os.Stdout, os.Stderr); err != nil {
+			os.Exit(1)
+		}
 	case "update":
 		force := updateCmd.Bool("force", false, "Force update even if on latest version")
 		updateCmd.Parse(os.Args[2:])

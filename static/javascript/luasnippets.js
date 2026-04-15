@@ -45,6 +45,7 @@ end`
   // RapidForge requires
   { label: "require json", type: "snippet", detail: "Import RapidForge JSON library", apply: "local json = require('json')" },
   { label: "require http", type: "snippet", detail: "Import RapidForge HTTP library", apply: "local http = require('http')" },
+  { label: "require kv", type: "snippet", detail: "Import RapidForge KV library", apply: "local kv = require('kv')" },
 
   // RapidForge libs: JSON
   { label: "json.encode", type: "function", detail: "Encode Lua table to JSON", apply: "json.encode($1)" },
@@ -62,6 +63,10 @@ print(obj.$1)` },
   { label: "http.post", type: "function", detail: "POST data (returns body, status)", apply: `local body, status = http.post('$1', $2, { ['$3'] = '$4' })` },
   { label: "http.put", type: "function", detail: "PUT data (returns body, status)", apply: `local body, status = http.put('$1', $2, { ['$3'] = '$4' })` },
   { label: "http.delete", type: "function", detail: "DELETE (returns body, status)", apply: `local body, status = http.delete('$1', { ['$2'] = '$3' })` },
+  { label: "kv.get", type: "function", detail: "Read value from KV store", apply: `local value = kv.get('$1')` },
+  { label: "kv.set", type: "function", detail: "Write value to KV store", apply: `local ok, err = kv.set('$1', '$2')` },
+  { label: "kv.del", type: "function", detail: "Delete key from KV store", apply: `local deleted = kv.del('$1')` },
+  { label: "kv.list", type: "function", detail: "List keys from KV store", apply: `local keys = kv.list()` },
 
   { label: "http.headers", type: "snippet", detail: "Headers table skeleton", apply: `{ ['Content-Type'] = 'application/json', ['Authorization'] = 'Bearer $1' }` },
 
@@ -82,4 +87,12 @@ print(status, body)` },
   { label: "json.parse response", type: "snippet", detail: "Decode HTTP response JSON", apply: `local json = require('json')
 local t = json.decode(body)
 print(t.$1)` },
+  { label: "kv roundtrip example", type: "snippet", detail: "Store and fetch a KV value", apply: `local kv = require('kv')
+local ok, err = kv.set('$1', '$2')
+if not ok then
+  error(err)
+end
+
+local value = kv.get('$1')
+print(value)` },
 ];

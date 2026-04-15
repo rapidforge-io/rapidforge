@@ -102,6 +102,30 @@ esac`
     apply: `curl -X GET "https://example.com"`
   },
   {
+    label: "kv_get",
+    type: "function",
+    detail: "Read a value from the RapidForge KV store",
+    apply: `value="$(kv_get "my-key")"`
+  },
+  {
+    label: "kv_set",
+    type: "function",
+    detail: "Write a value to the RapidForge KV store",
+    apply: `kv_set "my-key" "my-value"`
+  },
+  {
+    label: "kv_del",
+    type: "function",
+    detail: "Delete a key from the RapidForge KV store",
+    apply: `kv_del "my-key"`
+  },
+  {
+    label: "kv_list",
+    type: "function",
+    detail: "List keys from the RapidForge KV store",
+    apply: `kv_list`
+  },
+  {
     label: "export variable",
     type: "function",
     detail: "Set environment variable",
