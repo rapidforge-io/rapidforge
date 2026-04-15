@@ -95,3 +95,13 @@ header "Location" == "/login?next=%2Fpage%2Fpage-43"
 # Public page
 GET https://main.rapidforge.io/page/page-5
 HTTP 200
+
+GET https://main.rapidforge.io/webhook/kv-get-set
+HTTP 200
+[Asserts]
+jsonpath "$.result" == "my-value"
+
+GET https://main.rapidforge.io/webhook/kv-get-set-lua
+HTTP 200
+[Asserts]
+jsonpath "$.result" == "my-value-lua"
