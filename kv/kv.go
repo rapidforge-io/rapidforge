@@ -1,143 +1,112 @@
 package kv
 
 import (
+	"database/sql"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	"github.com/rapidforge-io/rapidforge/database"
 )
 
-func Set(key, value string) bool {
+func Set(key, value string) error {
 	stmt, err := database.GetKvDbConn().Prepare("INSERT OR REPLACE INTO KV(key, value) VALUES(?, ?)")
 	if err != nil {
-		fmt.Println("Error preparing statement:", err)
-		return false
+		return err
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(key, value)
-	if err != nil {
-		fmt.Println("Error executing statement:", err)
-		return false
-	}
-
-	return true
+	return err
 }
 
-func Get(key string) {
+func Get(key string) (string, bool, error) {
 	var value string
 	err := database.GetKvDbConn().QueryRow("SELECT value FROM KV WHERE key = ?", key).Scan(&value)
 	if err != nil {
-		return
-		// if err == sql.ErrNoRows {
-		// fmt.Println("Key not found:", key)
-		// return
-		// } else {
-		// fmt.Println("Error querying value:", err)
-		// }
-		// return ""
+		if err == sql.ErrNoRows {
+			return "", false, nil
+		}
+		return "", false, err
 	}
 
-	fmt.Println(value)
-	// return value
+	return value, true, nil
 }
 
-func Del(key string) {
+func Del(key string) (bool, error) {
 	stmt, err := database.GetKvDbConn().Prepare("DELETE FROM KV WHERE key = ?")
 	if err != nil {
-		os.Exit(1)
-		// fmt.Println("Error preparing statement:", err)
-		// fmt.Println(false)
+		return false, err
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(key)
 	if err != nil {
-		os.Exit(1)
-		// fmt.Println("Error executing statement:", err)
-		// fmt.Println(false)
-		// return false
+		return false, err
 	}
+
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		os.Exit(1)
-		// fmt.Println("Error fetching rows affected:", err)
-		// fmt.Println(false)
-		// return false
+		return false, err
 	}
-	if rowsAffected == 0 {
-		os.Exit(1)
-		// fmt.Println(false)
-		// return false
-	} else {
-		os.Exit(0)
-		// fmt.Println(true)
-		// return true
-	}
+
+	return rowsAffected > 0, nil
 }
 
-func List() {
-	rows, err := database.GetKvDbConn().Query("SELECT key FROM KV")
+func List() ([]string, error) {
+	rows, err := database.GetKvDbConn().Query("SELECT key FROM KV ORDER BY key")
 	if err != nil {
-		fmt.Println("Error querying keys:", err)
-		return
+		return nil, err
 	}
 	defer rows.Close()
 
+	keys := []string{}
 	for rows.Next() {
 		var key string
-		err = rows.Scan(&key)
-		if err != nil {
-			fmt.Println("Error scanning key:", err)
-			return
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
 		}
-		fmt.Println(key)
+		keys = append(keys, key)
 	}
+
+	return keys, rows.Err()
 }
 
-func ExecuteSQL(query string) {
-	// Prepare the statement
+func ExecuteSQL(query string, out io.Writer, errOut io.Writer) error {
 	stmt, err := database.GetKvDbConn().Prepare(query)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(errOut, err)
+		return err
 	}
 	defer stmt.Close()
 
-	// Execute the statement
 	rows, err := stmt.Query()
 	if err != nil {
-		// If Query fails, try Exec (for non-select statements)
-		_, err := stmt.Exec()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+		_, execErr := stmt.Exec()
+		if execErr != nil {
+			fmt.Fprintln(errOut, execErr)
+			return execErr
 		}
-		return
+		return nil
 	}
 	defer rows.Close()
 
-	// Fetch columns
 	columns, err := rows.Columns()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fmt.Fprintln(errOut, err)
+		return err
 	}
 
-	// Prepare a slice of interfaces to scan the row values
 	values := make([]interface{}, len(columns))
 	valuePtrs := make([]interface{}, len(columns))
 	for i := range values {
 		valuePtrs[i] = &values[i]
 	}
 
-	// Iterate over rows and print values
 	for rows.Next() {
-		err = rows.Scan(valuePtrs...)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+		if err := rows.Scan(valuePtrs...); err != nil {
+			fmt.Fprintln(errOut, err)
+			return err
 		}
 		var valueStrings []string
 		for _, val := range values {
@@ -150,11 +119,13 @@ func ExecuteSQL(query string) {
 				valueStrings = append(valueStrings, fmt.Sprintf("%v", v))
 			}
 		}
-		fmt.Println(strings.Join(valueStrings, "|"))
+		fmt.Fprintln(out, strings.Join(valueStrings, "|"))
 	}
 
-	if err = rows.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if err := rows.Err(); err != nil {
+		fmt.Fprintln(errOut, err)
+		return err
 	}
+
+	return nil
 }

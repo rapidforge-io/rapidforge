@@ -9,6 +9,12 @@
    <p> - <code>CRED_{CREDENTIAL_NAME}</code> = Credential name e.g. CRED_GITHUB_OAUTH_TOKEN</p>
 
    <p> For periodic tasks, environment variables regarding request will be empty </p>
+
+   <sl-divider></sl-divider>
+   <p><strong>KV Helpers</strong></p>
+   <p> Bash: <code>kv_get KEY</code>, <code>kv_set KEY VALUE</code>, <code>kv_del KEY</code>, <code>kv_list</code></p>
+   <p> Lua: <code>local kv = require('kv')</code> then <code>kv.get(key)</code>, <code>kv.set(key, value)</code>, <code>kv.del(key)</code>, <code>kv.list()</code></p>
+   <p> Missing keys are non-throwing by default: Bash helpers return exit code <code>1</code>, and Lua <code>kv.get()</code> returns <code>nil</code>.</p>
 </sl-dialog>
 <script>
   const codeHelper = document.getElementById("codeHelper");

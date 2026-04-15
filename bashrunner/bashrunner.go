@@ -49,6 +49,24 @@ func WithTempDir(dir string) Option {
 	}
 }
 
+const kvPrelude = `
+kv_get() {
+  "$RAPIDFORGE_BIN" get --key "$1"
+}
+
+kv_set() {
+  "$RAPIDFORGE_BIN" set --key "$1" --value "$2"
+}
+
+kv_del() {
+  "$RAPIDFORGE_BIN" del --key "$1"
+}
+
+kv_list() {
+  "$RAPIDFORGE_BIN" list
+}
+`
+
 func (br *BashRunner) Run(script string, envVars map[string]string) (runner.ScriptResult, error) {
 	// Create temporary script file
 	fileName := fmt.Sprintf("script-%d.sh", time.Now().Unix())
@@ -58,8 +76,18 @@ func (br *BashRunner) Run(script string, envVars map[string]string) (runner.Scri
 	}
 	defer os.Remove(tmpFile.Name()) // Clean up the file afterwards
 
+	executablePath := envVars["RAPIDFORGE_BIN"]
+	if executablePath == "" {
+		executablePath, err = os.Executable()
+		if err != nil {
+			return runner.ScriptResult{}, fmt.Errorf("failed to locate rapidforge binary: %w", err)
+		}
+	}
+
+	fullScript := kvPrelude + "\n" + script
+
 	// Write the script to the temporary file
-	if _, err := tmpFile.Write([]byte(script)); err != nil {
+	if _, err := tmpFile.Write([]byte(fullScript)); err != nil {
 		return runner.ScriptResult{}, fmt.Errorf("failed to write script to temp file: %w", err)
 	}
 	if err := tmpFile.Close(); err != nil {
@@ -92,6 +120,7 @@ func (br *BashRunner) Run(script string, envVars map[string]string) (runner.Scri
 	for key, value := range envVars {
 		env = append(env, fmt.Sprintf("%s=%s", key, value))
 	}
+	env = append(env, fmt.Sprintf("RAPIDFORGE_BIN=%s", executablePath))
 	cmd.Env = env
 
 	// Run the command
