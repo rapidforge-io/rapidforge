@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
@@ -84,7 +85,12 @@ func CreateDbFile(fileName string) {
 	if config.Get().Env == "test" {
 		path = fmt.Sprintf("./%s", fileName)
 	} else {
-		path = fmt.Sprintf("./%s", config.Get().DatabaseUrl)
+		dbUrl := config.Get().DatabaseUrl
+		if filepath.IsAbs(dbUrl) {
+			path = dbUrl
+		} else {
+			path = fmt.Sprintf("./%s", dbUrl)
+		}
 	}
 
 	if _, err = os.Stat(path); os.IsNotExist(err) {
