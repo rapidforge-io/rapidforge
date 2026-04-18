@@ -25,13 +25,13 @@
    height: 80%;
  }
 
-sl-tab-panel::part(base):active {
+.rf-editor-tabs sl-tab-panel::part(base):active {
   display: flex !important;
   flex-direction: column;
 }
 
 /* Also target non-active state if needed */
-sl-tab-panel::part(base) {
+.rf-editor-tabs sl-tab-panel::part(base) {
   display: flex !important;
   flex-direction: column;
 }
@@ -61,6 +61,28 @@ sl-tab-panel::part(base) {
 .rf-editor-toolbar,
 .rf-editor-meta {
   flex: 0 0 auto;
+}
+
+.rf-editor-body {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rf-editor-body[data-helper-open="true"] .rf-editor-main {
+  padding-right: min(430px, 40vw);
+}
+
+.rf-editor-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition: padding-right 0.2s ease;
 }
 
 .rf-code-editor {
@@ -105,6 +127,199 @@ sl-tab-panel::part(base) {
 
 .cm-editor .cm-cursorLayer {
   z-index: 1;
+}
+
+.rf-code-helper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(430px, 40vw);
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(100%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  z-index: 5;
+}
+
+.rf-code-helper[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.rf-code-helper__overlay {
+  display: none;
+}
+
+.rf-code-helper__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(430px, 40vw);
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  border-left: 1px solid var(--sl-color-neutral-200);
+  background: var(--sl-color-neutral-0);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.rf-code-helper__header,
+.rf-code-helper__search {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem 0;
+}
+
+.rf-code-helper__search {
+  flex-direction: column;
+  padding-bottom: 0.9rem;
+}
+
+.rf-code-helper__eyebrow {
+  color: var(--sl-color-neutral-500);
+  font-size: var(--sl-font-size-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rf-code-helper__title {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+}
+
+.rf-code-helper__badges,
+.rf-code-helper__card-badges,
+.rf-code-helper__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.rf-code-helper__tabs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: visible;
+}
+
+.rf-code-helper__tabs::part(body) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.rf-code-helper__tabs sl-tab-panel {
+  display: none;
+  min-height: 0;
+}
+
+.rf-code-helper__tabs sl-tab-panel[active] {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.rf-code-helper__tabs sl-tab-panel[active]::part(base) {
+  min-height: 0;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.rf-code-helper__tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 1rem;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.rf-code-helper__section,
+.rf-code-helper__group,
+.rf-code-helper__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rf-code-helper__section-title,
+.rf-code-helper__group-title {
+  font-size: var(--sl-font-size-small);
+  font-weight: var(--sl-font-weight-semibold);
+  color: var(--sl-color-neutral-700);
+}
+
+.rf-code-helper__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid var(--sl-color-neutral-200);
+  border-radius: var(--sl-border-radius-large);
+  background: var(--sl-color-neutral-0);
+}
+
+.rf-code-helper__card.is-active {
+  border-color: var(--sl-color-primary-400);
+  box-shadow: 0 0 0 1px var(--sl-color-primary-200);
+}
+
+.rf-code-helper__card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rf-code-helper__card-title {
+  font-weight: var(--sl-font-weight-semibold);
+}
+
+.rf-code-helper__card-summary,
+.rf-code-helper__empty-state {
+  color: var(--sl-color-neutral-600);
+  line-height: 1.5;
+}
+
+.rf-code-helper__snippet {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: var(--sl-border-radius-medium);
+  background: var(--sl-color-neutral-50);
+  border: 1px solid var(--sl-color-neutral-200);
+  font-size: 0.86rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.sl-theme-dark .rf-code-helper__section-title,
+.sl-theme-dark .rf-code-helper__group-title {
+  color: var(--sl-color-neutral-300);
+}
+
+.sl-theme-dark .rf-code-helper__card-summary,
+.sl-theme-dark .rf-code-helper__empty-state,
+.sl-theme-dark .rf-code-helper__eyebrow {
+  color: var(--sl-color-neutral-400);
+}
+
+.sl-theme-dark .rf-code-helper__snippet {
+  background: var(--sl-color-neutral-100);
 }
 
 .rf-run-now-dialog::part(panel) {
@@ -204,6 +419,52 @@ sl-tab-panel::part(base) {
 
   .rf-run-now-output-panel {
     max-height: 28vh;
+  }
+
+  .rf-code-helper {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    opacity: 1;
+    pointer-events: none;
+    transform: none;
+    z-index: 50;
+  }
+
+  .rf-code-helper[data-open="true"] {
+    pointer-events: auto;
+  }
+
+  .rf-code-helper__overlay {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .rf-code-helper[data-open="true"] .rf-code-helper__overlay {
+    opacity: 1;
+  }
+
+  .rf-code-helper__panel {
+    position: relative;
+    margin-left: auto;
+    width: min(100vw, 520px);
+    max-width: 100vw;
+    height: 100vh;
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+    box-shadow: -18px 0 48px rgba(15, 23, 42, 0.18);
+  }
+
+  .rf-editor-body[data-helper-open="true"] .rf-editor-main {
+    padding-right: 0;
+  }
+
+  .rf-code-helper[data-open="true"] .rf-code-helper__panel {
+    transform: translateX(0);
   }
 }
 

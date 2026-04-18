@@ -108,8 +108,7 @@
         </sl-button>
       </div>
       <div>
-        <sl-icon-button name="question-circle" onclick="codeHelper.show()" aria-label="Show help"></sl-icon-button>
-        {{ template "cheatsheet.html" }}
+        <sl-icon-button id="codeHelperToggle" name="question-circle" aria-label="Show help"></sl-icon-button>
       </div>
     </div>
 
@@ -125,7 +124,12 @@
       {{ end }}
     </div>
 
-    <div id="codeEditor" class="rf-code-editor"></div>
+    <div class="rf-editor-body">
+      <div class="rf-editor-main">
+        <div id="codeEditor" class="rf-code-editor"></div>
+      </div>
+      {{ template "cheatsheet.html" }}
+    </div>
     </div>
   </sl-tab-panel>
 
@@ -422,6 +426,7 @@
 
 <script src="/static/javascript/curlgenerator.js"></script>
 <script type="module">
+  import { initCodeHelper } from '/static/javascript/codehelper.js';
   import { hideOrShowCurlGenerator, getProgramType } from '/static/javascript/editorcommon.js';
   import { createEditor } from '/static/javascript/editorsetup.js';
   import { AuthManager } from '/static/javascript/authmanager.js';
@@ -430,6 +435,7 @@
 
   const customWords = [{{ range $index, $key := .variables }}'{{$key}}',{{ end }}];
   const programType = document.getElementById("programType")?.value || "{{.programType}}";
+  const helperData = {{ .helperData | toJSON }};
 
   function getOnFailEnabled() {
     return document.getElementById('onFailEnabled').checked
@@ -440,6 +446,16 @@
     customWords: customWords,
     parentElementId: 'codeEditor',
     initialMode: programType
+  });
+
+  const codeHelper = initCodeHelper({
+    context: 'webhook',
+    programType,
+    customWords,
+    mountId: 'codeHelperDrawer',
+    helperData,
+    editor,
+    triggerButtonId: 'codeHelperToggle'
   });
 
   window.getEditorVal = editor.getContent;
@@ -463,6 +479,7 @@
     const programType = e.target.value;
     hideOrShowCurlGenerator(programType);
     editor.switchMode(programType);
+    codeHelper.setProgramType(programType);
   });
 
   editor.view.focus();
