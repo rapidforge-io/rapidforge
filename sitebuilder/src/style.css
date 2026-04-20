@@ -47,6 +47,7 @@ body {
 
 .code-editor {
   text-align: left;
+  height: 100%;
 }
 
 .component-item {
@@ -463,4 +464,20 @@ body {
 ::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb-color);
   outline: none;
+}
+
+/* ─── Code editor tab panels: chain height to CodeMirror ─── */
+/* 67px = builder-container top offset, 55px = tab nav bar height */
+sl-tab-panel[name="css"],
+sl-tab-panel[name="js"] {
+  height: calc(100vh - 122px);
+  overflow: hidden;
+}
+
+sl-tab-panel[name="css"]::part(base),
+sl-tab-panel[name="js"]::part(base) {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
