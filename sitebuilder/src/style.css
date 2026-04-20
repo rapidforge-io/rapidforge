@@ -54,32 +54,26 @@ body {
   align-items: baseline;
   gap: 7px;
   padding: 4px;
+  cursor: grab;
 }
 
 .base-component {
   position: relative;
-  padding: 2px;
+  border-radius: 4px;
 }
 
-.draggableComponent {
-  background-color: var(--secondary-bg-color);
-  font-weight: normal;
-  border: 1px solid var(--primary-border-color);
-  position: relative;
+.base-component:hover {
+  outline: 1px solid var(--highlight-border-color);
+  outline-offset: 1px;
 }
 
 .draggable {
-  background-color: var(--secondary-bg-color);
-  font-weight: normal;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  padding: 10px;
-  border: 1px solid var(--primary-border-color);
   position: relative;
 }
 
 .draggable:hover {
-  border-color: var(--highlight-border-color);
+  outline: 1px dashed var(--highlight-border-color);
+  outline-offset: 2px;
 }
 
 .border-dotted {
@@ -89,20 +83,35 @@ body {
 }
 
 .selected-item {
-  border-style: dashed;
-  border: 2px dashed var(--primary-border-color);
+  outline: 2px dashed var(--highlight-border-color) !important;
+  outline-offset: 1px;
 }
 
 .dropzone {
   border-radius: 10px;
   border: 2px dashed var(--primary-border-color);
-  margin-bottom: 50px;
+  margin-bottom: 20px;
   margin-top: 10px;
-  padding: 40px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   min-height: 500px;
   overflow-y: auto;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone:has(> div:empty)::after,
+.dropzone > div:empty::after {
+  content: "Drop components here";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  width: 100%;
+  color: var(--primary-border-color);
+  font-size: 14px;
+  font-style: italic;
+  pointer-events: none;
 }
 
 .dropzone-elem {
@@ -110,6 +119,14 @@ body {
   margin: 10px;
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Default vertical stacking with sensible gap — used by Form and Container */
+.rf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .innCol {
@@ -156,6 +173,8 @@ body {
   z-index: 9;
   background: var(--primary-bg-color);
   padding: 10px 20px;
+  border-bottom: 1px solid var(--primary-border-color);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .innerHeader {
@@ -169,11 +188,20 @@ body {
   left: 5px;
   top: 65px;
   border: 1px solid var(--primary-border-color);
+  border-radius: 6px;
   color: var(--text-color);
   background: var(--background-color);
   width: 260px;
   height: var(--bar-height);
   z-index: 9;
+  display: flex;
+  flex-direction: column;
+}
+
+.leftAside .container {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 12px;
 }
 
 .rightAside {
@@ -181,11 +209,20 @@ body {
   right: 5px;
   top: 65px;
   border: 1px solid var(--primary-border-color);
+  border-radius: 6px;
   color: var(--text-color);
   background: var(--background-color);
   width: 260px;
   height: var(--bar-height);
   z-index: 9;
+  display: flex;
+  flex-direction: column;
+}
+
+.rightAside .flex-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 12px;
 }
 
 .mainEditor {

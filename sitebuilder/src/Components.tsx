@@ -608,11 +608,9 @@ export function ButtonComponent(props) {
 
   function Body() {
     return (
-      <div className="is-flex">
       <button className="button is-primary is-link" name={name} type={type} style={style}>
         {label}
       </button>
-      </div>
     );
   }
   return onCanvas === true ? (
@@ -644,7 +642,7 @@ export function FormComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <form className="form-gap is-flex is-align-items-center" action={action} method="POST">{children}</form>
+      <form className="rf-stack" action={action} method="POST">{children}</form>
     </BaseSortable>
   ) : (
     <BaseDrag
@@ -846,9 +844,7 @@ export function ContainerComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <div className="draggable" style={{ padding: "15px" }}>
-        <div className={`is-flex is-flex-direction-column ${classes}`}>{children}</div>
-      </div>
+      <div className={`rf-stack ${classes}`}>{children}</div>
     </BaseSortable>
   );
 }
@@ -889,9 +885,7 @@ export function GridComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <div className="draggable" style={{ padding: "15px" }}>
-        <div className="columns">{children}</div>
-      </div>
+      <div className="columns">{children}</div>
     </BaseSortable>
   );
 }
@@ -956,8 +950,7 @@ export function DropdownComponent(props) {
       currentParent={currentParent}
       componentName={componentName}
     >
-      <div className="is-flex">
-        <div className="select is-fullwidth">
+      <div className="select is-fullwidth">
           <select id="options" name={name} required>
             <option value="" disabled selected>
               {label}
@@ -967,7 +960,6 @@ export function DropdownComponent(props) {
             ))}
           </select>
         </div>
-      </div>
     </BaseSortable>
   );
 }

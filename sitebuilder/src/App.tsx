@@ -3,6 +3,7 @@ import { ComponentPanel } from "./Editor";
 import { TreeNode, Tree } from "./tree";
 import { editableProps, editablePropsRender } from "./Components";
 import { PageSettings } from "./PageSettings";
+import { treeToHtml } from "./htmlRenderer";
 
 import {
   SlTab,
@@ -19,10 +20,13 @@ import {
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { v4 as uuid } from "uuid";
 import CodeMirrorComponent from "./CodeMirrorComponent";
 
@@ -99,6 +103,7 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [canvasItems, setCanvasItems] = useState<Tree>(tree);
   const [activeItem, setActiveItem] = useState<ActiveItem>(null);
+  const [activeDragLabel, setActiveDragLabel] = useState<string | null>(null);
   const [pageMetaData, setPageMetadata] = useState<PageMetaData>({
     title: window.pageData.title || "title",
     description: window.pageData.description || "description",
@@ -112,7 +117,13 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   const [previewTab, setPreviewTab] = useState(null);
 
+  function handleDragStart(event: DragStartEvent) {
+    const componentName = event.active?.data?.current?.componentName || "";
+    setActiveDragLabel(componentName.replace(/Component|Container/g, "").trim() || componentName);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setActiveDragLabel(null);
     const { active, over } = event;
     const dropZone = over?.data?.current.dropZone || false;
     const overData = over?.data?.current || {};
@@ -165,16 +176,12 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
       dropZone === false &&
       overData &&
       overData.dropZone === undefined &&
-      activeData.parentId === overData.parentId
+      activeData.currentParent === overData.currentParent
     ) {
       const currentNode = canvasItems.search(activeData.currentParent);
-      const cloneChildren = [...currentNode.children];
       const activeIndex = activeData.sortable.index;
       const overIndex = overData.sortable.index;
-      const tmp = cloneChildren[activeIndex];
-      cloneChildren[activeIndex] = cloneChildren[overIndex];
-      cloneChildren[overIndex] = tmp;
-      currentNode.children = cloneChildren;
+      currentNode.children = arrayMove(currentNode.children, activeIndex, overIndex);
       setCanvasItems((prevTree) => {
         const newTree = new Tree();
         newTree.root = prevTree.root;
@@ -206,8 +213,32 @@ export const CanvasItemsProvider: React.FC<{ children: React.ReactNode }> = ({
         setPageMetadata,
       }}
     >
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         {children}
+        <DragOverlay dropAnimation={null}>
+          {activeDragLabel ? (
+            <div
+              style={{
+                background: "var(--primary-bg-color)",
+                border: "2px solid var(--highlight-border-color)",
+                borderRadius: "6px",
+                padding: "6px 14px",
+                fontSize: "13px",
+                fontWeight: 500,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+                color: "var(--text-color)",
+                cursor: "grabbing",
+                userSelect: "none",
+              }}
+            >
+              {activeDragLabel}
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </CanvasItemsContext.Provider>
   );
@@ -330,6 +361,12 @@ function wrapWithHTML(htmlContent, pageMetadata) {
           padding: 2px;
         }
 
+        .rf-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
         body {
           margin: 0;
           display: flex;
@@ -404,23 +441,20 @@ const Header = () => {
         </SlButton>
         <SlButton
           size="small"
-          disabled={containerRef.current === null}
-          onClick={() => {
-            if (containerRef.current) {
-              const htmlContent = containerRef.current.innerHTML;
+          onClick={async () => {
+            const htmlContent = await treeToHtml(canvasItems.root);
 
-              let newWindow = null;
+            let newWindow = null;
 
-              if (previewTab == null || previewTab.closed) {
-                newWindow = window.open("", "_blank");
-                setPreviewTab(newWindow);
-              } else {
-                newWindow = previewTab;
-              }
-
-              newWindow.document.write(wrapWithHTML(htmlContent, pageMetaData));
-              newWindow.document.close();
+            if (previewTab == null || previewTab.closed) {
+              newWindow = window.open("", "_blank");
+              setPreviewTab(newWindow);
+            } else {
+              newWindow = previewTab;
             }
+
+            newWindow.document.write(wrapWithHTML(htmlContent, pageMetaData));
+            newWindow.document.close();
           }}
         >
           <SlIcon slot="prefix" name="easel3"></SlIcon>
@@ -440,13 +474,7 @@ const Header = () => {
         <SlButton
           size="small"
           onClick={async () => {
-            if (
-              containerRef.current == null ||
-              containerRef.current.innerHTML == undefined
-            ) {
-              return;
-            }
-            const htmlContent = containerRef.current.innerHTML;
+            const htmlContent = await treeToHtml(canvasItems.root);
             const htmlOutput = wrapWithHTML(htmlContent, pageMetaData);
             const { title, description, active, protected: isProtected, ...otherMetaData } =
               pageMetaData;
