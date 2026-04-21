@@ -3,6 +3,7 @@
 export default function injectHtml() {
   return {
     name: 'inject-html',
+    apply: 'build',
     transformIndexHtml(html) {
       return html.replace(
         /<\/head>/,

@@ -77,6 +77,7 @@ const CodeMirrorComponent: React.FC<CodeMirrorProps> = ({
     const view = new EditorView({
       state,
       parent: hostRef.current,
+      root: document,
     });
 
 
