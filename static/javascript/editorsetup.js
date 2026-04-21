@@ -115,6 +115,15 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
     switchShell,
     switchMode,
     EditorSelection,
+    focus: () => view.focus(),
+    insertText: (text) => {
+      const selection = view.state.selection.main;
+      view.dispatch({
+        changes: { from: selection.from, to: selection.to, insert: text },
+        selection: { anchor: selection.from + text.length }
+      });
+      view.focus();
+    },
     getContent: () => view.state.doc.toString(),
     destroy: () => {
       window.removeEventListener('resize', resizeEditorContainer);

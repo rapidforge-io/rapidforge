@@ -1,22 +1,62 @@
 {{define "cheatsheet.html"}}
- <sl-dialog id="codeHelper" label="Cheat Sheet">
-   Special Environment Variables:
-   <sl-divider></sl-divider>
-   <p> - <code>PAYLOAD_DATA</code> = Request body data for the webhook, whole payload will be assigned to text.</p>
-   <p> - <code>FORM_{NAME} </code> = Parsed form data. Each field is accessible with FORM_NAME. i.e FROM_COMMENT if your submission has comment field </p>
-   <p> - <code>URL_PARAM_{NAME} </code> = Parsed from url params for GET requests only. Each field is accessible with URL_PARAM_NAME. i.e URL_PARAM_ID if your  url has `?id=1` </p>
-   <p> - <code>HEADER_{HEADER_NAME}</code> = Header name e.g. HEADER_USER_AGENT</p>
-   <p> - <code>CRED_{CREDENTIAL_NAME}</code> = Credential name e.g. CRED_GITHUB_OAUTH_TOKEN</p>
+<div id="codeHelperDrawer" class="rf-code-helper" aria-hidden="true" data-open="false">
+  <div class="rf-code-helper__overlay" data-code-helper-close></div>
+  <aside
+    class="rf-code-helper__panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="codeHelperTitle"
+  >
+    <div class="rf-code-helper__header">
+      <div>
+        <div class="rf-code-helper__eyebrow">Code Helper</div>
+        <h3 id="codeHelperTitle" class="rf-code-helper__title">Reference and Docs</h3>
+      </div>
+      <sl-icon-button name="x-lg" label="Close helper" data-code-helper-close></sl-icon-button>
+    </div>
 
-   <p> For periodic tasks, environment variables regarding request will be empty </p>
+    <div class="rf-code-helper__search">
+      <sl-input
+        id="codeHelperSearch"
+        size="small"
+        clearable
+        placeholder="Search env vars, helpers, snippets, docs"
+      >
+        <sl-icon slot="prefix" name="search"></sl-icon>
+      </sl-input>
+      <div id="codeHelperBadges" class="rf-code-helper__badges"></div>
+    </div>
 
-   <sl-divider></sl-divider>
-   <p><strong>KV Helpers</strong></p>
-   <p> Bash: <code>kv_get KEY</code>, <code>kv_set KEY VALUE</code>, <code>kv_del KEY</code>, <code>kv_list</code></p>
-   <p> Lua: <code>local kv = require('kv')</code> then <code>kv.get(key)</code>, <code>kv.set(key, value)</code>, <code>kv.del(key)</code>, <code>kv.list()</code></p>
-   <p> Missing keys are non-throwing by default: Bash helpers return exit code <code>1</code>, and Lua <code>kv.get()</code> returns <code>nil</code>.</p>
-</sl-dialog>
-<script>
-  const codeHelper = document.getElementById("codeHelper");
-</script>
+    <sl-tab-group id="codeHelperTabs" class="rf-code-helper__tabs">
+      <sl-tab slot="nav" panel="reference">Reference</sl-tab>
+      <sl-tab slot="nav" panel="search">Search</sl-tab>
+      <sl-tab slot="nav" panel="docs">Docs</sl-tab>
+
+      <sl-tab-panel name="reference" class="rf-code-helper__tab-panel">
+        <div class="rf-code-helper__section">
+          <div class="rf-code-helper__section-title">Quick refs</div>
+          <div id="codeHelperQuickRefs" class="rf-code-helper__stack"></div>
+        </div>
+        <div class="rf-code-helper__section">
+          <div class="rf-code-helper__section-title">Reference library</div>
+          <div id="codeHelperReferenceSections" class="rf-code-helper__stack"></div>
+        </div>
+      </sl-tab-panel>
+
+      <sl-tab-panel name="search" class="rf-code-helper__tab-panel">
+        <div id="codeHelperSearchState" class="rf-code-helper__empty-state">
+          Start typing to search RapidForge helpers and docs sources.
+        </div>
+        <div id="codeHelperSearchResults" class="rf-code-helper__stack"></div>
+      </sl-tab-panel>
+
+      <sl-tab-panel name="docs" class="rf-code-helper__tab-panel">
+        <div class="rf-code-helper__section">
+          <div class="rf-code-helper__section-title">Docs sources</div>
+          <div id="codeHelperDocsSources" class="rf-code-helper__stack"></div>
+        </div>
+      </sl-tab-panel>
+    </sl-tab-group>
+  </aside>
+</div>
 {{end}}

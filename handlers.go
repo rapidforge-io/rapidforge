@@ -1612,6 +1612,7 @@ func getWebhookHandler(store *models.Store) gin.HandlerFunc {
 
 		c.HTML(http.StatusOK, "webhook", gin.H{
 			"variables":               variables,
+			"helperData":              buildCodeHelperData(utils.WebhookEntity, variables),
 			"webhook":                 webhookWithDetails.Webhook,
 			"programType":             webhookWithDetails.Program.ProgramType,
 			"Type":                    utils.WebhookEntity,
@@ -1653,6 +1654,7 @@ func getAutoCompleteVars(details *models.WebhookDetail, store *models.Store) []s
 		"FORM_{NAME}",
 		"URL_PARAM_{NAME}",
 		"HEADER_{HEADER_NAME}",
+		"CRED_{CREDENTIAL_NAME}",
 	}
 	return getAutoCompleteVarsGeneric(&details.Webhook, details.Block, store, defaults)
 }
@@ -1683,6 +1685,7 @@ func getPeriodicTaskHandler(store *models.Store) gin.HandlerFunc {
 		editableComponentArgs["Field"] = utils.DefaultString(periodicTaskDetails.PeriodicTask.Name, "No Name")
 		c.HTML(http.StatusOK, "periodic_task", gin.H{
 			"variables":               variables,
+			"helperData":              buildCodeHelperData(utils.PeriodicTaskEntity, variables),
 			"periodicTask":            periodicTaskDetails.PeriodicTask,
 			"programType":             periodicTaskDetails.Program.ProgramType,
 			"Type":                    utils.PeriodicTaskEntity,
