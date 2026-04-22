@@ -52,10 +52,11 @@ body {
 
 .component-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 7px;
-  padding: 4px;
+  padding: 2px 0;
   cursor: grab;
+  width: 100%;
 }
 
 .base-component {
@@ -199,10 +200,27 @@ body {
   flex-direction: column;
 }
 
-.leftAside .container {
+/* Components panel header – mirrors props-panel-header */
+.components-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--primary-border-color);
+  flex-shrink: 0;
+}
+
+.leftAside-scroll {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 12px;
+}
+
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 8px;
 }
 
 .rightAside {
@@ -223,7 +241,80 @@ body {
 .rightAside .flex-grid {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 12px;
+}
+
+/* Props panel header */
+.props-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--primary-border-color);
+  flex-shrink: 0;
+  gap: 3px;
+}
+
+.props-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-color);
+  margin: 0;
+  opacity: 0.5;
+}
+
+.props-panel-component-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--highlight-border-color);
+  margin: 0;
+}
+
+/* Individual prop rows */
+.prop-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--primary-border-color);
+}
+
+.prop-section:last-child {
+  border-bottom: none;
+}
+
+.prop-section sl-input {
+  width: 100%;
+}
+
+/* Prop field label */
+.prop-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  margin: 0 0 6px 0;
+}
+
+/* Empty State */
+.props-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  gap: 10px;
+  opacity: 0.4;
+}
+
+.props-empty-state sl-icon {
+  font-size: 26px;
+}
+
+.props-empty-state p {
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+  line-height: 1.6;
 }
 
 .mainEditor {
@@ -480,4 +571,34 @@ sl-tab-panel[name="js"]::part(base) {
   padding: 0;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+/* Key-value table (Checkbox / Radiobox options) */
+.kv-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.kv-table-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 4px;
+}
+
+.kv-table-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kv-table-row sl-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.kv-table-add {
+  margin-top: 6px;
 }

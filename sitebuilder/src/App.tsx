@@ -555,7 +555,12 @@ function PropEditor() {
     }
 
     if (activeItem == null) {
-      return <></>;
+      return (
+        <div className="props-empty-state">
+          <SlIcon name="cursor" />
+          <p>Select a component<br />to edit its props</p>
+        </div>
+      );
     }
 
     const propEntries = editablePropsRender[activeItem?.type];
@@ -571,17 +576,15 @@ function PropEditor() {
         return Object.entries(currentValues).map(([key, value], idx) => {
           let obj = { [key]: value };
           return (
-            <div className="columns pl-1 pr-1" key={`style-${key}-${idx}`}>
-              <SlDivider />
+            <div className="prop-section" key={`style-${key}-${idx}`}>
               {renderFunc[idx](handlePropOnChange, obj)}
-              <SlDivider />
             </div>
           );
         });
       } else {
         const currentValue = canvasItem.editableProps[key];
         return (
-          <div className="columns p-1" key={`prop-${key}`}>
+          <div className="prop-section" key={`prop-${key}`}>
             {renderFunc(handlePropOnChange, currentValue)}
           </div>
         );
@@ -589,19 +592,23 @@ function PropEditor() {
     });
   }
 
+  const componentLabel = activeItem?.type
+    ? activeItem.type.replace(/Component$/, '').replace(/([A-Z])/g, ' $1').trim()
+    : null;
+
   return (
     <aside className={`rightAside ${isVisible ? "show" : ""}`}>
       <button className="menuRightbtn" onClick={toggleVisibility}>
         <SlIcon name="arrow-left"></SlIcon>
       </button>
-      <div className="flex-grid has-1-cols">
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <h2>
-            <b>Props</b>
-          </h2>
-        </div>
-        <SlDivider />
-        <div className="container pt-3 pl-3">{propsRender()}</div>
+      <div className="props-panel-header">
+        <p className="props-panel-title">Props</p>
+        {componentLabel && (
+          <span className="props-panel-component-type">{componentLabel}</span>
+        )}
+      </div>
+      <div className="flex-grid">
+        {propsRender()}
       </div>
     </aside>
   );

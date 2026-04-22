@@ -17,6 +17,7 @@ import {
   SlMenuItem,
   SlButtonGroup,
   SlIcon,
+  SlIconButton,
   SlSelect,
   SlOption,
   SlRange,
@@ -153,7 +154,7 @@ function Size(handlePropOnChange, value) {
   const key = Object.keys(value)[0]
   return (
     <div className="is-flex is-flex-direction-column is-align-items-flex-start">
-      <p>{`${capitalize(key)} px`}</p>
+      <p className="prop-label">{`${capitalize(key)} px`}</p>
       <SlInput
         type="number"
         size={"small"}
@@ -193,7 +194,7 @@ function ContentAligner(handlePropOnChange, classes: string) {
 
   return (
     <div className="is-flex is-flex-direction-column is-align-items-flex-start">
-      <p>Item alignment</p>
+      <p className="prop-label">Item Alignment</p>
       <SlButtonGroup label="Alignment">
         <SlButton size="small" onClick={() => handleAlignmentChange('is-align-items-flex-start')}>
           Left
@@ -220,7 +221,7 @@ function TextAligner(handlePropOnChange, _) {
 
   return (
     <div className="is-flex is-flex-direction-column is-align-items-flex-start">
-      <p>TextAlign</p>
+      <p className="prop-label">Text Align</p>
       <SlButtonGroup label="Alignment">
         <SlButton size="small" onClick={() => handleAlignmentChange("left")}>
           Left
@@ -259,7 +260,7 @@ function ColorPicker(handlePropOnChange, value) {
     <div>
       <div className="field is-horizontal m-1">
         <div className="field-label is-normal">
-          <p>{capitalize(key)}</p>
+          <p className="prop-label">{capitalize(key)}</p>
         </div>
         <div className="field-body">
           <div className="is-flex is-align-items-center">
@@ -302,37 +303,38 @@ function KeyValueTable(prop) {
   };
 
   return (
-    <div className="is-flex is-flex-direction-column m-1 p-0" style={{border: "black"}}>
-      <div className="is-flex is-flex-direction-column">
-        {data.map((item, index) => (
-          <div className="columns" key={index}>
-            <div className="column is-2">
-              <SlInput
-                size="small"
-                value={item.key}
-                placeholder="key"
-                onSlInput={(e) => handleChange(index, "key", e.target.value)}
-              />
-            </div>
-            <div className="column is-2" >
-              <SlInput
-                size="small"
-                placeholder="value"
-                value={item.value}
-                onSlInput={(e) => handleChange(index, "value", e.target.value)}
-              />
-            </div>
-            <div className="column is-0">
-              <SlButton size="small" onClick={() => handleRemoveRow(index)}>
-                <SlIcon name="dash-lg"></SlIcon>
-              </SlButton>
-            </div>
-          </div>
-        ))}
+    <div className="kv-table">
+      <div className="kv-table-header">
+        <span className="prop-label" style={{ flex: 1 }}>Key</span>
+        <span className="prop-label" style={{ flex: 1 }}>Value</span>
+        <span style={{ width: 28 }}></span>
       </div>
-      <div className="is-flex is-justify-content-space-around	mt-2" style={{width: "50%"}}>
+      {data.map((item, index) => (
+        <div className="kv-table-row" key={index}>
+          <SlInput
+            size="small"
+            value={item.key}
+            placeholder="key"
+            onSlInput={(e) => handleChange(index, "key", e.target.value)}
+          />
+          <SlInput
+            size="small"
+            placeholder="value"
+            value={item.value}
+            onSlInput={(e) => handleChange(index, "value", e.target.value)}
+          />
+          <SlIconButton
+            name="dash-lg"
+            label="Remove"
+            onClick={() => handleRemoveRow(index)}
+            style={{ fontSize: '14px' }}
+          />
+        </div>
+      ))}
+      <div className="kv-table-add">
         <SlButton size="small" onClick={handleAddRow}>
-          <SlIcon name="plus-lg"></SlIcon>
+          <SlIcon slot="prefix" name="plus-lg"></SlIcon>
+          Add row
         </SlButton>
       </div>
     </div>
@@ -409,11 +411,12 @@ export function LabelPropEditor(handlePropOnChange, value) {
 
 export function InputPropEditorHelper(handlePropOnChange, value, key) {
   return (
-    <div className="is-flex is-flex-direction-column is-align-items-flex-start block">
-      <p>{capitalize(key)}</p>
+    <div className="is-flex is-flex-direction-column">
+      <p className="prop-label">{capitalize(key)}</p>
       <SlInput
         value={value}
         size={"small"}
+        style={{ width: '100%' }}
         onSlInput={(e) => handlePropOnChange(key, e.currentTarget.value)}
       />
     </div>
