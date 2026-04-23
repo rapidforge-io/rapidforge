@@ -770,6 +770,11 @@ export function BaseSortable(props) {
         }}
         className={`base-component ${active === true ? "selected-item" : ""}`}
       >
+        {active === true && (
+          <span className="canvas-component-label">
+            {componentName.replace(/Component|Container/g, "").trim()}
+          </span>
+        )}
         <div
           ref={setNodeRef}
           style={style}

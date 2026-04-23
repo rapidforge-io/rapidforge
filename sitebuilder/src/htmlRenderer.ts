@@ -26,26 +26,27 @@ async function nodeToHtml(node: TreeNode): Promise<string> {
       return `<button class="button is-primary is-link" name="${ep.name || ""}" type="${ep.type || "submit"}" style="${style}">${ep.label || "Button"}</button>`;
     }
     case "TextInputComponent":
-      return `<input class="input" type="text" name="${ep.name || ""}" />`;
+      return `<input type="text" name="${ep.name || ""}" placeholder="${ep.name || ""}" />`;
     case "TextAreaComponent":
-      return `<textarea class="textarea" name="${ep.name || ""}"></textarea>`;
+      return `<textarea name="${ep.name || ""}" placeholder="${ep.name || ""}"></textarea>`;
     case "CheckboxComponent": {
+      const label = ep.label ? `<legend style="font-weight:600;margin-bottom:6px;font-size:15px">${ep.label}</legend>` : "";
       const items = (ep.items || [])
         .map(
           (item) =>
-            `<div class="is-flex"><label class="checkbox"><input type="checkbox" name="${ep.name || ""}" value="${item.value}" /> ${item.key}</label></div>`
+            `<label class="checkbox"><input type="checkbox" name="${ep.name || ""}" value="${item.value}" /> ${item.key}</label>`
         )
         .join("\n");
-      return `<div class="is-flex is-flex-direction-column m-2">${items}</div>`;
+      return `<fieldset style="border:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px">${label}${items}</fieldset>`;
     }
     case "RadioboxComponent": {
       const items = (ep.items || [])
         .map(
           (item) =>
-            `<label class="radio m-1"><input type="radio" name="${ep.name || ""}" value="${item.value}" /> ${item.key}</label>`
+            `<label class="radio"><input type="radio" name="${ep.name || ""}" value="${item.value}" /> ${item.key}</label>`
         )
         .join("\n");
-      return `<div class="is-flex is-flex-direction-column"><p>${ep.label || ""}</p>${items}</div>`;
+      return `<fieldset style="border:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px"><legend style="font-weight:600;margin-bottom:6px;font-size:15px">${ep.label || ""}</legend>${items}</fieldset>`;
     }
     case "FormComponent":
       return `<form class="rf-stack" action="${ep.action || ""}" method="POST">${childrenHtml}</form>`;

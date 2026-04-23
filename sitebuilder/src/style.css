@@ -62,11 +62,14 @@ body {
 .base-component {
   position: relative;
   border-radius: 4px;
+  margin: 1px 0;
+  transition: outline 0.1s ease;
 }
 
 .base-component:hover {
   outline: 1px solid var(--highlight-border-color);
-  outline-offset: 1px;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .draggable {
@@ -85,8 +88,28 @@ body {
 }
 
 .selected-item {
-  outline: 2px dashed var(--highlight-border-color) !important;
-  outline-offset: 1px;
+  outline: 2px solid var(--highlight-border-color) !important;
+  outline-offset: 3px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--highlight-border-color) 12%, transparent);
+}
+
+.canvas-component-label {
+  position: absolute;
+  top: -22px;
+  left: -2px;
+  background: var(--highlight-border-color);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px 4px 0 0;
+  z-index: 20;
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1.6;
 }
 
 .dropzone {

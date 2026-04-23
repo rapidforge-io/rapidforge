@@ -342,23 +342,16 @@ function wrapWithHTML(htmlContent, pageMetadata) {
       <meta name="description" content="${pageMetadata.description}" >
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css"/>
       <style>
+        body { margin: 0; }
 
         .app {
           width: 100%;
-          margin: 0 auto;
-          text-align: center;
-          align-items: center;
-          margin-bottom: 50px;
-          margin-top: 10px;
-          margin: 5%;
+          max-width: 720px;
+          margin: 48px auto;
+          padding: 0 24px 64px;
           display: flex;
           flex-direction: column;
-          overflow-y: auto;
-        }
-
-        .base-component {
-          position: relative;
-          padding: 2px;
+          gap: 1rem;
         }
 
         .rf-stack {
@@ -366,12 +359,6 @@ function wrapWithHTML(htmlContent, pageMetadata) {
           flex-direction: column;
           gap: 0.75rem;
         }
-
-        body {
-          margin: 0;
-          display: flex;
-        }
-
       </style>
       <title>${pageMetadata.title}</title>
 
