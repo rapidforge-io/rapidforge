@@ -52,20 +52,24 @@ body {
 
 .component-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 7px;
-  padding: 4px;
+  padding: 2px 0;
   cursor: grab;
+  width: 100%;
 }
 
 .base-component {
   position: relative;
   border-radius: 4px;
+  margin: 1px 0;
+  transition: outline 0.1s ease;
 }
 
 .base-component:hover {
   outline: 1px solid var(--highlight-border-color);
-  outline-offset: 1px;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .draggable {
@@ -84,8 +88,28 @@ body {
 }
 
 .selected-item {
-  outline: 2px dashed var(--highlight-border-color) !important;
-  outline-offset: 1px;
+  outline: 2px solid var(--highlight-border-color) !important;
+  outline-offset: 3px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--highlight-border-color) 12%, transparent);
+}
+
+.canvas-component-label {
+  position: absolute;
+  top: -22px;
+  left: -2px;
+  background: var(--highlight-border-color);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px 4px 0 0;
+  z-index: 20;
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1.6;
 }
 
 .dropzone {
@@ -199,10 +223,27 @@ body {
   flex-direction: column;
 }
 
-.leftAside .container {
+/* Components panel header – mirrors props-panel-header */
+.components-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--primary-border-color);
+  flex-shrink: 0;
+}
+
+.leftAside-scroll {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 12px;
+}
+
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 8px;
 }
 
 .rightAside {
@@ -223,7 +264,80 @@ body {
 .rightAside .flex-grid {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 12px;
+}
+
+/* Props panel header */
+.props-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--primary-border-color);
+  flex-shrink: 0;
+  gap: 3px;
+}
+
+.props-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-color);
+  margin: 0;
+  opacity: 0.5;
+}
+
+.props-panel-component-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--highlight-border-color);
+  margin: 0;
+}
+
+/* Individual prop rows */
+.prop-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--primary-border-color);
+}
+
+.prop-section:last-child {
+  border-bottom: none;
+}
+
+.prop-section sl-input {
+  width: 100%;
+}
+
+/* Prop field label */
+.prop-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  margin: 0 0 6px 0;
+}
+
+/* Empty State */
+.props-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  gap: 10px;
+  opacity: 0.4;
+}
+
+.props-empty-state sl-icon {
+  font-size: 26px;
+}
+
+.props-empty-state p {
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+  line-height: 1.6;
 }
 
 .mainEditor {
@@ -480,4 +594,34 @@ sl-tab-panel[name="js"]::part(base) {
   padding: 0;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+/* Key-value table (Checkbox / Radiobox options) */
+.kv-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.kv-table-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 4px;
+}
+
+.kv-table-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kv-table-row sl-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.kv-table-add {
+  margin-top: 6px;
 }

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   classMap,
 } from "./Components";
-import { SlDivider, SlIcon } from "@shoelace-style/shoelace/dist/react";
+import { SlIcon } from "@shoelace-style/shoelace/dist/react";
 
 
 export const ComponentPanel = (props) => {
@@ -17,13 +17,10 @@ export const ComponentPanel = (props) => {
       <button className="menuLeftbtn" onClick={toggleVisibility}>
         <SlIcon name="arrow-right"></SlIcon>
       </button>
-      <div className="container">
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <h2>
-            <b>Components</b>
-          </h2>
-        </div>
-        <SlDivider />
+      <div className="components-panel-header">
+        <p className="props-panel-title">Components</p>
+      </div>
+      <div className="leftAside-scroll">
         <Accordion />
       </div>
     </aside>
@@ -34,7 +31,7 @@ function Accordion() {
   const {CanvasDropZone, Dropzone, ...componentNames} = classMap;
 
   return (
-    <div>
+    <div className="accordion-list">
       {Object.values(componentNames).map((Component) => (
         <Component id={`${Component.name}-lib`} key={`${Component.name}-lib`} />
       ))}
