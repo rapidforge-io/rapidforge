@@ -5,7 +5,12 @@ export default function injectHtml() {
     name: 'inject-html',
     apply: 'build',
     transformIndexHtml(html) {
-      return html.replace(
+      // Strip the dev-only pageData script block before injecting the Go template version
+      const stripped = html.replace(
+        /<script>\s*var pageData\s*=[\s\S]*?<\/script>/,
+        ''
+      );
+      return stripped.replace(
         /<\/head>/,
         `<script>
         var pageData= {

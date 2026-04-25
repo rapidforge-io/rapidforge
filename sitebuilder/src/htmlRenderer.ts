@@ -26,9 +26,9 @@ async function nodeToHtml(node: TreeNode): Promise<string> {
       return `<button class="button is-primary is-link" name="${ep.name || ""}" type="${ep.type || "submit"}" style="${style}">${ep.label || "Button"}</button>`;
     }
     case "TextInputComponent":
-      return `<input type="text" name="${ep.name || ""}" placeholder="${ep.name || ""}" />`;
+      return `<input class="input" type="text" name="${ep.name || ""}" placeholder="${ep.name || ""}" />`;
     case "TextAreaComponent":
-      return `<textarea name="${ep.name || ""}" placeholder="${ep.name || ""}"></textarea>`;
+      return `<textarea class="textarea" name="${ep.name || ""}" placeholder="${ep.name || ""}"></textarea>`;
     case "CheckboxComponent": {
       const label = ep.label ? `<legend style="font-weight:600;margin-bottom:6px;font-size:15px">${ep.label}</legend>` : "";
       const items = (ep.items || [])
