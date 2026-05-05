@@ -1,6 +1,7 @@
 import {
   lintConfig, EditorState, EditorView, EditorSelection,
   basicSetup, luaLanguage, languageConfig,
+  rubyLanguage,
   autocompletion, themeConfig, dracula,
   shellLanguage, lintGutter, luaLinter
 } from 'codemirror';
@@ -8,20 +9,21 @@ import {
 import { generateCustomWordSuggestions } from '/static/javascript/editorcommon.js';
 import { luaSnippets } from '/static/javascript/luasnippets.js';
 import { bashSnippets } from '/static/javascript/bashsnippets.js';
+import { mrubySnippets } from '/static/javascript/mrubysnippets.js';
 
 /**
- * Creates a CodeMirror editor with Lua and Bash support
+ * Creates a CodeMirror editor with Lua, Bash, and mRuby support
  * @param {Object} config - Configuration object
  * @param {string} config.fileContent - Initial content for the editor
  * @param {string[]} config.customWords - Array of custom words for autocomplete
  * @param {string} config.parentElementId - ID of the parent DOM element (default: 'codeEditor')
- * @param {string} config.initialMode - Initial language mode ('lua' or 'bash', default: 'lua')
+ * @param {string} config.initialMode - Initial language mode ('lua', 'bash', or 'mruby'; default: 'lua')
  * @returns {Object} - Object containing the view and switch functions
  */
 export function createEditor({ fileContent = '', customWords = [], parentElementId = 'codeEditor', initialMode = 'lua' }) {
   // Add standard custom words
   const allCustomWords = [...customWords, 'PAYLOAD_DATA', 'HEADER_NAME', 'URL_PARAM_NAME', 'FORM_NAME'];
-  const { bash: bashCustomWords, lua: luaCustomWords } = generateCustomWordSuggestions(allCustomWords);
+  const { bash: bashCustomWords, lua: luaCustomWords, mruby: mrubyCustomWords } = generateCustomWordSuggestions(allCustomWords);
 
   const currentTheme = localStorage.getItem('theme') || 'light';
   const theme = currentTheme === 'dark' ? dracula : [];
@@ -66,6 +68,9 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
         shellLanguage.data.of({
           autocomplete: [...bashCustomWords, ...bashSnippets]
         }),
+        rubyLanguage.data.of({
+          autocomplete: [...mrubyCustomWords, ...mrubySnippets]
+        }),
         themeConfig.of(theme),
         lintConfig.of(luaLinter),
         lintGutter(),
@@ -96,11 +101,22 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
     });
   }
 
+  function switchMRuby() {
+    view.dispatch({
+      effects: [
+        languageConfig.reconfigure(rubyLanguage),
+        lintConfig.reconfigure([]),
+      ]
+    });
+  }
+
   function switchMode(mode) {
     if (mode === "bash") {
       switchShell();
     } else if (mode === "lua") {
       switchLua();
+    } else if (mode === "mruby") {
+      switchMRuby();
     }
 
     view.focus();
@@ -113,6 +129,7 @@ export function createEditor({ fileContent = '', customWords = [], parentElement
     view,
     switchLua,
     switchShell,
+    switchMRuby,
     switchMode,
     EditorSelection,
     focus: () => view.focus(),

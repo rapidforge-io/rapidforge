@@ -116,6 +116,7 @@
       <sl-select id="programType" name="programType" size="small" value="{{.programType}}">
         <sl-option value="bash">Bash</sl-option>
         <sl-option value="lua">Lua</sl-option>
+        <sl-option value="mruby">mRuby</sl-option>
       </sl-select>
       {{ if .showCurlGenerator }}
         <div id="curlGeneratorContainer" class="is-flex ml-2">
@@ -346,6 +347,7 @@
           <sl-select id="onFailScriptType" name="onFailScriptType" size="small" label="Script Type" value={{defaultString .webhook.OnFailScriptType "bash"}} style="margin-bottom: 1rem;">
             <sl-option value="bash">Bash</sl-option>
             <sl-option value="lua">Lua</sl-option>
+            <sl-option value="mruby">mRuby</sl-option>
           </sl-select>
 
           <div id="onFailEditor" name="onFailScript" style="height: 300px; border: 1px solid var(--sl-color-neutral-300); border-radius: var(--sl-border-radius-medium);"></div>

@@ -33,6 +33,7 @@ function getInfoForVar(word) {
 export function generateCustomWordSuggestions(words ) {
   const bash = [];
   const lua = [];
+  const mruby = [];
   words.forEach(w => {
     const info = getInfoForVar(w);
     bash.push({
@@ -45,6 +46,11 @@ export function generateCustomWordSuggestions(words ) {
       type: "variable",
       info: info
     });
+    mruby.push({
+      label: `env("${w}")`,
+      type: "variable",
+      info: info
+    });
   });
-  return { bash, lua };
+  return { bash, lua, mruby };
 }

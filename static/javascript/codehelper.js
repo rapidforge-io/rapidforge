@@ -23,6 +23,19 @@ function slugLabel(value) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function displayProgramLabel(value) {
+  if (value === 'mruby') {
+    return 'mRuby';
+  }
+  if (value === 'lua') {
+    return 'Lua';
+  }
+  if (value === 'bash') {
+    return 'Bash';
+  }
+  return slugLabel(value);
+}
+
 function itemMatchesContext(item, context) {
   const contexts = normalizeList(item.contexts);
   if (contexts.length === 0 || contexts.includes('all')) {
@@ -53,7 +66,7 @@ function buildBadgeMarkup(item, context, programType) {
 
   languages.forEach((lang) => {
     if (lang) {
-      badges.push(`<sl-badge pill variant="${lang === programType ? 'primary' : 'neutral'}">${escapeHtml(lang)}</sl-badge>`);
+      badges.push(`<sl-badge pill variant="${lang === programType ? 'primary' : 'neutral'}">${escapeHtml(displayProgramLabel(lang))}</sl-badge>`);
     }
   });
 
@@ -164,7 +177,7 @@ export function initCodeHelper({
 
   function renderGlobalBadges() {
     const contextBadge = `<sl-badge pill variant="primary">${escapeHtml(slugLabel(context))}</sl-badge>`;
-    const languageBadge = `<sl-badge pill variant="success">${escapeHtml(currentProgramType)}</sl-badge>`;
+    const languageBadge = `<sl-badge pill variant="success">${escapeHtml(displayProgramLabel(currentProgramType))}</sl-badge>`;
     const wordBadge = `<sl-badge pill variant="neutral">${customWords.length} env vars</sl-badge>`;
     badgesContainer.innerHTML = `${contextBadge}${languageBadge}${wordBadge}`;
   }

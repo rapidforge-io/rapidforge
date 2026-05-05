@@ -1,0 +1,61 @@
+export const mrubySnippets = [
+  { label: "def", type: "keyword", detail: "Method definition", apply: "def $1\n  $2\nend" },
+  { label: "class skeleton", type: "snippet", detail: "Define a class", apply: "class $1\n  def initialize($2)\n    $3\n  end\nend" },
+  { label: "module skeleton", type: "snippet", detail: "Define a module", apply: "module $1\n  $2\nend" },
+  { label: "if", type: "keyword", detail: "Conditional", apply: "if $1\n  $2\nend" },
+  { label: "unless", type: "keyword", detail: "Negative conditional", apply: "unless $1\n  $2\nend" },
+  { label: "case", type: "keyword", detail: "Case statement", apply: "case $1\nwhen $2\n  $3\nelse\n  $4\nend" },
+  { label: "begin rescue", type: "snippet", detail: "Error handling", apply: "begin\n  $1\nrescue => e\n  puts e.message\nend" },
+  { label: "times", type: "function", detail: "Repeat a block", apply: "$1.times do |index|\n  puts index\nend" },
+
+  { label: "Array#each", type: "function", detail: "Iterate array items", apply: "items = [$1]\nitems.each do |item|\n  puts item\nend" },
+  { label: "Array#map", type: "function", detail: "Transform array values", apply: "values = [$1]\nresult = values.map do |value|\n  $2\nend\nputs result.inspect" },
+  { label: "Array#select", type: "function", detail: "Filter an array", apply: "values = [$1]\nselected = values.select do |value|\n  $2\nend\nputs selected.inspect" },
+  { label: "Array#join", type: "function", detail: "Join array values", apply: "items = [$1]\nputs items.join($2)" },
+
+  { label: "Hash#each", type: "function", detail: "Iterate key/value pairs", apply: "data = { $1 => $2 }\ndata.each do |key, value|\n  puts \"#{key}=#{value}\"\nend" },
+  { label: "Hash#fetch", type: "function", detail: "Read a hash key with default", apply: "data = { $1 => $2 }\nvalue = data.fetch($3, $4)\nputs value" },
+  { label: "hash literal", type: "snippet", detail: "Create a hash", apply: "{ \"$1\" => $2, \"$3\" => $4 }" },
+  { label: "array literal", type: "snippet", detail: "Create an array", apply: "[$1, $2, $3]" },
+
+  { label: "Enumerable#find", type: "function", detail: "Find the first matching value", apply: "match = [$1].find do |value|\n  $2\nend\nputs match.inspect" },
+  { label: "Enumerable#reduce", type: "function", detail: "Accumulate values", apply: "sum = [$1].reduce($2) do |acc, value|\n  acc + value\nend\nputs sum" },
+  { label: "Range", type: "snippet", detail: "Range iteration", apply: "($1..$2).each do |value|\n  puts value\nend" },
+
+  { label: "String interpolation", type: "snippet", detail: "Interpolate values into a string", apply: "name = \"$1\"\nputs \"Hello #{name}\"" },
+  { label: "String#split", type: "function", detail: "Split a string", apply: "parts = \"$1\".split($2)\nputs parts.inspect" },
+  { label: "String#strip", type: "function", detail: "Trim whitespace", apply: "value = \"$1\".strip\nputs value" },
+
+  { label: "Proc", type: "snippet", detail: "Store a reusable block", apply: "formatter = proc do |value|\n  $1\nend\nputs formatter.call($2)" },
+  { label: "Struct", type: "snippet", detail: "Create a light data object", apply: "$1 = Struct.new(:$2, :$3)\nentry = $1.new($4, $5)\nputs entry.inspect" },
+  { label: "Time.now", type: "function", detail: "Current timestamp", apply: "puts Time.now.to_s" },
+  { label: "File.read", type: "function", detail: "Read a file", apply: "contents = File.read($1)\nputs contents" },
+  { label: "IO.popen", type: "function", detail: "Open a subprocess stream", apply: "IO.popen($1) do |io|\n  puts io.read\nend" },
+  { label: "Kernel#puts", type: "function", detail: "Print to stdout", apply: "puts $1" },
+
+  { label: "JSON.parse", type: "function", detail: "Parse JSON into Ruby values", apply: "data = JSON.parse($1)\nputs data.inspect" },
+  { label: "JSON.generate", type: "function", detail: "Encode Ruby values as JSON", apply: "json = JSON.generate({ \"$1\" => $2 })\nputs json" },
+  { label: "JSON.parse example", type: "snippet", detail: "Parse PAYLOAD_DATA and use a field", apply: "payload = JSON.parse(env(\"PAYLOAD_DATA\") || \"{}\")\nputs payload[\"$1\"].inspect" },
+  { label: "JSON response parse", type: "snippet", detail: "Decode an HTTP response body", apply: "body, status = http_get(\"$1\")\nif status == 200\n  data = JSON.parse(body)\n  puts data[\"$2\"].inspect\nend" },
+
+  { label: "env(\"PAYLOAD_DATA\")", type: "function", detail: "Read a RapidForge variable", apply: "env(\"PAYLOAD_DATA\")" },
+  { label: "env(\"HEADER_USER_AGENT\")", type: "function", detail: "Read a request header variable", apply: "env(\"HEADER_USER_AGENT\")" },
+  { label: "webhook payload parse", type: "snippet", detail: "Parse webhook JSON payload", apply: "payload = JSON.parse(env(\"PAYLOAD_DATA\") || \"{}\")\nputs payload.inspect" },
+  { label: "on-fail vars", type: "snippet", detail: "Inspect on-fail variables", apply: "puts env(\"FAILURE_EXIT_CODE\")\nputs env(\"FAILURE_OUTPUT\")\nputs env(\"FAILURE_ERROR\")" },
+
+  { label: "http_get", type: "function", detail: "RapidForge HTTP GET helper", apply: "body, status = http_get(\"$1\", { \"Accept\" => \"application/json\" })\nputs status\nputs body" },
+  { label: "http_post", type: "function", detail: "RapidForge HTTP POST helper", apply: "body, status = http_post(\"$1\", $2, { \"Content-Type\" => \"application/json\" })\nputs status\nputs body" },
+  { label: "http_put", type: "function", detail: "RapidForge HTTP PUT helper", apply: "body, status = http_put(\"$1\", $2, { \"Content-Type\" => \"application/json\" })\nputs status\nputs body" },
+  { label: "http_patch", type: "function", detail: "RapidForge HTTP PATCH helper", apply: "body, status = http_patch(\"$1\", $2, { \"Content-Type\" => \"application/json\" })\nputs status\nputs body" },
+  { label: "http_delete", type: "function", detail: "RapidForge HTTP DELETE helper", apply: "body, status = http_delete(\"$1\", { \"Accept\" => \"application/json\" })\nputs status\nputs body" },
+  { label: "http_post JSON example", type: "snippet", detail: "Post JSON and inspect the response", apply: "payload = JSON.generate({ \"$1\" => \"$2\" })\nbody, status = http_post(\"$3\", payload, { \"Content-Type\" => \"application/json\" })\nputs status\nputs body" },
+
+  { label: "kv_get", type: "function", detail: "Read from RapidForge KV storage", apply: "value = kv_get(\"$1\")\nputs value.inspect" },
+  { label: "kv_set", type: "function", detail: "Write to RapidForge KV storage", apply: "kv_set(\"$1\", \"$2\")" },
+  { label: "kv_del", type: "function", detail: "Delete a key from RapidForge KV storage", apply: "deleted = kv_del(\"$1\")\nputs deleted" },
+  { label: "kv_list", type: "function", detail: "List RapidForge KV keys", apply: "keys = kv_list\nputs keys.inspect" },
+  { label: "KV roundtrip", type: "snippet", detail: "Store and read a KV value", apply: "kv_set(\"$1\", \"$2\")\nvalue = kv_get(\"$1\")\nputs value\nputs kv_list.inspect" },
+
+  { label: "Class + Enumerable pattern", type: "snippet", detail: "Wrap array processing in a class", apply: "class $1\n  def initialize(items)\n    @items = items\n  end\n\n  def names\n    @items.map do |item|\n      item[\"name\"]\n    end\n  end\nend" },
+  { label: "Module helper", type: "snippet", detail: "Organize helpers inside a module", apply: "module $1\n  def self.call(input)\n    $2\n  end\nend" },
+];
