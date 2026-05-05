@@ -54,7 +54,16 @@ RapidForge is a modern, self-hosted platform that lets you quickly create webhoo
 
 **Download Pre-built Binary:**
 
-Visit the [releases page](https://github.com/rapidforge-io/release) to download the latest binary for your platform.
+Visit the [releases page](https://github.com/rapidforge-io/rapidforge/releases) to download the latest binary for your platform.
+
+**Docker:**
+
+```bash
+docker pull celdem/rapidforge
+docker run -p 8080:8080 -v $(pwd)/data:/data celdem/rapidforge
+```
+
+Docker images are available at [hub.docker.com/r/celdem/rapidforge](https://hub.docker.com/r/celdem/rapidforge).
 
 **Or Build from Source:**
 
