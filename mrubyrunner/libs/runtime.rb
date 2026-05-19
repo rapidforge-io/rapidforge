@@ -98,7 +98,7 @@ end
 
 def kv_get(key)
   output, code = shell_capture("#{shell_escape(rapidforge_bin!)} get --key #{shell_escape(key)} 2>/dev/null")
-  return output.sub(/\r?\n\z/, "") if code == 0
+  return output.chomp if code == 0
   return nil if code == 1
 
   raise "kv_get failed with exit code #{code}"
@@ -123,5 +123,5 @@ def kv_list
   output, code = shell_capture("#{shell_escape(rapidforge_bin!)} list 2>/dev/null")
   raise "kv_list failed with exit code #{code}" unless code == 0
 
-  output.split(/\r?\n/).reject(&:empty?)
+  output.split("\n").map { |l| l.chomp }.reject { |l| l.empty? }
 end

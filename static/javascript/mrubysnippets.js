@@ -58,4 +58,22 @@ export const mrubySnippets = [
 
   { label: "Class + Enumerable pattern", type: "snippet", detail: "Wrap array processing in a class", apply: "class $1\n  def initialize(items)\n    @items = items\n  end\n\n  def names\n    @items.map do |item|\n      item[\"name\"]\n    end\n  end\nend" },
   { label: "Module helper", type: "snippet", detail: "Organize helpers inside a module", apply: "module $1\n  def self.call(input)\n    $2\n  end\nend" },
+
+  // Regexp (mruby-onig-regexp)
+  { label: "Regexp literal", type: "snippet", detail: "Create a regex literal", apply: "/$1/" },
+  { label: "Regexp literal (ignore case)", type: "snippet", detail: "Case-insensitive regex", apply: "/$1/i" },
+  { label: "Regexp literal (multiline)", type: "snippet", detail: "Multiline regex (. matches newline)", apply: "/$1/m" },
+  { label: "Regexp.new", type: "function", detail: "Create a Regexp from a string", apply: "re = Regexp.new(\"$1\")\n" },
+  { label: "Regexp.new (flags)", type: "function", detail: "Create a Regexp with flags", apply: "re = Regexp.new(\"$1\", Regexp::IGNORECASE)\n" },
+  { label: "=~ match", type: "snippet", detail: "Match regex and get offset", apply: "if \"$1\" =~ /$2/\n  puts \"matched\"\nend" },
+  { label: "String#match", type: "function", detail: "Match and return MatchData", apply: "if m = \"$1\".match(/$2/)\n  puts m[0]\nend" },
+  { label: "String#match?", type: "function", detail: "Test a string against a regex (no MatchData)", apply: "puts \"$1\".match?(/$2/)" },
+  { label: "String#gsub (regex)", type: "function", detail: "Replace all matches", apply: "result = \"$1\".gsub(/$2/, \"$3\")\nputs result" },
+  { label: "String#gsub (regex block)", type: "snippet", detail: "Replace all matches with a block", apply: "result = \"$1\".gsub(/$2/) do |match|\n  $3\nend\nputs result" },
+  { label: "String#sub (regex)", type: "function", detail: "Replace first match", apply: "result = \"$1\".sub(/$2/, \"$3\")\nputs result" },
+  { label: "String#scan", type: "function", detail: "Return all matches as an array", apply: "matches = \"$1\".scan(/$2/)\nputs matches.inspect" },
+  { label: "String#split (regex)", type: "function", detail: "Split on a regex", apply: "parts = \"$1\".split(/$2/)\nputs parts.inspect" },
+  { label: "Named captures", type: "snippet", detail: "Use named capture groups", apply: "if m = \"$1\".match(/(?<$2>$3)/)\n  puts m[:$2]\nend" },
+  { label: "Capture groups ($1 etc.)", type: "snippet", detail: "Access numbered capture groups", apply: "if \"$1\" =~ /($2)($3)/\n  puts $~[1]\n  puts $~[2]\nend" },
+  { label: "Global match var $~", type: "snippet", detail: "Use MatchData after =~", apply: "\"$1\" =~ /$2/\nm = $~\nputs m[0].inspect if m" },
 ];
