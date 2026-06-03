@@ -7,6 +7,7 @@ import {autocompletion } from "@codemirror/autocomplete"
 
 import {StreamLanguage} from "@codemirror/language"
 import {lua} from "@codemirror/legacy-modes/mode/lua"
+import {ruby} from "@codemirror/legacy-modes/mode/ruby"
 import {shell} from "@codemirror/legacy-modes/mode/shell"
 import {dracula} from 'thememirror';
 import { linter, lintGutter } from "@codemirror/lint";
@@ -42,6 +43,7 @@ const lintConfig = new Compartment();
 // Create language definitions
 const shellLanguage = StreamLanguage.define(shell);
 const luaLanguage = StreamLanguage.define(lua);
+const rubyLanguage = StreamLanguage.define(ruby);
 
 // Export everything your HTML needs
 export {
@@ -57,6 +59,7 @@ export {
   StreamLanguage,
   shellLanguage,
   luaLanguage,
+  rubyLanguage,
 
   // Themes and configuration
   dracula,

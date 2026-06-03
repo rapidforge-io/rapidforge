@@ -102,11 +102,11 @@ func defaultCodeHelperItems() []codeHelperItemSpec {
 			Title:     "PAYLOAD_DATA",
 			Kind:      "env_var",
 			Contexts:  []string{utils.WebhookEntity},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"request", "body", "payload", "json", "webhook"},
 			Summary:   "Request body data for webhook runs.",
 			Content:   "RapidForge stores the raw request body in PAYLOAD_DATA so scripts can parse or forward it.",
-			Snippets:  helperSnippets("bash", `echo "$PAYLOAD_DATA"`, "lua", `local payload = os.getenv("PAYLOAD_DATA")`),
+			Snippets:  helperSnippets("bash", `echo "$PAYLOAD_DATA"`, "lua", `local payload = os.getenv("PAYLOAD_DATA")`, "mruby", `payload = env("PAYLOAD_DATA")`),
 			SourceID:  "rapidforge-internal",
 			QuickRef:  true,
 		},
@@ -115,11 +115,11 @@ func defaultCodeHelperItems() []codeHelperItemSpec {
 			Title:     "FORM_{NAME}",
 			Kind:      "env_var",
 			Contexts:  []string{utils.WebhookEntity},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"form", "request", "fields", "post"},
 			Summary:   "Parsed form fields from webhook requests.",
 			Content:   "Each submitted form field becomes an environment variable such as FORM_COMMENT or FORM_EMAIL.",
-			Snippets:  helperSnippets("bash", `echo "$FORM_COMMENT"`, "lua", `local comment = os.getenv("FORM_COMMENT")`),
+			Snippets:  helperSnippets("bash", `echo "$FORM_COMMENT"`, "lua", `local comment = os.getenv("FORM_COMMENT")`, "mruby", `comment = env("FORM_COMMENT")`),
 			SourceID:  "rapidforge-internal",
 			QuickRef:  true,
 		},
@@ -128,11 +128,11 @@ func defaultCodeHelperItems() []codeHelperItemSpec {
 			Title:     "URL_PARAM_{NAME}",
 			Kind:      "env_var",
 			Contexts:  []string{utils.WebhookEntity},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"query", "params", "url", "get"},
 			Summary:   "Query parameters for GET-style webhook requests.",
 			Content:   "RapidForge exposes query parameters as URL_PARAM_* values so you can branch on request input.",
-			Snippets:  helperSnippets("bash", `echo "$URL_PARAM_ID"`, "lua", `local id = os.getenv("URL_PARAM_ID")`),
+			Snippets:  helperSnippets("bash", `echo "$URL_PARAM_ID"`, "lua", `local id = os.getenv("URL_PARAM_ID")`, "mruby", `id = env("URL_PARAM_ID")`),
 			SourceID:  "rapidforge-internal",
 			QuickRef:  true,
 		},
@@ -141,11 +141,11 @@ func defaultCodeHelperItems() []codeHelperItemSpec {
 			Title:     "HEADER_{HEADER_NAME}",
 			Kind:      "env_var",
 			Contexts:  []string{utils.WebhookEntity},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"headers", "request", "user agent", "auth"},
 			Summary:   "Incoming webhook headers as environment variables.",
 			Content:   "Headers are normalized into HEADER_* variables such as HEADER_USER_AGENT and HEADER_CONTENT_TYPE.",
-			Snippets:  helperSnippets("bash", `echo "$HEADER_USER_AGENT"`, "lua", `local userAgent = os.getenv("HEADER_USER_AGENT")`),
+			Snippets:  helperSnippets("bash", `echo "$HEADER_USER_AGENT"`, "lua", `local userAgent = os.getenv("HEADER_USER_AGENT")`, "mruby", `user_agent = env("HEADER_USER_AGENT")`),
 			SourceID:  "rapidforge-internal",
 			QuickRef:  true,
 		},
@@ -154,11 +154,11 @@ func defaultCodeHelperItems() []codeHelperItemSpec {
 			Title:     "CRED_{CREDENTIAL_NAME}",
 			Kind:      "env_var",
 			Contexts:  []string{"all"},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"credentials", "secret", "token", "oauth"},
 			Summary:   "Saved credentials exposed as environment variables.",
 			Content:   "Stored credentials are injected as CRED_* variables, for example CRED_GITHUB_OAUTH_TOKEN.",
-			Snippets:  helperSnippets("bash", `echo "$CRED_GITHUB_OAUTH_TOKEN"`, "lua", `local token = os.getenv("CRED_GITHUB_OAUTH_TOKEN")`),
+			Snippets:  helperSnippets("bash", `echo "$CRED_GITHUB_OAUTH_TOKEN"`, "lua", `local token = os.getenv("CRED_GITHUB_OAUTH_TOKEN")`, "mruby", `token = env("CRED_GITHUB_OAUTH_TOKEN")`),
 			SourceID:  "rapidforge-internal",
 			QuickRef:  true,
 		},
@@ -252,6 +252,113 @@ local encoded = json.encode({
 			QuickRef: true,
 		},
 		{
+			ID:        `mruby-env-helper`,
+			Title:     `mRuby env helper`,
+			Kind:      "helper_method",
+			Contexts:  []string{"all"},
+			Languages: []string{"mruby"},
+			Keywords:  []string{"mruby", "env", "environment", "payload", "headers"},
+			Summary:   `Read RapidForge variables in mRuby with env("NAME").`,
+			Content:   `RapidForge injects all runtime variables into the mRuby bootstrap layer and exposes them through env("NAME") and RAPIDFORGE_ENV.`,
+			Snippets: helperSnippets(
+				"mruby", `payload = env("PAYLOAD_DATA")
+user_agent = env("HEADER_USER_AGENT")
+puts RAPIDFORGE_ENV.keys.sort.inspect`,
+			),
+			SourceID: "mruby-reference",
+			QuickRef: true,
+		},
+		{
+			ID:        `mruby-http-helper`,
+			Title:     `mRuby HTTP helpers`,
+			Kind:      "helper_method",
+			Contexts:  []string{"all"},
+			Languages: []string{"mruby"},
+			Keywords:  []string{"mruby", "http", "curl", "json", "get", "post", "put", "patch", "delete"},
+			Summary:   `Use http_get/http_post/http_put/http_patch/http_delete in mRuby scripts.`,
+			Content:   `RapidForge boots mRuby with top-level HTTP helpers backed by the bundled mruby-curl runtime. Each helper returns [body, status].`,
+			Snippets: helperSnippets(
+				"mruby", `body, status = http_get("https://example.com", {
+  "Accept" => "application/json"
+})
+
+payload = JSON.generate({ "ok" => true })
+post_body, post_status = http_post(
+  "https://example.com/api",
+  payload,
+  { "Content-Type" => "application/json" }
+)`,
+			),
+			SourceID: "mruby-reference",
+			QuickRef: true,
+		},
+		{
+			ID:        `mruby-kv-helper`,
+			Title:     `mRuby KV helpers`,
+			Kind:      "helper_method",
+			Contexts:  []string{"all"},
+			Languages: []string{"mruby"},
+			Keywords:  []string{"mruby", "kv", "storage", "sqlite", "keys"},
+			Summary:   `Use kv_get/kv_set/kv_del/kv_list in mRuby scripts.`,
+			Content:   `RapidForge exposes KV helpers as top-level mRuby functions so scripts can read and persist small values without shelling out.`,
+			Snippets: helperSnippets(
+				"mruby", `kv_set("job:last_id", "123")
+value = kv_get("job:last_id")
+keys = kv_list
+deleted = kv_del("job:last_id")`,
+			),
+			SourceID: "mruby-reference",
+			QuickRef: true,
+		},
+		{
+			ID:        `mruby-json-helper`,
+			Title:     `mRuby JSON helpers`,
+			Kind:      "helper_method",
+			Contexts:  []string{"all"},
+			Languages: []string{"mruby"},
+			Keywords:  []string{"mruby", "json", "parse", "generate", "payload"},
+			Summary:   `Use JSON.parse(...) and JSON.generate(...) in mRuby scripts.`,
+			Content:   `The bundled mRuby runtime includes JSON support, so scripts can parse payloads and generate response bodies without extra setup.`,
+			Snippets: helperSnippets(
+				"mruby", `payload = JSON.parse(env("PAYLOAD_DATA") || "{}")
+
+encoded = JSON.generate({
+  "ok" => true,
+  "id" => payload["id"]
+})
+
+puts encoded`,
+			),
+			SourceID: "mruby-reference",
+			QuickRef: true,
+		},
+		{
+			ID:        `mruby-enumerable-patterns`,
+			Title:     `mRuby Enumerable patterns`,
+			Kind:      "snippet",
+			Contexts:  []string{"all"},
+			Languages: []string{"mruby"},
+			Keywords:  []string{"mruby", "enumerable", "array", "map", "select", "find"},
+			Summary:   `Common collection patterns for Arrays and Enumerable.`,
+			Content:   `Use Ruby's collection helpers like each, map, select, and find to transform webhook payloads and task data cleanly.`,
+			Snippets: helperSnippets(
+				"mruby", `items = JSON.parse(env("PAYLOAD_DATA") || "[]")
+
+names = items.map do |item|
+  item["name"]
+end
+
+selected = items.select do |item|
+  item["active"] == true
+end
+
+match = items.find do |item|
+  item["id"] == "target"
+end`,
+			),
+			SourceID: "mruby-reference",
+		},
+		{
 			ID:        "bash-http",
 			Title:     "HTTP Request in Bash",
 			Kind:      "snippet",
@@ -290,11 +397,11 @@ local response, err = http.request("POST", "https://example.com/api", {
 			Title:     "Webhook On-Fail Vars",
 			Kind:      "env_var",
 			Contexts:  []string{utils.WebhookEntity},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"on fail", "failure", "stderr", "webhook"},
 			Summary:   "Variables available to webhook on-fail scripts.",
 			Content:   "Webhook on-fail scripts can inspect FAILURE_EXIT_CODE, FAILURE_OUTPUT, FAILURE_ERROR, WEBHOOK_ID, and WEBHOOK_PATH.",
-			Snippets:  helperSnippets("bash", `echo "$FAILURE_ERROR"`, "lua", `local errorText = os.getenv("FAILURE_ERROR")`),
+			Snippets:  helperSnippets("bash", `echo "$FAILURE_ERROR"`, "lua", `local errorText = os.getenv("FAILURE_ERROR")`, "mruby", `error_text = env("FAILURE_ERROR")`),
 			SourceID:  "rapidforge-internal",
 		},
 		{
@@ -302,11 +409,11 @@ local response, err = http.request("POST", "https://example.com/api", {
 			Title:     "Periodic Task On-Fail Vars",
 			Kind:      "env_var",
 			Contexts:  []string{utils.PeriodicTaskEntity},
-			Languages: []string{"bash", "lua"},
+			Languages: []string{"bash", "lua", "mruby"},
 			Keywords:  []string{"on fail", "failure", "stderr", "task"},
 			Summary:   "Variables available to periodic-task on-fail scripts.",
 			Content:   "Periodic-task on-fail scripts can inspect FAILURE_EXIT_CODE, FAILURE_OUTPUT, FAILURE_ERROR, and TASK_ID.",
-			Snippets:  helperSnippets("bash", `echo "$FAILURE_EXIT_CODE"`, "lua", `local exitCode = os.getenv("FAILURE_EXIT_CODE")`),
+			Snippets:  helperSnippets("bash", `echo "$FAILURE_EXIT_CODE"`, "lua", `local exitCode = os.getenv("FAILURE_EXIT_CODE")`, "mruby", `exit_code = env("FAILURE_EXIT_CODE")`),
 			SourceID:  "rapidforge-internal",
 		},
 	}
@@ -317,6 +424,7 @@ func defaultCodeHelperSections() []codeHelperSectionSpec {
 		{ID: "request-data", Title: "Request data", ItemIDs: []string{"payload-data", "form-vars", "url-param-vars", "header-vars", "credential-vars"}},
 		{ID: "helpers", Title: "Helpers", ItemIDs: []string{"kv-helpers", "on-fail-webhook", "on-fail-periodic"}},
 		{ID: "lua-modules", Title: "Lua modules", ItemIDs: []string{"lua-kv-module", "lua-http-module", "lua-json-module"}},
+		{ID: "mruby-helpers", Title: "mRuby helpers", ItemIDs: []string{"mruby-env-helper", "mruby-http-helper", "mruby-kv-helper", "mruby-json-helper", "mruby-enumerable-patterns"}},
 		{ID: "bash-recipes", Title: "Bash recipes", ItemIDs: []string{"bash-http"}},
 	}
 }
@@ -326,6 +434,7 @@ func defaultCodeHelperSources() []codeHelperSourceSpec {
 		{ID: "rapidforge-internal", Label: "RapidForge Docs", Description: "RapidForge installation and configuration docs.", ExternalURLTemplate: "https://rapidforge.io/install-config/"},
 		{ID: "bash-reference", Label: "Bash Reference", Description: "External Bash manual and shell examples.", ExternalURLTemplate: "https://www.gnu.org/software/bash/manual/bash.html"},
 		{ID: "lua-reference", Label: "Lua Reference", Description: "External Lua reference manual.", ExternalURLTemplate: "https://www.lua.org/manual/5.4/"},
+		{ID: "mruby-reference", Label: "mRuby Reference", Description: "Official mRuby guides and API docs.", ExternalURLTemplate: "https://mruby.org/docs/"},
 	}
 }
 
@@ -361,13 +470,14 @@ func buildCodeHelperVariableItem(variable string) codeHelperItemSpec {
 		Title:     variable,
 		Kind:      "env_var",
 		Contexts:  contexts,
-		Languages: []string{"bash", "lua"},
+		Languages: []string{"bash", "lua", "mruby"},
 		Keywords:  []string{"env", "custom", strings.ToLower(variable)},
 		Summary:   summary,
 		Content:   "RapidForge will inject this variable when the script executes.",
 		Snippets: helperSnippets(
 			"bash", fmt.Sprintf(`echo "$%s"`, variable),
 			"lua", fmt.Sprintf(`local value = os.getenv("%s")`, variable),
+			"mruby", fmt.Sprintf(`value = env("%s")`, variable),
 		),
 	}
 }
