@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"github.com/rapidforge-io/rapidforge/config"
+	rapidmcp "github.com/rapidforge-io/rapidforge/mcp"
 	"github.com/rapidforge-io/rapidforge/models"
 	"github.com/rapidforge-io/rapidforge/services"
 	"github.com/rapidforge-io/rapidforge/utils"
@@ -72,6 +73,7 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		"info":          {"views/info.html"},
 		"users":         {"views/users.html", "views/user_cards.html"},
 		"credentials":   {"views/credentials.html"},
+		"mcp_settings":  {"views/mcp_settings.html"},
 		"error":         {"views/error.html"},
 		"terminal-view": {"views/terminal.html"},
 	}
@@ -225,6 +227,9 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 	r.Any("/webhook/*path", webhookHandlers(store))
 	r.GET("/page/:path", pageHandler(store, loginService))
 
+	mcpServer := rapidmcp.NewServer(store)
+	r.Any("/mcp", rapidmcp.BearerAuthMiddleware(store), mcpServer.HandleHTTP)
+
 	r.GET("/terminal", AuthMiddleware(loginService), AdminOnlyMiddleware(), terminalHandler(store))
 	r.GET("/terminal-view", AuthMiddleware(loginService), AdminOnlyMiddleware(), terminalViewHandler(store))
 
@@ -307,6 +312,9 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 
 	// Miscellaneous Routes
 	r.GET("/info", cors.New(corsConfig), AuthMiddleware(loginService), infoHandler())
+	r.GET("/settings/mcp", cors.New(corsConfig), AuthMiddleware(loginService), AdminOnlyMiddleware(), mcpSettingsHandler(store))
+	r.POST("/settings/mcp/tokens", cors.New(corsConfig), AuthMiddleware(loginService), AdminOnlyMiddleware(), createMCPTokenHandler(store))
+	r.POST("/settings/mcp/tokens/:id/revoke", cors.New(corsConfig), AuthMiddleware(loginService), AdminOnlyMiddleware(), revokeMCPTokenHandler(store))
 	r.POST("/feedback", cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), feedbackHandler())
 	r.DELETE("/delete/:type/:id", cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), deleteHandler(store))
 	r.PATCH("/rename/:type/:id", cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService), renameHandler(store))

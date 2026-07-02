@@ -1,0 +1,114 @@
+{{define "content.html"}}
+<div class="p-4">
+  <div class="mb-4">
+    <h1 class="title is-4">MCP</h1>
+    <p class="has-text-grey">
+      Connect AI tools to this RapidForge instance so they can create pages, endpoints, and cronjobs.
+    </p>
+  </div>
+
+  {{if .newToken}}
+  <sl-alert variant="success" open class="mb-4">
+    <sl-icon slot="icon" name="check2-circle"></sl-icon>
+    <strong>Copy this token now. It will not be shown again.</strong>
+    <sl-input class="mt-2" value="{{.newToken}}" readonly>
+      <sl-button slot="suffix" onclick="navigator.clipboard.writeText('{{.newToken}}')">
+        <sl-icon name="copy"></sl-icon>
+      </sl-button>
+    </sl-input>
+  </sl-alert>
+  {{end}}
+
+  <div class="columns">
+    <div class="column is-half">
+      <sl-card style="width: 100%">
+        <h2 class="title is-5">Create Token</h2>
+        <form method="POST" action="/settings/mcp/tokens">
+          <sl-input name="name" label="Token name" value="AI tool"></sl-input>
+
+          <div class="mt-4 mb-2">
+            <strong>Scopes</strong>
+          </div>
+          {{range .scopes}}
+          <div class="mb-2">
+            <sl-checkbox name="scopes" value="{{.}}" checked>{{.}}</sl-checkbox>
+          </div>
+          {{end}}
+
+          <sl-button class="mt-4" type="submit" variant="primary">
+            <sl-icon slot="prefix" name="key"></sl-icon>
+            Create MCP Token
+          </sl-button>
+        </form>
+      </sl-card>
+    </div>
+
+    <div class="column is-half">
+      <sl-card style="width: 100%">
+        <h2 class="title is-5">Connection</h2>
+        <p class="mb-2">Remote MCP endpoint</p>
+        <sl-input value="{{.baseUrl}}/mcp" readonly>
+          <sl-button slot="suffix" onclick="navigator.clipboard.writeText('{{.baseUrl}}/mcp')">
+            <sl-icon name="copy"></sl-icon>
+          </sl-button>
+        </sl-input>
+
+        <p class="mt-4 mb-2">Example configuration</p>
+        <sl-textarea resize="auto" rows="9" readonly value='{
+  "mcpServers": {
+    "rapidforge": {
+      "url": "{{.baseUrl}}/mcp",
+      "headers": {
+        "Authorization": "Bearer rf_mcp_your_token_here"
+      }
+    }
+  }
+}'></sl-textarea>
+      </sl-card>
+    </div>
+  </div>
+
+  <sl-card style="width: 100%" class="mt-4">
+    <h2 class="title is-5">Tokens</h2>
+    <table class="table is-fullwidth">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Prefix</th>
+          <th>Scopes</th>
+          <th>Created</th>
+          <th>Last used</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .tokens}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>{{maskToken .TokenPrefix}}</td>
+          <td>{{.Scopes}}</td>
+          <td>{{formatDateTime .CreatedAt}}</td>
+          <td>{{if .LastUsedAt.Valid}}{{formatDateTime .LastUsedAt.Time}}{{else}}Never{{end}}</td>
+          <td>{{if .RevokedAt.Valid}}Revoked{{else}}Active{{end}}</td>
+          <td>
+            {{if not .RevokedAt.Valid}}
+            <form method="POST" action="/settings/mcp/tokens/{{.ID}}/revoke">
+              <sl-button size="small" variant="danger" type="submit">
+                <sl-icon slot="prefix" name="x-circle"></sl-icon>
+                Revoke
+              </sl-button>
+            </form>
+            {{end}}
+          </td>
+        </tr>
+        {{else}}
+        <tr>
+          <td colspan="7">No MCP tokens yet.</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </sl-card>
+</div>
+{{end}}

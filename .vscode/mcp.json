@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"rf-mcp": {
+			"url": "http://localhost:4000/mcp",
+			"type": "http",
+			  "headers": {
+              "Authorization": "Bearer rf_mcp_97d8bf3addc5cbf7ee7995d1e1716e8723ece20dca7b3cc9"
+           }
+		}
+	},
+	"inputs": []
+}
