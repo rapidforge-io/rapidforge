@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"log"
 	"strings"
 )
@@ -36,4 +37,26 @@ func (s *Store) GetConfigByKey(key string) (string, error) {
 		return "", err
 	}
 	return setting.Value, nil
+}
+
+func (s *Store) GetConfigByKeyDefault(key, defaultValue string) string {
+	value, err := s.GetConfigByKey(key)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
+func (s *Store) UpsertSetting(key, value string) error {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return sql.ErrNoRows
+	}
+
+	_, err := s.db.Exec(`
+		INSERT INTO settings (name, value)
+		VALUES (?, ?)
+		ON CONFLICT(name) DO UPDATE SET value = excluded.value
+	`, key, value)
+	return err
 }

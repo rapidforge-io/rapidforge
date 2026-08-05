@@ -628,6 +628,79 @@ func infoHandler() gin.HandlerFunc {
 	}
 }
 
+func mcpSettingsHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokens, err := store.ListMCPTokens()
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error", gin.H{
+				"currentUser": getCurrentUser(c),
+				"error":       err.Error(),
+			})
+			return
+		}
+
+		c.HTML(http.StatusOK, "mcp_settings", gin.H{
+			"currentUser": getCurrentUser(c),
+			"tokens":      tokens,
+			"newToken":    "",
+			"baseUrl":     config.BaseUrl(),
+			"scopes":      models.DefaultMCPScopes,
+		})
+	}
+}
+
+func createMCPTokenHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := getCurrentUser(c)
+		if user == nil || user.Role != models.AdminRole {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		result, err := store.CreateMCPToken(c.PostForm("name"), c.PostFormArray("scopes"), user.ID)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error", gin.H{
+				"currentUser": user,
+				"error":       err.Error(),
+			})
+			return
+		}
+
+		tokens, err := store.ListMCPTokens()
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error", gin.H{
+				"currentUser": user,
+				"error":       err.Error(),
+			})
+			return
+		}
+
+		c.HTML(http.StatusOK, "mcp_settings", gin.H{
+			"currentUser": user,
+			"tokens":      tokens,
+			"newToken":    result.Secret,
+			"baseUrl":     config.BaseUrl(),
+			"scopes":      models.DefaultMCPScopes,
+		})
+	}
+}
+
+func revokeMCPTokenHandler(store *models.Store) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := parseInt(c.Param("id"))
+		if err := store.RevokeMCPToken(id); err != nil {
+			c.HTML(http.StatusInternalServerError, "error", gin.H{
+				"currentUser": getCurrentUser(c),
+				"error":       err.Error(),
+			})
+			return
+		}
+
+		c.Header("HX-Redirect", "/settings/mcp")
+		c.Redirect(http.StatusFound, "/settings/mcp")
+	}
+}
+
 func doLoginHandler(loginService *services.LoginService) gin.HandlerFunc {
 	type LoginForm struct {
 		Username string `form:"username" binding:"required"`
