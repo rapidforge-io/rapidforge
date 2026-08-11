@@ -51,6 +51,13 @@ func (s *Store) RecordTaskFailure(id int64) error {
 	return err
 }
 
+func (s *Store) IsPeriodicTaskActive(id int64) (bool, error) {
+	var active bool
+	query := `SELECT active FROM periodic_tasks WHERE id = ?`
+	err := s.db.Get(&active, query, id)
+	return active, err
+}
+
 func (s *Store) GetAndLockDuePeriodicTasks() ([]DueTasksTaskDetail, error) {
 	// TODO: think about this one
 	// err := s.UnlockStalePeriodicTasks()

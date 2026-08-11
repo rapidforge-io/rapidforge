@@ -45,6 +45,17 @@ func (s *Service) RunPeriodicPrograms() {
 				}
 			}()
 
+			active, err := s.store.IsPeriodicTaskActive(task.PeriodicTask.ID)
+			if err != nil {
+				rflog.Error("Failed to check periodic task active state", "task_id=", task.PeriodicTask.ID, "err=", err)
+				s.store.UnlockPeriodicTask(task.PeriodicTask.ID)
+				return
+			}
+			if !active {
+				s.store.UnlockPeriodicTask(task.PeriodicTask.ID)
+				return
+			}
+
 			blockEnv := task.Block.GetEnvVars()
 			taskEnv := task.PeriodicTask.GetEnvVars()
 			env := utils.MergeMaps(blockEnv, taskEnv)
