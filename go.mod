@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/fatih/color v1.17.0
-	github.com/gin-contrib/multitemplate v1.1.0
+	github.com/gin-contrib/multitemplate v1.1.1
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/pressly/goose/v3 v3.20.0
