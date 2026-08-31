@@ -9,6 +9,31 @@ import (
 	"github.com/rapidforge-io/rapidforge/database"
 )
 
+type KVPair struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+func GetAll() ([]KVPair, error) {
+	rows, err := database.GetKvDbConn().Query("SELECT key, value FROM KV ORDER BY key")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	pairs := []KVPair{}
+	for rows.Next() {
+		var pair KVPair
+		if err := rows.Scan(&pair.Key, &pair.Value); err != nil {
+			return nil, err
+		}
+		pairs = append(pairs, pair)
+	}
+
+	return pairs, rows.Err()
+}
+
+
 func Set(key, value string) error {
 	stmt, err := database.GetKvDbConn().Prepare("INSERT OR REPLACE INTO KV(key, value) VALUES(?, ?)")
 	if err != nil {

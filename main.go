@@ -125,10 +125,11 @@ func handleCLI() {
 		key := setCmd.String("key", "", "Key to set")
 		value := setCmd.String("value", "", "Value to set")
 		setCmd.Parse(os.Args[2:])
-		if *key == "" || *value == "" {
+		if *key == "" {
 			setCmd.PrintDefaults()
 			os.Exit(1)
 		}
+
 		if err := kv.Set(*key, *value); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
