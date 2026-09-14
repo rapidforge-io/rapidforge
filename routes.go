@@ -76,7 +76,9 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		"mcp_settings":  {"views/mcp_settings.html"},
 		"error":         {"views/error.html"},
 		"terminal-view": {"views/terminal.html"},
+		"kv":            {"views/kv.html"},
 	}
+
 
 	for name, pages := range templatesWithBase {
 		addTemplateWithBase(name, pages...)
@@ -310,7 +312,18 @@ func setupRoutes(r *gin.Engine, store *models.Store, staticFS embed.FS) {
 		credentialGroup.GET("/search", credentialsSearchHandler(store))
 	}
 
+	// KV Store Routes
+	kvGroup := r.Group("/kv")
+	kvGroup.Use(cors.New(corsConfig), TimeoutMiddleware(), AuthMiddleware(loginService))
+	{
+		kvGroup.GET("/", kvViewHandler())
+		kvGroup.GET("/data", kvDataHandler())
+		kvGroup.POST("/set", kvSetHandler())
+		kvGroup.POST("/del", kvDeleteHandler())
+	}
+
 	// Miscellaneous Routes
+
 	r.GET("/info", cors.New(corsConfig), AuthMiddleware(loginService), infoHandler())
 	r.GET("/settings/mcp", cors.New(corsConfig), AuthMiddleware(loginService), AdminOnlyMiddleware(), mcpSettingsHandler(store))
 	r.POST("/settings/mcp/tokens", cors.New(corsConfig), AuthMiddleware(loginService), AdminOnlyMiddleware(), createMCPTokenHandler(store))

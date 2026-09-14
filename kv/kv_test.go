@@ -62,6 +62,19 @@ func TestKVOperations(t *testing.T) {
 		t.Fatalf("List() = %v, want %v", keys, []string{"alpha", "beta"})
 	}
 
+	pairs, err := GetAll()
+	if err != nil {
+		t.Fatalf("GetAll() error = %v", err)
+	}
+	expectedPairs := []KVPair{
+		{Key: "alpha", Value: "one"},
+		{Key: "beta", Value: "two"},
+	}
+	if !reflect.DeepEqual(pairs, expectedPairs) {
+		t.Fatalf("GetAll() = %v, want %v", pairs, expectedPairs)
+	}
+
+
 	deleted, err := Del("alpha")
 	if err != nil {
 		t.Fatalf("Del(alpha) error = %v", err)

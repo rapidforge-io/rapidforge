@@ -29,6 +29,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gorilla/websocket"
 	"github.com/rapidforge-io/rapidforge/config"
+	"github.com/rapidforge-io/rapidforge/kv"
 	rflog "github.com/rapidforge-io/rapidforge/logger"
 	"github.com/rapidforge-io/rapidforge/models"
 	"github.com/rapidforge-io/rapidforge/observability"
@@ -1936,3 +1937,76 @@ func parseInt(s string) int64 {
 	}
 	return i
 }
+
+func kvViewHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.HTML(http.StatusOK, "kv", gin.H{
+			"currentUser": getCurrentUser(c),
+		})
+	}
+}
+
+func kvDataHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		pairs, err := kv.GetAll()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, pairs)
+	}
+}
+
+type kvSetRequest struct {
+	Key   string `json:"key" form:"key"`
+	Value string `json:"value" form:"value"`
+}
+
+func kvSetHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req kvSetRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			req.Key = c.PostForm("key")
+			req.Value = c.PostForm("value")
+		}
+
+		if strings.TrimSpace(req.Key) == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Key is required"})
+			return
+		}
+
+		if err := kv.Set(req.Key, req.Value); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	}
+}
+
+type kvDelRequest struct {
+	Key string `json:"key" form:"key"`
+}
+
+func kvDeleteHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req kvDelRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			req.Key = c.PostForm("key")
+		}
+
+		if strings.TrimSpace(req.Key) == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Key is required"})
+			return
+		}
+
+		deleted, err := kv.Del(req.Key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "deleted": deleted})
+	}
+}
+

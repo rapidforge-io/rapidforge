@@ -1,0 +1,484 @@
+{{ define "title" }}KV Store{{ end }}
+{{ define "content.html" }}
+
+<div class="is-flex is-align-items-baseline">
+  <sl-icon-button name="arrow-left" id="backButton" label="Blocks" href="/blocks"></sl-icon-button>
+  <h1 class="title is-3">KV Store</h1>
+</div>
+
+<sl-tab-group>
+  <sl-tab slot="nav" panel="kv">KV Store</sl-tab>
+  <sl-tab-panel name="kv">
+    <div class="m-2">
+      <div class="columns is-align-items-end mb-3">
+        <div class="column">
+          <sl-input
+            label="Search"
+            type="search"
+            id="kvSearchInput"
+            placeholder="Search key or value"
+            clearable>
+            <sl-icon name="search" slot="prefix"></sl-icon>
+          </sl-input>
+        </div>
+        <div class="column is-narrow is-flex is-align-items-center gap-2">
+          <span class="tag is-info is-light" id="kvCountTag">0 entries</span>
+          <sl-button variant="default" onclick="refreshKvTable()">
+            <sl-icon slot="prefix" name="arrow-clockwise"></sl-icon>
+            Refresh
+          </sl-button>
+          <sl-button variant="primary" onclick="showCreateDialog()">
+            <sl-icon slot="prefix" name="plus-lg"></sl-icon>
+            Create
+          </sl-button>
+        </div>
+      </div>
+
+      <div id="alertContainer" class="mb-2"></div>
+
+      <div id="kv-table"></div>
+
+    </div>
+  </sl-tab-panel>
+</sl-tab-group>
+
+<!-- Create Entry Dialog -->
+<sl-dialog label="Add Key-Value Pair" id="createKvDialog">
+  <form id="createKvForm" onsubmit="handleCreateKv(event)">
+    <div class="field mb-3">
+      <sl-input id="newKvKey" label="Key" placeholder="e.g. user_session_token" required></sl-input>
+    </div>
+    <div class="field mb-4">
+      <sl-textarea id="newKvValue" label="Value" placeholder="Enter string value or JSON payload..." rows="4"></sl-textarea>
+    </div>
+    <div class="is-flex is-justify-content-end gap-2">
+      <sl-button variant="default" onclick="hideDialog('createKvDialog')">Cancel</sl-button>
+      <sl-button variant="primary" type="submit" id="createSubmitBtn">Save Entry</sl-button>
+    </div>
+  </form>
+</sl-dialog>
+
+<!-- Edit Value Dialog -->
+<sl-dialog label="Edit Value" id="editKvDialog">
+  <form id="editKvForm" onsubmit="handleEditKv(event)">
+    <input type="hidden" id="editKvKeyOriginal" />
+    <div class="field mb-3">
+      <sl-input id="editKvKeyDisplay" label="Key" readonly></sl-input>
+    </div>
+    <div class="field mb-4">
+      <sl-textarea id="editKvValue" label="Value" rows="8" placeholder="Enter value..."></sl-textarea>
+    </div>
+    <div class="is-flex is-justify-content-end gap-2">
+      <sl-button variant="default" onclick="hideDialog('editKvDialog')">Cancel</sl-button>
+      <sl-button variant="primary" type="submit" id="editSubmitBtn">Update Value</sl-button>
+    </div>
+  </form>
+</sl-dialog>
+
+<!-- Confirm Delete Dialog -->
+<sl-dialog label="Delete Key" id="deleteKvDialog">
+  <p class="mb-4">Are you sure you want to delete the key <strong id="deleteKvKeyText"></strong>? This action cannot be undone.</p>
+  <input type="hidden" id="deleteKvKey" />
+  <div class="is-flex is-justify-content-end gap-2">
+    <sl-button variant="default" onclick="hideDialog('deleteKvDialog')">Cancel</sl-button>
+    <sl-button variant="danger" onclick="confirmDeleteKv()">Delete</sl-button>
+  </div>
+</sl-dialog>
+
+<style>
+  .gap-2 { gap: 0.5rem; }
+
+  /* Ensure Tabulator uses flat styling consistent with RapidForge design system */
+  .tabulator {
+    border: 1px solid var(--sl-color-neutral-200, #e1e4e8) !important;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    background-color: var(--sl-panel-background-color, #ffffff) !important;
+    box-shadow: none !important;
+  }
+
+  .tabulator .tabulator-header {
+    background-color: var(--sl-color-neutral-50, #f8f9fa) !important;
+    color: var(--sl-color-neutral-900, #212529) !important;
+    border-bottom: 1px solid var(--sl-color-neutral-200, #e1e4e8) !important;
+    font-weight: 600;
+  }
+
+  .tabulator .tabulator-header .tabulator-col {
+    background-color: transparent !important;
+    border-right: 1px solid var(--sl-color-neutral-200, #e1e4e8) !important;
+  }
+
+  .tabulator .tabulator-row {
+    background-color: var(--sl-panel-background-color, #ffffff) !important;
+    color: var(--sl-color-neutral-900, #212529) !important;
+    border-bottom: 1px solid var(--sl-color-neutral-200, #e1e4e8) !important;
+  }
+
+  .tabulator .tabulator-row.tabulator-row-even {
+    background-color: var(--sl-color-neutral-50, #fafafa) !important;
+  }
+
+  .tabulator .tabulator-row:hover {
+    background-color: var(--sl-color-neutral-100, #f1f3f5) !important;
+  }
+
+  .tabulator .tabulator-footer {
+    background-color: var(--sl-color-neutral-50, #f8f9fa) !important;
+    color: var(--sl-color-neutral-900, #212529) !important;
+    border-top: 1px solid var(--sl-color-neutral-200, #e1e4e8) !important;
+  }
+
+  .tabulator .tabulator-footer .tabulator-page {
+    border-radius: 4px;
+    border: 1px solid var(--sl-color-neutral-300, #dee2e6);
+    background-color: #ffffff;
+  }
+
+  .tabulator .tabulator-footer .tabulator-page.active {
+    background-color: var(--sl-color-primary-600, #0284c7) !important;
+    color: #ffffff !important;
+    border-color: var(--sl-color-primary-600, #0284c7) !important;
+  }
+
+  /* Dark mode theme consistency */
+  .sl-theme-dark .tabulator {
+    background-color: var(--sl-panel-background-color, #181825) !important;
+    color: #cdd6f4 !important;
+    border-color: #313244 !important;
+    box-shadow: none !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-header {
+    background-color: #11111b !important;
+    color: #cdd6f4 !important;
+    border-bottom: 1px solid #313244 !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-header .tabulator-col {
+    background-color: transparent !important;
+    border-right: 1px solid #313244 !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-row {
+    background-color: #181825 !important;
+    color: #cdd6f4 !important;
+    border-bottom: 1px solid #313244 !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-row.tabulator-row-even {
+    background-color: #1e1e2e !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-row:hover {
+    background-color: #313244 !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-footer {
+    background-color: #11111b !important;
+    color: #cdd6f4 !important;
+    border-top: 1px solid #313244 !important;
+  }
+
+  .sl-theme-dark .tabulator .tabulator-footer .tabulator-page {
+    border-color: #313244;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+  }
+
+  .tabulator-cell-editable {
+    background-color: rgba(2, 132, 199, 0.04) !important;
+  }
+
+  .tabulator-cell-editable:hover {
+    background-color: rgba(2, 132, 199, 0.12) !important;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  let kvTable = null;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initKvTable();
+
+    // Setup global search filter
+    const searchInput = document.getElementById('kvSearchInput');
+    if (searchInput) {
+      searchInput.addEventListener('sl-input', function (e) {
+        const val = e.target.value;
+        if (kvTable) {
+          if (!val) {
+            kvTable.clearFilter();
+          } else {
+            kvTable.setFilter([
+              [
+                { field: 'key', type: 'like', value: val },
+                { field: 'value', type: 'like', value: val }
+              ]
+            ]);
+          }
+        }
+      });
+    }
+  });
+
+  function initKvTable() {
+    kvTable = new Tabulator('#kv-table', {
+      ajaxURL: '/kv/data',
+      ajaxConfig: 'GET',
+      pagination: 'local',
+      paginationSize: 20,
+      paginationSizeSelector: [10, 20, 50, 100],
+      layout: 'fitColumns',
+      responsiveLayout: 'collapse',
+      placeholder: 'No Key-Value entries found.',
+      columns: [
+        {
+          title: 'Key',
+          field: 'key',
+          sorter: 'string',
+          widthGrow: 1,
+          formatter: function (cell) {
+            const val = cell.getValue() || '';
+            return `<strong style="font-family: monospace; color: var(--sl-color-primary-600);">${escapeHtml(val)}</strong>`;
+          }
+        },
+        {
+          title: 'Value (Click to inline edit)',
+          field: 'value',
+          sorter: 'string',
+          editor: 'textarea',
+          widthGrow: 2,
+          cssClass: 'tabulator-cell-editable',
+          formatter: function (cell) {
+            const val = cell.getValue() || '';
+            const truncated = val.length > 120 ? val.substring(0, 120) + '...' : val;
+            return `<span style="font-family: monospace; white-space: pre-wrap;">${escapeHtml(truncated)}</span>`;
+          }
+        },
+        {
+          title: 'Actions',
+          field: 'actions',
+          width: 170,
+          headerSort: false,
+          hozAlign: 'center',
+          formatter: function (cell) {
+            const rowData = cell.getRow().getData();
+            const encodedKey = encodeURIComponent(rowData.key || '');
+            return `
+              <div class="is-flex gap-2 is-justify-content-center">
+                <sl-icon-button name="pencil" label="Edit" onclick="openEditModal('${encodedKey}')"></sl-icon-button>
+                <sl-icon-button name="copy" label="Copy Value" onclick="copyValue('${encodedKey}')"></sl-icon-button>
+                <sl-icon-button name="trash" label="Delete" style="color: var(--sl-color-danger-600);" onclick="openDeleteModal('${encodedKey}')"></sl-icon-button>
+              </div>
+            `;
+          }
+        }
+      ]
+    });
+
+    kvTable.on("dataLoaded", function (data) {
+      updateCountTag(Array.isArray(data) ? data.length : 0);
+    });
+
+    kvTable.on("dataFiltered", function (filters, rows) {
+      updateCountTag(Array.isArray(rows) ? rows.length : 0);
+    });
+
+    // Save automatic changes when inline cell is edited
+    kvTable.on('cellEdited', function (cell) {
+      const field = cell.getField();
+      if (field === 'value') {
+        const rowData = cell.getRow().getData();
+        saveKvPair(rowData.key, cell.getValue(), true);
+      }
+    });
+  }
+
+  function updateCountTag(count) {
+    const tag = document.getElementById('kvCountTag');
+    if (tag) {
+      const num = (typeof count === 'number' && !isNaN(count)) ? count : 0;
+      tag.textContent = `${num} ${num === 1 ? 'entry' : 'entries'}`;
+    }
+  }
+
+  function refreshKvTable() {
+    if (kvTable) {
+      kvTable.setData('/kv/data').then(function () {
+        const count = typeof kvTable.getDataCount === 'function' ? kvTable.getDataCount('active') : kvTable.getData().length;
+        updateCountTag(count);
+        showAlert('Key-Value table refreshed', 'success');
+      }).catch(function (err) {
+        showAlert('Failed to refresh table: ' + err, 'danger');
+      });
+    }
+  }
+
+  function showCreateDialog() {
+    document.getElementById('newKvKey').value = '';
+    document.getElementById('newKvValue').value = '';
+    showDialog('createKvDialog');
+  }
+
+  function handleCreateKv(event) {
+    event.preventDefault();
+    const key = document.getElementById('newKvKey').value.trim();
+    const value = document.getElementById('newKvValue').value;
+
+    if (!key) {
+      showAlert('Key is required', 'warning');
+      return;
+    }
+
+    saveKvPair(key, value, false, function () {
+      hideDialog('createKvDialog');
+    });
+  }
+
+  function openEditModal(encodedKey) {
+    const key = decodeURIComponent(encodedKey);
+    const row = kvTable.getRows().find(r => r.getData().key === key);
+    if (!row) return;
+
+    const data = row.getData();
+    document.getElementById('editKvKeyOriginal').value = data.key;
+    document.getElementById('editKvKeyDisplay').value = data.key;
+    document.getElementById('editKvValue').value = data.value || '';
+    showDialog('editKvDialog');
+  }
+
+  function handleEditKv(event) {
+    event.preventDefault();
+    const key = document.getElementById('editKvKeyOriginal').value;
+    const value = document.getElementById('editKvValue').value;
+
+    saveKvPair(key, value, false, function () {
+      hideDialog('editKvDialog');
+    });
+  }
+
+  function saveKvPair(key, value, isInline, callback) {
+    fetch('/kv/set', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ key: key, value: value })
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Server returned HTTP ' + res.status);
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (data.status === 'ok') {
+          if (isInline) {
+            showAlert(`Updated "${key}" successfully`, 'success');
+          } else {
+            showAlert(`Saved "${key}" successfully`, 'success');
+            refreshKvTable();
+          }
+          if (callback) callback();
+        } else {
+          showAlert('Failed to save: ' + (data.error || 'Unknown error'), 'danger');
+        }
+      })
+      .catch(err => {
+        showAlert('Error saving key-value pair: ' + err.message, 'danger');
+      });
+  }
+
+  function openDeleteModal(encodedKey) {
+    const key = decodeURIComponent(encodedKey);
+    document.getElementById('deleteKvKey').value = key;
+    document.getElementById('deleteKvKeyText').textContent = key;
+    showDialog('deleteKvDialog');
+  }
+
+  function confirmDeleteKv() {
+    const key = document.getElementById('deleteKvKey').value;
+    fetch('/kv/del', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ key: key })
+    })
+      .then(res => res.json())
+      .then(data => {
+        hideDialog('deleteKvDialog');
+        if (data.status === 'ok') {
+          showAlert(`Deleted key "${key}"`, 'success');
+          refreshKvTable();
+        } else {
+          showAlert('Failed to delete: ' + (data.error || 'Unknown error'), 'danger');
+        }
+      })
+      .catch(err => {
+        hideDialog('deleteKvDialog');
+        showAlert('Error deleting key: ' + err.message, 'danger');
+      });
+  }
+
+  function copyValue(encodedKey) {
+    const key = decodeURIComponent(encodedKey);
+    const row = kvTable.getRows().find(r => r.getData().key === key);
+    if (row) {
+      const val = row.getData().value || '';
+      navigator.clipboard.writeText(val).then(() => {
+        showAlert(`Copied value of "${key}" to clipboard`, 'neutral');
+      }).catch(err => {
+        showAlert('Failed to copy: ' + err, 'warning');
+      });
+    }
+  }
+
+  function showDialog(id) {
+    const dialog = document.getElementById(id);
+    if (dialog) dialog.show();
+  }
+
+  function hideDialog(id) {
+    const dialog = document.getElementById(id);
+    if (dialog) dialog.hide();
+  }
+
+  function showAlert(message, variant = 'primary') {
+    const container = document.getElementById('alertContainer');
+    if (!container) return;
+
+    const alert = document.createElement('sl-alert');
+    alert.variant = variant;
+    alert.duration = 4000;
+    alert.closable = true;
+
+    let iconName = 'info-circle';
+    if (variant === 'success') iconName = 'check-circle';
+    if (variant === 'danger') iconName = 'exclamation-octagon';
+    if (variant === 'warning') iconName = 'exclamation-triangle';
+
+    alert.innerHTML = `
+      <sl-icon slot="icon" name="${iconName}"></sl-icon>
+      ${escapeHtml(message)}
+    `;
+
+    container.appendChild(alert);
+    alert.toast();
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+</script>
+
+{{ end }}

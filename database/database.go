@@ -32,7 +32,8 @@ type DbCon struct {
 }
 
 var (
-	once     sync.Once
+	dbOnce   sync.Once
+	kvOnce   sync.Once
 	instance *sqlx.DB
 	kbDB     *sqlx.DB
 )
@@ -51,16 +52,28 @@ func (db *DbCon) BeginImmediateTransaction() (*sqlx.Tx, error) {
 }
 
 func GetKvDbConn() *DbCon {
-	once.Do(func() {
+	kvOnce.Do(func() {
 		fileName := config.Get().KVUrl
+		if fileName == "" {
+			fileName = "rapidforgekv.sqlite3"
+		}
 		kbDB = LoadConnection(fileName)
+		createTableSQL := `CREATE TABLE IF NOT EXISTS KV (
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
+	"key" TEXT NOT NULL UNIQUE,
+	"value" TEXT
+);`
+		_, err := kbDB.Exec(createTableSQL)
+		if err != nil {
+			rflog.Error("Failed to create KV table", "err:", err)
+		}
 	})
 
 	return &DbCon{DB: kbDB}
 }
 
 func GetDbConn(fileName string) *DbCon {
-	once.Do(func() {
+	dbOnce.Do(func() {
 		instance = LoadConnection(fileName)
 	})
 
@@ -82,14 +95,17 @@ func CreateDbFile(fileName string) {
 	var err error
 	var path string
 
+	if fileName == "" {
+		fileName = config.Get().DatabaseUrl
+	}
+
 	if config.Get().Env == "test" {
 		path = fmt.Sprintf("./%s", fileName)
 	} else {
-		dbUrl := config.Get().DatabaseUrl
-		if filepath.IsAbs(dbUrl) {
-			path = dbUrl
+		if filepath.IsAbs(fileName) {
+			path = fileName
 		} else {
-			path = fmt.Sprintf("./%s", dbUrl)
+			path = fmt.Sprintf("./%s", fileName)
 		}
 	}
 
@@ -100,6 +116,7 @@ func CreateDbFile(fileName string) {
 		}
 	}
 }
+
 
 func RemoveDbFile(filePath string) {
 	var err error
