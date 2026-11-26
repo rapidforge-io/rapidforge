@@ -3,8 +3,9 @@ package mcp
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -575,16 +576,8 @@ func defaultTrue(value *bool) bool {
 }
 
 func keyValueLines(values map[string]string) string {
-	if len(values) == 0 {
-		return ""
-	}
-	keys := make([]string, 0, len(values))
-	for key := range values {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	lines := make([]string, 0, len(keys))
-	for _, key := range keys {
+	lines := make([]string, 0, len(values))
+	for _, key := range slices.Sorted(maps.Keys(values)) {
 		if strings.TrimSpace(key) == "" {
 			continue
 		}
@@ -594,9 +587,6 @@ func keyValueLines(values map[string]string) string {
 }
 
 func exitHTTPPair(values map[string]int) string {
-	if len(values) == 0 {
-		return ""
-	}
 	keys := make([]int, 0, len(values))
 	for key := range values {
 		parsed, err := strconv.Atoi(key)
@@ -604,7 +594,7 @@ func exitHTTPPair(values map[string]int) string {
 			keys = append(keys, parsed)
 		}
 	}
-	sort.Ints(keys)
+	slices.Sort(keys)
 	pairs := make([]string, 0, len(keys))
 	for _, key := range keys {
 		pairs = append(pairs, fmt.Sprintf("%d=%d", key, values[strconv.Itoa(key)]))

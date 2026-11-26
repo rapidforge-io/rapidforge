@@ -34,7 +34,7 @@ func createMyRender(viewsFS embed.FS) multitemplate.Renderer {
 		"dec": func(i int) int {
 			return i - 1
 		},
-		"toJSON": func(v interface{}) template.JS {
+		"toJSON": func(v any) template.JS {
 			bytes, err := json.Marshal(v)
 			if err != nil {
 				return template.JS("[]")

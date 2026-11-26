@@ -33,7 +33,7 @@ func Info(msg string, args ...any) {
 	color.Unset()
 }
 
-func Error(message any, args ...interface{}) {
+func Error(message any, args ...any) {
 	var msg string
 	switch v := message.(type) {
 	case string:

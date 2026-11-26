@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"maps"
 	"os/exec"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -117,39 +119,31 @@ func ToastHeader(message string) (string, string) {
 func DefaultHtml(input any, defaultValue string) template.HTML {
 	switch v := input.(type) {
 	case string:
-		if v == "" {
-			return template.HTML(defaultValue)
-		} else {
+		if v != "" {
 			return template.HTML(v)
 		}
 	case sql.NullString:
 		if v.Valid && v.String != "" {
 			return template.HTML(v.String)
-		} else {
-			return template.HTML(defaultValue)
 		}
-	default:
-		return template.HTML(defaultValue)
 	}
+
+	return template.HTML(defaultValue)
 }
 
 func DefaultString(input any, defaultValue string) string {
 	switch v := input.(type) {
 	case string:
-		if v == "" {
-			return defaultValue
-		} else {
+		if v != "" {
 			return v
 		}
 	case sql.NullString:
 		if v.Valid && v.String != "" {
 			return v.String
-		} else {
-			return defaultValue
 		}
-	default:
-		return defaultValue
 	}
+
+	return defaultValue
 }
 
 func ParseInt64(s string) int64 {
@@ -209,26 +203,27 @@ func GetFieldValue(input any, fieldName string) (any, error) {
 
 // transformToMaps is the generic function to transform any slice to []map[string]any
 func TransformToMaps[T any](items []T, typeName string) []map[string]any {
-	var mapBlocks []map[string]any
+	mapBlocks := make([]map[string]any, 0, len(items))
 
 	for _, item := range items {
 		mapBlock := ToMap(item)
 		mapBlock["Badges"] = []string{}
 		mapBlock["Type"] = typeName
 
-		if typeName == WebhookEntity {
+		switch typeName {
+		case WebhookEntity:
 			httpMethod, err := GetFieldValue(item, "HttpMethod")
 			if err != nil {
 				// for circler dependency we can't use rflog
 				log.Fatalln("failed to get http method", err)
-			} else {
-				mapBlock["Badges"] = []string{"Hook", httpMethod.(string)}
 			}
-		} else if typeName == PageEntity {
+			mapBlock["Badges"] = []string{"Hook", httpMethod.(string)}
+		case PageEntity:
 			mapBlock["Badges"] = []string{"Page"}
-		} else if typeName == PeriodicTaskEntity {
+		case PeriodicTaskEntity:
 			mapBlock["Badges"] = []string{"Periodic Task"}
 		}
+
 		mapBlocks = append(mapBlocks, mapBlock)
 	}
 
@@ -247,25 +242,19 @@ func GenerateRandomString(length int) (string, error) {
 }
 
 func GetMapKeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
+	return slices.Collect(maps.Keys(m))
 }
 
 func RemoveDuplicates(input []string) []string {
-	// Create a map to track unique elements
-	uniqueMap := make(map[string]bool)
-	var result []string
+	seen := make(map[string]struct{}, len(input))
+	result := make([]string, 0, len(input))
 
-	// Iterate through the input slice
 	for _, val := range input {
-		// If the value is not already in the map, add it
-		if !uniqueMap[val] {
-			uniqueMap[val] = true
-			result = append(result, val)
+		if _, ok := seen[val]; ok {
+			continue
 		}
+		seen[val] = struct{}{}
+		result = append(result, val)
 	}
 
 	return result
