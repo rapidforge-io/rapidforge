@@ -43,15 +43,16 @@ update_file() {
     echo -e "${GREEN}✓${NC} Updated $file"
 }
 
-update_file "go.mod" "s/^go [0-9.]\+$/go ${GO_VERSION}/" "go ${GO_VERSION}"
-update_file "dockerfile" "s/FROM golang:[0-9.]\+ AS builder/FROM golang:${GO_VERSION} AS builder/" "FROM golang:${GO_VERSION} AS builder"
-update_file ".github/workflows/ci.yml" "s/go-version: '[0-9.]\+'/go-version: '${GO_VERSION}'/" "go-version: '${GO_VERSION}'"
-update_file "README.md" "s/Go-[0-9.]\++-/Go-${GO_VERSION}+-/" "Go-${GO_VERSION}+"
-update_file "README.md" "s/- Go [0-9.]\+ or higher/- Go ${GO_VERSION} or higher/" "- Go ${GO_VERSION} or higher"
+update_file "go.mod" "s/^go [0-9.]*$/go ${GO_VERSION}/" "go ${GO_VERSION}"
+update_file "dockerfile" "s/golang:[0-9.]* AS builder/golang:${GO_VERSION} AS builder/" "FROM golang:${GO_VERSION} AS builder"
+update_file ".github/workflows/ci.yml" "s/go-version: '[0-9.]*'/go-version: '${GO_VERSION}'/" "go-version: '${GO_VERSION}'"
+update_file ".github/workflows/release.yml" "s/go-version: '[0-9.]*'/go-version: '${GO_VERSION}'/" "go-version: '${GO_VERSION}'"
+update_file "README.md" "s/Go-[0-9.]*+-/Go-${GO_VERSION}+-/" "Go-${GO_VERSION}+"
+update_file "README.md" "s/- Go [0-9.]* or higher/- Go ${GO_VERSION} or higher/" "- Go ${GO_VERSION} or higher"
 
 echo ""
 echo -e "${GREEN}Version sync complete!${NC}"
 echo ""
 echo -e "${YELLOW}Note:${NC} Make sure to commit these changes:"
-echo -e "  git add .mise.toml go.mod dockerfile .github/workflows/ci.yml README.md"
+echo -e "  git add .mise.toml go.mod dockerfile .github/workflows/ci.yml .github/workflows/release.yml README.md"
 echo -e "  git commit -m 'chore: update Go to ${GO_VERSION} and Node to ${NODE_VERSION}'"
