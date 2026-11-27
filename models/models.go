@@ -81,19 +81,10 @@ type WebhookAuthConfig struct {
 func getEnvVars(envVars sql.NullString) map[string]string {
 	envVarsMap := map[string]string{}
 
-	if envVars.String == "" {
-		return envVarsMap
-	}
-
-	pairs := strings.Split(envVars.String, "\n")
-
-	if len(pairs) == 0 {
-		return envVarsMap
-	}
-
-	for _, pair := range pairs {
-		parts := strings.Split(pair, "=")
-		envVarsMap[parts[0]] = parts[1]
+	for line := range strings.SplitSeq(envVars.String, "\n") {
+		if key, value, ok := strings.Cut(line, "="); ok {
+			envVarsMap[key] = value
+		}
 	}
 
 	return envVarsMap
@@ -122,60 +113,40 @@ func (w *Webhook) GetAuthConfig() *WebhookAuthConfig {
 	var config WebhookAuthConfig
 	if err := json.Unmarshal([]byte(w.AuthConfig.String), &config); err != nil {
 		rflog.Error("failed to unmarshal auth config", err)
-		return &WebhookAuthConfig{
-			Enabled: false,
-			Tokens:  []string{},
-		}
+		return &WebhookAuthConfig{Tokens: []string{}}
 	}
 
 	return &config
 }
 
 func (w *Webhook) GetExitHttpPair() map[int]int {
-	envVars := map[int]int{}
+	pairs := map[int]int{}
 
-	if w.ExitHttpPair.String == "" {
-		return envVars
-	}
+	for pair := range strings.SplitSeq(w.ExitHttpPair.String, ";") {
+		exitCode, httpCode, ok := strings.Cut(pair, "=")
+		if !ok {
+			continue
+		}
 
-	pairs := strings.Split(w.ExitHttpPair.String, ";")
-
-	if len(pairs) == 0 {
-		return envVars
-	}
-
-	for _, pair := range pairs {
-		parts := strings.Split(pair, "=")
-		key := utils.ParseInt(parts[0])
-		val := utils.ParseInt(parts[1])
-
+		key, val := utils.ParseInt(exitCode), utils.ParseInt(httpCode)
 		if key == 0 && val == 0 {
 			continue
 		}
 
-		envVars[key] = val
+		pairs[key] = val
 	}
 
-	return envVars
+	return pairs
 }
 
 func (w *Webhook) GetResponseHeaders() map[string]string {
 	headers := map[string]string{}
 
-	if w.ResponseHeaders.String == "" {
-		return headers
-	}
-
-	pairs := strings.Split(w.ResponseHeaders.String, "\n")
-
-	if len(pairs) == 0 {
-		return headers
-	}
-
-	for _, pair := range pairs {
-		parts := strings.Split(pair, "=")
-		key := parts[0]
-		val := parts[1]
+	for pair := range strings.SplitSeq(w.ResponseHeaders.String, "\n") {
+		key, val, ok := strings.Cut(pair, "=")
+		if !ok {
+			continue
+		}
 
 		headers[key] = val
 	}
@@ -184,22 +155,18 @@ func (w *Webhook) GetResponseHeaders() map[string]string {
 }
 
 func (w *Webhook) GetCors() []string {
-	cors := []string{}
-
 	if w.Cors.String == "" || w.Cors.String == "*" {
-		return append(cors, "*")
+		return []string{"*"}
 	}
 
-	cors = strings.Split(w.Cors.String, "\n")
-
-	return cors
+	return strings.Split(w.Cors.String, "\n")
 }
 
 // Custom type to handle JSON unmarshalling
 type JSONRawString map[string]any
 
 // Implement the sql.Scanner interface for JSONRawString
-func (j *JSONRawString) Scan(value interface{}) error {
+func (j *JSONRawString) Scan(value any) error {
 	if value == nil {
 		j = nil
 		return nil
@@ -709,10 +676,9 @@ func constructKeyValueFormat(exitCodes, httpResponseCodes []string) string {
 		return ""
 	}
 
-	var pairs []string
-	for i := 0; i < len(exitCodes); i++ {
-		pair := exitCodes[i] + "=" + httpResponseCodes[i]
-		pairs = append(pairs, pair)
+	pairs := make([]string, 0, len(exitCodes))
+	for i := range exitCodes {
+		pairs = append(pairs, exitCodes[i]+"="+httpResponseCodes[i])
 	}
 
 	result := strings.Join(pairs, ";")

@@ -122,8 +122,8 @@ func ExecuteSQL(query string, out io.Writer, errOut io.Writer) error {
 		return err
 	}
 
-	values := make([]interface{}, len(columns))
-	valuePtrs := make([]interface{}, len(columns))
+	values := make([]any, len(columns))
+	valuePtrs := make([]any, len(columns))
 	for i := range values {
 		valuePtrs[i] = &values[i]
 	}

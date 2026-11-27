@@ -22,7 +22,7 @@ func WrapDBWithTracing(db *sqlx.DB) *TracedDB {
 	return &TracedDB{DB: db}
 }
 
-func (db *TracedDB) ExecContext(ctx context.Context, query string, args ...interface{}) (result sql.Result, err error) {
+func (db *TracedDB) ExecContext(ctx context.Context, query string, args ...any) (result sql.Result, err error) {
 	ctx, span := tracer.Start(ctx, "db.exec",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -43,7 +43,7 @@ func (db *TracedDB) ExecContext(ctx context.Context, query string, args ...inter
 	return db.DB.ExecContext(ctx, query, args...)
 }
 
-func (db *TracedDB) QueryContext(ctx context.Context, query string, args ...interface{}) (rows *sqlx.Rows, err error) {
+func (db *TracedDB) QueryContext(ctx context.Context, query string, args ...any) (rows *sqlx.Rows, err error) {
 	ctx, span := tracer.Start(ctx, "db.query",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -64,7 +64,7 @@ func (db *TracedDB) QueryContext(ctx context.Context, query string, args ...inte
 	return db.DB.QueryxContext(ctx, query, args...)
 }
 
-func (db *TracedDB) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row {
+func (db *TracedDB) QueryRowContext(ctx context.Context, query string, args ...any) *sqlx.Row {
 	ctx, span := tracer.Start(ctx, "db.query_row",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -78,7 +78,7 @@ func (db *TracedDB) QueryRowContext(ctx context.Context, query string, args ...i
 }
 
 // SelectContext executes a select query with tracing
-func (db *TracedDB) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) (err error) {
+func (db *TracedDB) SelectContext(ctx context.Context, dest any, query string, args ...any) (err error) {
 	ctx, span := tracer.Start(ctx, "db.select",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -99,7 +99,7 @@ func (db *TracedDB) SelectContext(ctx context.Context, dest interface{}, query s
 	return db.DB.SelectContext(ctx, dest, query, args...)
 }
 
-func (db *TracedDB) GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) (err error) {
+func (db *TracedDB) GetContext(ctx context.Context, dest any, query string, args ...any) (err error) {
 	ctx, span := tracer.Start(ctx, "db.get",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -120,7 +120,7 @@ func (db *TracedDB) GetContext(ctx context.Context, dest interface{}, query stri
 	return db.DB.GetContext(ctx, dest, query, args...)
 }
 
-func (db *TracedDB) NamedExecContext(ctx context.Context, query string, arg interface{}) (result sql.Result, err error) {
+func (db *TracedDB) NamedExecContext(ctx context.Context, query string, arg any) (result sql.Result, err error) {
 	ctx, span := tracer.Start(ctx, "db.named_exec",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -141,7 +141,7 @@ func (db *TracedDB) NamedExecContext(ctx context.Context, query string, arg inte
 	return db.DB.NamedExecContext(ctx, query, arg)
 }
 
-func (db *TracedDB) BeginTxx(ctx context.Context, opts interface{}) (tx *sqlx.Tx, err error) {
+func (db *TracedDB) BeginTxx(ctx context.Context, opts *sql.TxOptions) (tx *sqlx.Tx, err error) {
 	ctx, span := tracer.Start(ctx, "db.begin_transaction",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -158,5 +158,5 @@ func (db *TracedDB) BeginTxx(ctx context.Context, opts interface{}) (tx *sqlx.Tx
 		span.End()
 	}()
 
-	return db.DB.BeginTxx(ctx, nil)
+	return db.DB.BeginTxx(ctx, opts)
 }
