@@ -17,4 +17,9 @@ updates:
       interval: "weekly"              # Run Dependabot weekly
     open-pull-requests-limit: 10      # Limit the number of open PRs
 
+  - package-ecosystem: "docker"
+    directory: "/"            # dockerfile and Dockerfile.release base images
+    schedule:
+      interval: "weekly"
+
 
