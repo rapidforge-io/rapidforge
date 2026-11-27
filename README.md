@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/rapidforge-io/rapidforge/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
-  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go" alt="Go Version"></a>
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.27.4+-00ADD8?logo=go" alt="Go Version"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-22.0+-339933?logo=node.js" alt="Node Version"></a>
 </p>
 
